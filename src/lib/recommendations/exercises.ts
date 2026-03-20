@@ -1,0 +1,660 @@
+import type { Exercise } from '../engine/types';
+
+export const EXERCISES: Exercise[] = [
+  // ── Emotional ──────────────────────────────────────────────
+  {
+    id: 'exercise-001',
+    title: 'Emotional Weather Report',
+    description:
+      'Each partner shares their current emotional state using a weather metaphor, making it easier to express complex feelings without judgment.',
+    category: 'emotional',
+    durationMinutes: 5,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: 'Emotional Intelligence',
+    instructions: [
+      'Sit facing each other without distractions.',
+      'Each person describes their inner state as a weather pattern (e.g., "partly cloudy with a chance of anxiety").',
+      'The listener reflects back what they heard without fixing or judging.',
+      'Switch roles and repeat.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-002',
+    title: 'Gratitude Sharing',
+    description:
+      'Partners take turns naming three specific things they appreciate about each other from the past 24 hours.',
+    category: 'emotional',
+    durationMinutes: 5,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: 'Positive Psychology (PERMA)',
+    instructions: [
+      'Set a timer for 5 minutes.',
+      'Partner A shares three specific appreciations from the last 24 hours.',
+      'Partner B listens fully, then says "thank you."',
+      'Switch roles.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-003',
+    title: 'Feelings Wheel Deep Dive',
+    description:
+      'Use a feelings wheel to move from broad emotions to precise labels, building emotional vocabulary and self-awareness.',
+    category: 'emotional',
+    durationMinutes: 10,
+    targetDimensions: ['emotional'],
+    theoryBasis: 'Emotional Intelligence',
+    instructions: [
+      'Start with a broad feeling category (happy, sad, angry, afraid, surprised, disgusted).',
+      'Narrow down to the second ring of the wheel for more precision.',
+      'Reach the outer ring and name the exact feeling.',
+      'Share a brief story about when you last felt this way.',
+      'Your partner asks one clarifying question.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-004',
+    title: 'Vulnerability Practice',
+    description:
+      'Share something you normally keep to yourself: a fear, insecurity, or unspoken need. Builds emotional depth.',
+    category: 'emotional',
+    durationMinutes: 15,
+    targetDimensions: ['emotional', 'trust', 'autonomy'],
+    theoryBasis: 'Attachment Theory',
+    instructions: [
+      'Agree on a safe word either partner can use to pause.',
+      'Partner A shares one thing they have been holding back.',
+      'Partner B responds with empathy only, no solutions or defensiveness.',
+      'Switch roles.',
+      'Close by each naming one thing you respect about the other for sharing.',
+    ],
+    difficulty: 'hard',
+  },
+
+  // ── Trust ──────────────────────────────────────────────────
+  {
+    id: 'exercise-005',
+    title: 'Trust-Building Questions',
+    description:
+      'Answer progressively deeper questions about values, fears, and dreams to build mutual understanding and trust.',
+    category: 'trust',
+    durationMinutes: 15,
+    targetDimensions: ['trust', 'emotional'],
+    theoryBasis: "Gottman's Sound Relationship House",
+    instructions: [
+      'Choose three questions: one easy, one medium, one deep.',
+      'Take turns answering each question fully before moving to the next.',
+      'The listener may ask one follow-up question per answer.',
+      'End by summarizing what you learned about your partner.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-006',
+    title: 'Bid Recognition Practice',
+    description:
+      'Practice noticing and turning toward each other\'s emotional bids throughout a shared 10-minute activity.',
+    category: 'trust',
+    durationMinutes: 10,
+    targetDimensions: ['trust', 'emotional'],
+    theoryBasis: "Gottman's Sound Relationship House",
+    instructions: [
+      'Spend 10 minutes on any shared activity (cooking, walking, tidying).',
+      'Pay deliberate attention to each bid your partner makes (a comment, glance, touch, sigh).',
+      'Respond to each bid by turning toward: acknowledge, engage, or ask more.',
+      'Afterward, discuss how many bids each person noticed.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-007',
+    title: 'Promise Audit',
+    description:
+      'Review recent promises made to each other and assess follow-through. Repair any broken promises openly.',
+    category: 'trust',
+    durationMinutes: 15,
+    targetDimensions: ['trust', 'fairness'],
+    theoryBasis: "Gottman's Sound Relationship House",
+    instructions: [
+      'Each partner lists promises or commitments made in the past week.',
+      'Mark each as kept, partially kept, or broken.',
+      'For broken promises, explain what happened without excuses.',
+      'Agree on a concrete repair action for each broken promise.',
+      'Set one new promise each for the coming week.',
+    ],
+    difficulty: 'hard',
+  },
+  {
+    id: 'exercise-008',
+    title: 'Love Map Update',
+    description:
+      'Update your mental map of your partner\'s inner world: current worries, hopes, preferences, and stressors.',
+    category: 'trust',
+    durationMinutes: 10,
+    targetDimensions: ['trust', 'emotional'],
+    theoryBasis: "Gottman's Sound Relationship House",
+    instructions: [
+      'Partner A asks: "What is your biggest worry right now?"',
+      'Partner B answers honestly; A reflects back.',
+      'Switch and repeat with: "What are you most looking forward to?"',
+      'Each person shares one thing they learned that they did not know.',
+    ],
+    difficulty: 'easy',
+  },
+
+  // ── Fairness ───────────────────────────────────────────────
+  {
+    id: 'exercise-009',
+    title: 'Fair Division Audit',
+    description:
+      'List all recurring household and relationship tasks, then evaluate whether the division feels equitable to both partners.',
+    category: 'fairness',
+    durationMinutes: 15,
+    targetDimensions: ['fairness', 'autonomy'],
+    theoryBasis: 'Equity Theory',
+    instructions: [
+      'Together, list every recurring task (chores, planning, emotional labor, finances).',
+      'Each partner independently marks who currently handles each task.',
+      'Compare lists and discuss discrepancies.',
+      'Identify two tasks to swap or redistribute.',
+      'Schedule a follow-up check in one week.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-010',
+    title: 'Invisible Labor Spotlight',
+    description:
+      'Surface the emotional and logistical labor that often goes unnoticed: remembering appointments, managing social obligations, anticipating needs.',
+    category: 'fairness',
+    durationMinutes: 10,
+    targetDimensions: ['fairness', 'emotional'],
+    theoryBasis: 'Equity Theory',
+    instructions: [
+      'Each partner writes down five invisible tasks they do regularly.',
+      'Share lists and discuss which tasks feel most draining.',
+      'Acknowledge the labor with genuine appreciation.',
+      'Choose one invisible task each to take over from your partner this week.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-011',
+    title: 'Energy Exchange Check',
+    description:
+      'Assess whether both partners are contributing and receiving energy proportionally in the relationship.',
+    category: 'fairness',
+    durationMinutes: 10,
+    targetDimensions: ['fairness', 'stress'],
+    theoryBasis: 'Equity Theory',
+    instructions: [
+      'Rate your current energy level 1-10.',
+      'List three things your partner does that give you energy.',
+      'List one thing that drains your energy in the relationship.',
+      'Discuss how to amplify energizing behaviors and reduce draining ones.',
+    ],
+    difficulty: 'easy',
+  },
+
+  // ── Communication ──────────────────────────────────────────
+  {
+    id: 'exercise-012',
+    title: 'Active Listening Practice',
+    description:
+      'One partner speaks for three minutes on any topic while the other practices pure listening, then summarizes what they heard.',
+    category: 'communication',
+    durationMinutes: 10,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: 'Emotional Intelligence',
+    instructions: [
+      'Partner A speaks for 3 minutes on something important to them.',
+      'Partner B listens without interrupting, mentally noting key feelings and themes.',
+      'Partner B summarizes what they heard, focusing on feelings, not just facts.',
+      'Partner A confirms or gently corrects the summary.',
+      'Switch roles.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-013',
+    title: 'Conflict Repair Ritual',
+    description:
+      'A structured process for revisiting a recent disagreement with curiosity rather than blame.',
+    category: 'communication',
+    durationMinutes: 15,
+    targetDimensions: ['emotional', 'trust', 'fairness'],
+    theoryBasis: "Gottman's Four Horsemen",
+    instructions: [
+      'Each partner describes their experience of the conflict using "I felt..." statements.',
+      'Identify which of the Four Horsemen appeared (criticism, contempt, defensiveness, stonewalling).',
+      'Each person takes responsibility for one thing they could have done differently.',
+      'Agree on a repair phrase to use next time things escalate (e.g., "Can we start over?").',
+      'End with a 20-second hug or other agreed-upon reconnection gesture.',
+    ],
+    difficulty: 'hard',
+  },
+  {
+    id: 'exercise-014',
+    title: 'Gentle Start-Up Practice',
+    description:
+      'Transform a complaint into a gentle start-up: describe the situation, express your feeling, state your need.',
+    category: 'communication',
+    durationMinutes: 10,
+    targetDimensions: ['emotional', 'fairness'],
+    theoryBasis: "Gottman's Four Horsemen",
+    instructions: [
+      'Choose a current frustration (start small).',
+      'Rewrite it: "When [situation], I feel [emotion], and I need [request]."',
+      'Deliver it to your partner using the formula.',
+      'Partner reflects back what they heard and responds to the need.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-015',
+    title: 'Five-Minute Check-In',
+    description:
+      'A quick daily ritual to stay connected: highs, lows, and one thing you need from your partner today.',
+    category: 'communication',
+    durationMinutes: 5,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: "Gottman's Sound Relationship House",
+    instructions: [
+      'Each partner shares: one high point, one low point, and one need for today.',
+      'The listener responds with acknowledgment (not advice unless asked).',
+      'End with a brief physical connection (hug, hand squeeze).',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-016',
+    title: 'Assumption Check',
+    description:
+      'Surface and test assumptions you are making about your partner\'s thoughts or motives.',
+    category: 'communication',
+    durationMinutes: 10,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: 'Emotional Intelligence',
+    instructions: [
+      'Each partner writes down one assumption they are currently making about the other.',
+      'Share the assumption using: "The story I am telling myself is..."',
+      'The other partner confirms or corrects the assumption.',
+      'Discuss what evidence led to the assumption and what was missing.',
+    ],
+    difficulty: 'medium',
+  },
+
+  // ── Intimacy ───────────────────────────────────────────────
+  {
+    id: 'exercise-017',
+    title: 'Love Language Exploration',
+    description:
+      'Identify and discuss each partner\'s primary love language and how to better speak it.',
+    category: 'intimacy',
+    durationMinutes: 15,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: 'Attachment Theory',
+    instructions: [
+      'Each partner ranks the five love languages: words, acts of service, gifts, quality time, physical touch.',
+      'Share your top two and give an example of when you felt most loved.',
+      'Identify one way you can better speak your partner\'s language this week.',
+      'Set a reminder to do that specific action within 48 hours.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-018',
+    title: 'Dream Sharing',
+    description:
+      'Share a personal dream or aspiration and explore how the relationship can support it.',
+    category: 'intimacy',
+    durationMinutes: 15,
+    targetDimensions: ['emotional', 'autonomy', 'trust'],
+    theoryBasis: 'Self-Determination Theory',
+    instructions: [
+      'Each partner shares one dream they hold for the next 1-5 years.',
+      'The listener asks: "What does achieving this look like? How would it feel?"',
+      'Together, brainstorm one small step toward each dream.',
+      'Discuss how the relationship can support rather than hinder each dream.',
+      'Commit to revisiting this topic monthly.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-019',
+    title: 'Connection Ritual Design',
+    description:
+      'Co-create a daily or weekly ritual that is uniquely yours as a couple.',
+    category: 'intimacy',
+    durationMinutes: 10,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: "Gottman's Sound Relationship House",
+    instructions: [
+      'Brainstorm five possible rituals (morning coffee together, evening walk, weekly date).',
+      'Each partner picks their top two.',
+      'Choose one that overlaps or combine elements from both.',
+      'Agree on when, where, and how often.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-020',
+    title: 'Appreciation Ritual',
+    description:
+      'A nightly micro-ritual of expressing one thing you noticed and appreciated about your partner today.',
+    category: 'intimacy',
+    durationMinutes: 5,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: 'Positive Psychology (PERMA)',
+    instructions: [
+      'Before bed, face each other.',
+      'Each partner completes: "Today I noticed you [action] and I appreciated it because [reason]."',
+      'Receive the appreciation with a simple "thank you."',
+    ],
+    difficulty: 'easy',
+  },
+
+  // ── Growth ─────────────────────────────────────────────────
+  {
+    id: 'exercise-021',
+    title: 'Goal Alignment Session',
+    description:
+      'Map individual and shared goals, then identify where they align, conflict, or complement each other.',
+    category: 'growth',
+    durationMinutes: 15,
+    targetDimensions: ['autonomy', 'trust'],
+    theoryBasis: 'Self-Determination Theory',
+    instructions: [
+      'Each partner lists three personal goals and three relationship goals.',
+      'Compare lists and mark goals as aligned, complementary, or potentially conflicting.',
+      'For conflicting goals, discuss creative compromises.',
+      'Choose one shared goal to actively work on together this month.',
+      'Schedule a mid-month check-in.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-022',
+    title: 'Skill-Challenge Match',
+    description:
+      'Find a shared activity where both partners are slightly challenged, creating conditions for flow.',
+    category: 'growth',
+    durationMinutes: 10,
+    targetDimensions: ['emotional', 'trust'],
+    theoryBasis: "Csikszentmihalyi's Flow",
+    instructions: [
+      'Each partner lists three skills they want to develop.',
+      'Find one overlapping or complementary skill.',
+      'Plan a shared activity that stretches both of you slightly beyond your current level.',
+      'Schedule the activity within the next week.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-023',
+    title: 'Growth Edge Conversation',
+    description:
+      'Discuss the areas where each of you is currently growing and how the relationship can support that edge.',
+    category: 'growth',
+    durationMinutes: 10,
+    targetDimensions: ['autonomy', 'emotional'],
+    theoryBasis: "Maslow's Hierarchy of Needs",
+    instructions: [
+      'Each partner identifies one area of personal growth they are working on.',
+      'Share what support looks like for this growth (encouragement, space, accountability).',
+      'The listener offers one concrete way to provide that support.',
+      'Agree to check in on progress in two weeks.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-024',
+    title: 'Needs Hierarchy Check',
+    description:
+      'Walk through basic needs to higher needs and identify which level needs attention right now.',
+    category: 'growth',
+    durationMinutes: 10,
+    targetDimensions: ['emotional', 'stress', 'autonomy'],
+    theoryBasis: "Maslow's Hierarchy of Needs",
+    instructions: [
+      'Together, walk through each need level: physical health, safety/finances, belonging, esteem, growth.',
+      'Each partner rates their satisfaction at each level (1-10).',
+      'Identify the lowest-scoring level for each person.',
+      'Brainstorm one action to address each person\'s lowest level.',
+    ],
+    difficulty: 'easy',
+  },
+
+  // ── Stress ─────────────────────────────────────────────────
+  {
+    id: 'exercise-025',
+    title: 'Stress Decompression',
+    description:
+      'A structured venting session where one partner shares external stressors while the other provides support.',
+    category: 'stress',
+    durationMinutes: 10,
+    targetDimensions: ['stress', 'emotional'],
+    theoryBasis: "Gottman's Sound Relationship House",
+    instructions: [
+      'Partner A shares an external stress for 5 minutes (work, family, health).',
+      'Partner B\'s only job: understand and empathize. No fixing.',
+      'Partner B validates with: "That sounds really [difficult/frustrating/exhausting]."',
+      'Switch roles for the remaining 5 minutes.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-026',
+    title: 'Calm Down Together',
+    description:
+      'Practice co-regulation through synchronized breathing and grounding when stress is high.',
+    category: 'stress',
+    durationMinutes: 5,
+    targetDimensions: ['stress', 'emotional'],
+    theoryBasis: 'Emotional Intelligence',
+    instructions: [
+      'Sit or stand close, holding hands or touching shoulders.',
+      'Breathe in together for 4 counts, hold for 4, exhale for 6.',
+      'Repeat 5 cycles.',
+      'Each person names one physical sensation that shifted.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-027',
+    title: 'Energy Audit',
+    description:
+      'Map where your energy goes in a typical week and identify energy leaks and sources.',
+    category: 'stress',
+    durationMinutes: 15,
+    targetDimensions: ['stress', 'fairness', 'autonomy'],
+    theoryBasis: "Simon's Satisficing",
+    instructions: [
+      'Draw a pie chart of where your energy goes: work, relationship, kids, self-care, social, chores.',
+      'Circle the slice that feels most draining.',
+      'Identify one "good enough" solution to reduce that drain (satisfice, do not optimize).',
+      'Share with your partner and ask for support on one item.',
+      'Implement one change this week.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-028',
+    title: 'Stress Signal Mapping',
+    description:
+      'Identify your personal stress signals so your partner can recognize and respond to them early.',
+    category: 'stress',
+    durationMinutes: 10,
+    targetDimensions: ['stress', 'emotional', 'trust'],
+    theoryBasis: 'Emotional Intelligence',
+    instructions: [
+      'Each partner lists their top 3 stress signals (e.g., withdrawing, snapping, insomnia).',
+      'Share the list and discuss what each signal looks like from the outside.',
+      'Agree on a helpful response for each signal.',
+      'Create a code word your partner can use gently when they notice a signal.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-029',
+    title: 'Worry Externalization',
+    description:
+      'Write down current worries, sort them into actionable vs. non-actionable, and release what you cannot control.',
+    category: 'stress',
+    durationMinutes: 10,
+    targetDimensions: ['stress', 'emotional'],
+    theoryBasis: 'Emotional Intelligence',
+    instructions: [
+      'Each partner writes down their top 5 current worries.',
+      'Sort each into: "I can act on this" or "I cannot control this."',
+      'For actionable worries, write one next step.',
+      'For uncontrollable worries, symbolically let go (crumple the paper, set it aside).',
+    ],
+    difficulty: 'easy',
+  },
+
+  // ── Autonomy ───────────────────────────────────────────────
+  {
+    id: 'exercise-030',
+    title: 'Autonomy Check-In',
+    description:
+      'Evaluate whether each partner has enough space for individual identity, hobbies, and friendships.',
+    category: 'autonomy',
+    durationMinutes: 10,
+    targetDimensions: ['autonomy', 'fairness'],
+    theoryBasis: 'Self-Determination Theory',
+    instructions: [
+      'Each partner rates their current sense of autonomy 1-10.',
+      'Name one area where you feel you have enough freedom and one where you do not.',
+      'Discuss adjustments without defensiveness.',
+      'Agree on one concrete change to support each person\'s autonomy.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-031',
+    title: 'Boundary Setting Conversation',
+    description:
+      'Practice stating and receiving personal boundaries with respect and clarity.',
+    category: 'autonomy',
+    durationMinutes: 15,
+    targetDimensions: ['autonomy', 'trust', 'emotional'],
+    theoryBasis: 'Bowen Family Systems Theory',
+    instructions: [
+      'Each partner identifies one boundary they need to set or reinforce.',
+      'State the boundary using: "I need [boundary] because [reason]. This is not about you; it is about me."',
+      'The listener responds with: "I hear your boundary. I will respect it by [specific action]."',
+      'Discuss any feelings that came up during the exercise.',
+      'Agree to revisit these boundaries in one month.',
+    ],
+    difficulty: 'hard',
+  },
+  {
+    id: 'exercise-032',
+    title: 'Individual Identity Map',
+    description:
+      'Each partner maps aspects of their identity that exist independently of the relationship.',
+    category: 'autonomy',
+    durationMinutes: 10,
+    targetDimensions: ['autonomy', 'emotional'],
+    theoryBasis: 'Bowen Family Systems Theory',
+    instructions: [
+      'List five things that define you outside of this relationship (hobbies, values, friendships, goals).',
+      'Share your list with your partner.',
+      'Discuss which items have been neglected and which are thriving.',
+      'Choose one neglected item to invest in this week.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-033',
+    title: 'Togetherness-Separateness Calibration',
+    description:
+      'Find the right balance between couple time and individual time using the Circumplex Model.',
+    category: 'autonomy',
+    durationMinutes: 10,
+    targetDimensions: ['autonomy', 'emotional', 'trust'],
+    theoryBasis: 'Circumplex Model',
+    instructions: [
+      'Each partner independently rates current togetherness 1-10 (1 = too distant, 10 = too fused).',
+      'Share ratings and discuss the gap.',
+      'If ratings differ by 3+, brainstorm adjustments.',
+      'Agree on the ideal balance for this season of life.',
+    ],
+    difficulty: 'medium',
+  },
+
+  // ── Additional exercises to reach 35+ ─────────────────────
+  {
+    id: 'exercise-034',
+    title: 'PERMA Relationship Scorecard',
+    description:
+      'Rate your relationship on each PERMA dimension and identify the weakest pillar to strengthen.',
+    category: 'growth',
+    durationMinutes: 10,
+    targetDimensions: ['emotional', 'trust', 'autonomy'],
+    theoryBasis: 'Positive Psychology (PERMA)',
+    instructions: [
+      'Each partner rates the relationship 1-10 on: Positive emotion, Engagement, Relationships, Meaning, Accomplishment.',
+      'Compare scores and discuss the biggest gap.',
+      'Choose the lowest-scoring dimension.',
+      'Brainstorm two small actions to improve it this week.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-035',
+    title: 'Good Enough Decision Practice',
+    description:
+      'Practice making a joint decision using satisficing: set criteria, pick the first option that meets them.',
+    category: 'communication',
+    durationMinutes: 10,
+    targetDimensions: ['stress', 'fairness'],
+    theoryBasis: "Simon's Satisficing",
+    instructions: [
+      'Choose a pending decision (dinner, weekend plans, a purchase).',
+      'Together, list 3 must-have criteria and 2 nice-to-haves.',
+      'Generate options until one meets all must-haves.',
+      'Commit to that option without second-guessing.',
+    ],
+    difficulty: 'easy',
+  },
+  {
+    id: 'exercise-036',
+    title: 'Emotional Flooding Timeout Protocol',
+    description:
+      'Establish a pre-agreed protocol for when one or both partners become emotionally flooded during conflict.',
+    category: 'stress',
+    durationMinutes: 10,
+    targetDimensions: ['stress', 'emotional', 'trust'],
+    theoryBasis: "Gottman's Four Horsemen",
+    instructions: [
+      'Discuss physical signs of flooding (racing heart, tight chest, urge to flee).',
+      'Agree on a timeout signal that either partner can use (word, gesture).',
+      'Set rules: timeout lasts 20-30 minutes, no door slamming, return to the conversation afterward.',
+      'Practice using the signal in a low-stakes conversation.',
+      'Debrief on how it felt.',
+    ],
+    difficulty: 'medium',
+  },
+  {
+    id: 'exercise-037',
+    title: 'Secure Base Visualization',
+    description:
+      'Guided visualization to strengthen the felt sense of your partner as a secure base you can explore the world from.',
+    category: 'intimacy',
+    durationMinutes: 10,
+    targetDimensions: ['trust', 'emotional'],
+    theoryBasis: 'Attachment Theory',
+    instructions: [
+      'Sit comfortably, eyes closed, holding hands.',
+      'Recall a moment when your partner made you feel truly safe.',
+      'Visualize that safety as a warm light you carry with you.',
+      'Open your eyes and share the memory with your partner.',
+      'Express what their presence means to you.',
+    ],
+    difficulty: 'medium',
+  },
+];
