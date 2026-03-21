@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db";
 import { users, scores } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { redirect, isRedirectError } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/guard";
 import { InviteClient } from "./invite-client";
 import type { Metadata } from "next";
@@ -86,7 +86,7 @@ export default async function InvitePage({ params }: Props) {
     }
   } catch (e) {
     // redirect() throws a special error — rethrow it
-    if (isRedirectError(e)) throw e;
+    if (e instanceof Error && e.message?.includes("NEXT_REDIRECT")) throw e;
     // Otherwise DB/auth failure — continue to show invite page
   }
 
