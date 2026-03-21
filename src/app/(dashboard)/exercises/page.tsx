@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { getDb } from "@/lib/db";
 import { dailyLogs, interventions } from "@/lib/db/schema";
-import { eq, desc, gte } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { ExercisesClient } from "./exercises-client";
 
 export default async function ExercisesPage() {

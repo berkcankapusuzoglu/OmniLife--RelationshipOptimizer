@@ -128,8 +128,8 @@ export function InteractiveRadar({
   };
 
   return (
-    <div className="w-full aspect-square max-w-[500px] mx-auto">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full max-w-[500px] mx-auto" style={{ minHeight: 300 }}>
+      <ResponsiveContainer width="100%" height={300}>
         <RadarChart
           cx="50%"
           cy="50%"
