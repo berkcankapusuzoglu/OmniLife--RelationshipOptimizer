@@ -29,7 +29,7 @@ interface BottomTab {
 }
 
 const bottomTabs: BottomTab[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/overview", icon: LayoutDashboard },
   { label: "Daily", href: "/daily", icon: Calendar },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Insights", href: "/insights", icon: TrendingUp },
@@ -67,7 +67,7 @@ export function MobileNav() {
           {bottomTabs.map((tab) => {
             const isActive =
               pathname === tab.href ||
-              (tab.href !== "/" && pathname.startsWith(tab.href));
+              (tab.href !== "/overview" && pathname.startsWith(tab.href));
             const Icon = tab.icon;
 
             return (

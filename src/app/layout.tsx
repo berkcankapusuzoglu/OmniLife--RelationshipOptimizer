@@ -15,11 +15,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OmniLife — Optimize Your Relationship With Science",
+  title: {
+    default: "OmniLife — Optimize Your Relationship With Science",
+    template: "%s | OmniLife",
+  },
   description:
     "Track 9 relationship dimensions, get a science-backed score, and improve together with 37 psychology-grounded exercises. Free to start.",
   keywords:
     "relationship score, couples assessment, relationship quiz, relationship optimizer, couples app",
+  metadataBase: new URL("https://omnilife.app"),
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -35,12 +39,17 @@ export const metadata: Metadata = {
       "Track 9 relationship dimensions, get a science-backed score, and improve together with 37 psychology-grounded exercises. Free to start.",
     type: "website",
     siteName: "OmniLife",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "OmniLife — Optimize Your Relationship With Science",
     description:
       "Track 9 relationship dimensions, get a science-backed score, and improve together with 37 psychology-grounded exercises. Free to start.",
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

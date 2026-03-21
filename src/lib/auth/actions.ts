@@ -45,7 +45,7 @@ export async function registerAction(formData: FormData) {
     .returning({ id: users.id });
 
   await createSession(newUser.id);
-  redirect("/");
+  redirect("/overview");
 }
 
 export async function loginAction(formData: FormData) {
@@ -78,7 +78,7 @@ export async function loginAction(formData: FormData) {
   }
 
   await createSession(user.id);
-  redirect("/");
+  redirect("/overview");
 }
 
 export async function logoutAction() {
