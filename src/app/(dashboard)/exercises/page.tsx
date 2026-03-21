@@ -4,6 +4,7 @@ import { dailyLogs, interventions } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { ExercisesClient } from "./exercises-client";
 import { getUserTier } from "@/lib/subscription/access";
+import { computeInterventionImpact } from "@/lib/engine/impact";
 
 export default async function ExercisesPage() {
   const user = await requireAuth();
@@ -55,6 +56,9 @@ export default async function ExercisesPage() {
     )
     .map((i) => i.type);
 
+  // Compute impact from completed interventions
+  const impactSummary = computeInterventionImpact(recentInterventions);
+
   return (
     <div className="space-y-6">
       <div>
@@ -70,6 +74,7 @@ export default async function ExercisesPage() {
         recentExerciseIds={recentExerciseIds}
         userId={user.id}
         userTier={userTier}
+        impactSummary={impactSummary}
       />
     </div>
   );

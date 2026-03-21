@@ -9,6 +9,8 @@ export interface Features {
   constraints: boolean;
   partnerLinking: boolean;
   exportReports: boolean;
+  aiCoaching: boolean;
+  therapistExport: boolean;
 }
 
 export const TIERS = {
@@ -20,14 +22,13 @@ export const TIERS = {
       "Daily logging",
       "Basic scoring engine",
       "7-day history",
-      "5 exercises",
-      "1 scenario profile",
+      "3 exercises per week",
       "Partner linking",
     ],
     features: {
       dailyLog: true,
       basicScores: true,
-      exerciseLimit: 5,
+      exerciseLimit: 3,
       historyDays: 7,
       insights: false,
       weeklyCheckin: true,
@@ -35,12 +36,14 @@ export const TIERS = {
       constraints: false,
       partnerLinking: true,
       exportReports: false,
+      aiCoaching: false,
+      therapistExport: false,
     } satisfies Features,
   },
-  premium: {
-    name: "Premium",
-    monthlyPrice: 7.99,
-    yearlyPrice: 59.99,
+  pro: {
+    name: "Pro",
+    monthlyPrice: 4.99,
+    yearlyPrice: 39.99,
     featureList: [
       "Everything in Free",
       "Unlimited history",
@@ -50,6 +53,30 @@ export const TIERS = {
       "Full exercise library (37)",
       "Constraints & redlines",
       "Data export",
+    ],
+    features: {
+      dailyLog: true,
+      basicScores: true,
+      exerciseLimit: Infinity,
+      historyDays: Infinity,
+      insights: true,
+      weeklyCheckin: true,
+      scenarios: true,
+      constraints: true,
+      partnerLinking: true,
+      exportReports: true,
+      aiCoaching: false,
+      therapistExport: false,
+    } satisfies Features,
+  },
+  premium: {
+    name: "Premium",
+    monthlyPrice: 7.99,
+    yearlyPrice: 59.99,
+    featureList: [
+      "Everything in Pro",
+      "AI relationship coaching",
+      "Therapist export reports",
       "Priority support",
     ],
     features: {
@@ -63,6 +90,8 @@ export const TIERS = {
       constraints: true,
       partnerLinking: true,
       exportReports: true,
+      aiCoaching: true,
+      therapistExport: true,
     } satisfies Features,
   },
 } as const;
@@ -81,6 +110,8 @@ export const FEATURE_LABELS: Record<keyof Features, string> = {
   constraints: "Constraints",
   partnerLinking: "Partner Linking",
   exportReports: "Export Reports",
+  aiCoaching: "AI Coaching",
+  therapistExport: "Therapist Export",
 };
 
 export const FEATURE_DESCRIPTIONS: Record<keyof Features, string> = {
@@ -94,4 +125,6 @@ export const FEATURE_DESCRIPTIONS: Record<keyof Features, string> = {
   constraints: "Set redlines and budget constraints",
   partnerLinking: "Link with your partner's account",
   exportReports: "Export monthly PDF reports",
+  aiCoaching: "Get personalized AI coaching insights",
+  therapistExport: "Generate detailed reports for your therapist",
 };

@@ -15,6 +15,8 @@ import {
   TrendingUp,
   Gift,
   Settings,
+  BotMessageSquare,
+  ClipboardList,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +38,8 @@ export const navItems: NavItem[] = [
   { label: "Partner", href: "/partner", icon: Heart },
   { label: "Compare", href: "/compare", icon: GitCompareArrows },
   { label: "Insights", href: "/insights", icon: TrendingUp },
+  { label: "Weekly Report", href: "/weekly-report", icon: ClipboardList },
+  { label: "AI Coach", href: "/coaching", icon: BotMessageSquare },
   { label: "Refer Friends", href: "/refer", icon: Gift },
   { label: "Settings", href: "/settings", icon: Settings },
 ];

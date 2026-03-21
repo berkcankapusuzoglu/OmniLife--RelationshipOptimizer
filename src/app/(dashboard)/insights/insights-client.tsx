@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Lightbulb, TrendingUp } from "lucide-react";
+import { AlertTriangle, Lightbulb, TrendingUp, Target } from "lucide-react";
 import { ParetoChart } from "@/components/charts/ParetoChart";
 import { PremiumGate } from "@/components/premium-gate";
 import type { Recommendation } from "@/lib/engine/types";
+import type { ActionPlanItem } from "@/lib/recommendations/action-plan";
 import {
   LineChart,
   Line,
@@ -37,6 +38,8 @@ interface InsightsClientProps {
     autonomy: number;
   }[];
   userTier: string;
+  actionPlan?: ActionPlanItem[];
+  partnerPoints?: { lifeScore: number; relScore: number; date: string }[];
 }
 
 const PILLAR_COLORS: Record<string, string> = {
@@ -74,11 +77,14 @@ export function InsightsClient({
   recommendations,
   trendData,
   userTier,
+  actionPlan = [],
+  partnerPoints,
 }: InsightsClientProps) {
   return (
     <Tabs defaultValue="recommendations" className="space-y-4">
       <TabsList>
         <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+        <TabsTrigger value="action-plan">Action Plan</TabsTrigger>
         <TabsTrigger value="pareto">Pareto Frontier</TabsTrigger>
         <TabsTrigger value="trends">Trends</TabsTrigger>
       </TabsList>
@@ -117,6 +123,55 @@ export function InsightsClient({
         )}
       </TabsContent>
 
+      <TabsContent value="action-plan" className="space-y-4">
+        {actionPlan.length > 0 ? (
+          actionPlan.map((item) => (
+            <Card key={item.dimension}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-blue-400" />
+                  <CardTitle className="text-base capitalize">{item.dimension}</CardTitle>
+                  <Badge variant="outline" className="ml-auto text-xs">
+                    Gap: {item.gap}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-muted-foreground">
+                    Current: <span className="font-mono font-medium text-foreground">{item.currentScore}</span>
+                  </span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="text-muted-foreground">
+                    Target: <span className="font-mono font-medium text-emerald-400">{item.targetScore}</span>
+                  </span>
+                </div>
+                {item.exercises.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">Recommended exercises:</p>
+                      {item.exercises.map((ex) => (
+                        <div key={ex.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                          <span>{ex.title}</span>
+                          <Badge variant="secondary" className="text-xs">{ex.durationMinutes}m</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              Log your daily scores to generate an action plan.
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+
       <TabsContent value="pareto">
         <PremiumGate userTier={userTier} feature="insights">
           <Card>
@@ -129,6 +184,7 @@ export function InsightsClient({
                   historicalPoints={historicalPoints}
                   frontierPoints={frontierPoints}
                   currentPoint={currentPoint!}
+                  partnerPoints={partnerPoints}
                 />
               ) : (
                 <p className="py-8 text-center text-muted-foreground">

@@ -23,7 +23,7 @@ export function computeLifeScore(pillars: PillarScores, weights: PillarWeights):
 export function computeRelScore(dims: RelDimScores, weights: RelWeights): number {
   const w = normalizeWeights({ ...weights });
   const raw = w.emotional * dims.emotional + w.trust * dims.trust +
-              w.fairness * dims.fairness + w.stress * dims.stress + w.autonomy * dims.autonomy;
+              w.fairness * dims.fairness + w.stress * (10 - dims.stress) + w.autonomy * dims.autonomy;
   return Math.round(raw * 10 * 100) / 100;
 }
 

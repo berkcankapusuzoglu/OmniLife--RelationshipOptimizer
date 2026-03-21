@@ -13,6 +13,8 @@ import {
   Calendar,
   Sparkles,
   Flame,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
@@ -21,6 +23,7 @@ import { InteractiveRadar } from "@/components/charts/InteractiveRadar";
 import { TrendSparkline } from "@/components/charts/TrendSparkline";
 import { ShareScore } from "@/components/share-score";
 import type { PillarScores, RelDimScores } from "@/lib/engine/types";
+import type { CrisisAlert } from "@/lib/engine/alerts";
 
 interface DashboardClientProps {
   currentScores: {
@@ -42,6 +45,8 @@ interface DashboardClientProps {
   userName: string;
   currentStreak: number;
   longestStreak: number;
+  trendAlerts?: { dimension: string; message: string }[];
+  crisisAlerts?: CrisisAlert[];
 }
 
 function ScoreCard({
@@ -106,6 +111,8 @@ export function DashboardClient({
   userName,
   currentStreak,
   longestStreak,
+  trendAlerts = [],
+  crisisAlerts = [],
 }: DashboardClientProps) {
   const searchParams = useSearchParams();
 
@@ -207,6 +214,40 @@ export function DashboardClient({
               <p className="text-xs text-muted-foreground">
                 Longest: {longestStreak} days
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {crisisAlerts.length > 0 && (
+        <div className="space-y-2">
+          {crisisAlerts.map((alert, i) => (
+            <Card key={i} className="border-destructive bg-destructive/5">
+              <CardContent className="flex items-start gap-3 py-3">
+                <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                <div>
+                  <p className="text-sm font-medium text-destructive">{alert.title}</p>
+                  <p className="text-xs text-muted-foreground">{alert.description}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {trendAlerts.length > 0 && crisisAlerts.length === 0 && (
+        <Card className="border-amber-500/50 bg-amber-500/5">
+          <CardContent className="flex items-start gap-3 py-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+            <div>
+              <p className="text-sm font-medium">Declining trends detected</p>
+              <ul className="mt-1 space-y-0.5">
+                {trendAlerts.map((alert) => (
+                  <li key={alert.dimension} className="text-xs text-muted-foreground">
+                    {alert.message}
+                  </li>
+                ))}
+              </ul>
             </div>
           </CardContent>
         </Card>

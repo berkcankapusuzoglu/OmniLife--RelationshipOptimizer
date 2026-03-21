@@ -1,4 +1,5 @@
 import { requireAuth } from "@/lib/auth/guard";
+import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { SidebarNav } from "@/components/nav/SidebarNav";
@@ -8,6 +9,7 @@ import { WelcomeModal } from "@/components/welcome-modal";
 import { getDb } from "@/lib/db";
 import { dailyLogs } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
+import { headers } from "next/headers";
 
 export default async function DashboardLayout({
   children,
@@ -15,6 +17,20 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireAuth();
+
+  // Redirect to onboarding if not completed (avoid infinite redirect loop on /onboarding itself)
+  if (!user.onboardingCompleted) {
+    const headersList = await headers();
+    // Next.js sets x-invoke-path internally for server components
+    const pathname =
+      headersList.get("x-invoke-path") ??
+      headersList.get("x-next-url") ??
+      "";
+    if (!pathname.startsWith("/onboarding")) {
+      redirect("/onboarding");
+    }
+  }
+
   const db = getDb();
   const [logCountResult] = await db
     .select({ value: count() })

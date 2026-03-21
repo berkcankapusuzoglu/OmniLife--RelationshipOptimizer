@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Clock, BookOpen, Star, Play, Check } from "lucide-react";
+import { Clock, BookOpen, Star, Play, Check, BarChart3, TrendingUp, TrendingDown } from "lucide-react";
 import { getRecommendedExercises } from "@/lib/recommendations/engine";
 import { completeExercise } from "./actions";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { TIERS } from "@/lib/subscription/tiers";
 import type { PillarScores, RelDimScores, Exercise } from "@/lib/engine/types";
+import type { ImpactSummary } from "@/lib/engine/impact";
 
 interface ExercisesClientProps {
   currentScores: {
@@ -20,6 +21,7 @@ interface ExercisesClientProps {
   recentExerciseIds: string[];
   userId: string;
   userTier: string;
+  impactSummary?: ImpactSummary;
 }
 
 export function ExercisesClient({
@@ -27,6 +29,7 @@ export function ExercisesClient({
   recentExerciseIds,
   userId,
   userTier,
+  impactSummary,
 }: ExercisesClientProps) {
   const tier = userTier as "free" | "premium";
   const exerciseLimit = TIERS[tier].features.exerciseLimit;
@@ -219,6 +222,47 @@ export function ExercisesClient({
         <Card className="col-span-full">
           <CardContent className="py-8 text-center text-muted-foreground">
             Log your daily scores to get personalized exercise recommendations.
+          </CardContent>
+        </Card>
+      )}
+
+      {impactSummary && impactSummary.byExercise.length > 0 && (
+        <Card className="col-span-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BarChart3 className="h-5 w-5" />
+              Impact History
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {impactSummary.mostEffective && (
+              <div className="rounded-md border bg-emerald-500/5 p-3">
+                <p className="text-sm font-medium">
+                  Most effective: {impactSummary.mostEffective.title}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Avg. improvement: +{impactSummary.mostEffective.avgChange} ({impactSummary.mostEffective.count} sessions)
+                </p>
+              </div>
+            )}
+            <div className="space-y-2">
+              {impactSummary.byExercise.map((ex) => (
+                <div key={ex.exerciseId} className="flex items-center justify-between text-sm">
+                  <span className="truncate">{ex.title}</span>
+                  <div className="flex items-center gap-2">
+                    {ex.avgChange >= 0 ? (
+                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 text-destructive" />
+                    )}
+                    <span className={ex.avgChange >= 0 ? "text-emerald-400" : "text-destructive"}>
+                      {ex.avgChange >= 0 ? "+" : ""}{ex.avgChange}
+                    </span>
+                    <Badge variant="secondary" className="text-xs">{ex.count}x</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

@@ -11,11 +11,40 @@ import { WeightSliders } from "@/components/forms/WeightSliders";
 import { updateProfile, updateWeights, exportData } from "./actions";
 import { logoutAction } from "@/lib/auth/actions";
 import type { Weights } from "@/lib/engine/types";
-import { LogOut, Download, Save, CreditCard, Loader2, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  LogOut,
+  Download,
+  Save,
+  CreditCard,
+  Loader2,
+  ExternalLink,
+  Lightbulb,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
+
+interface WeightSuggestionData {
+  dimension: string;
+  label: string;
+  currentWeight: number;
+  suggestedWeight: number;
+  delta: number;
+  reasoning: string;
+  group: "pillar" | "rel";
+}
+
+interface CalibrationData {
+  eligible: boolean;
+  summary: string;
+  suggestions: WeightSuggestionData[];
+}
 
 export function SettingsClient({
   user,
   weights: initialWeights,
+  calibration,
+  logCount,
 }: {
   user: {
     id: string;
@@ -26,6 +55,8 @@ export function SettingsClient({
     stripeCustomerId: string | null;
   };
   weights: Weights;
+  calibration?: CalibrationData | null;
+  logCount?: number;
 }) {
   const [weights, setWeights] = useState<Weights>(initialWeights);
   const [saving, setSaving] = useState(false);
@@ -127,6 +158,95 @@ export function SettingsClient({
             </Button>
           </CardContent>
         </Card>
+
+        {/* Weight Suggestions Card */}
+        {calibration && calibration.eligible ? (
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Lightbulb className="h-5 w-5 text-amber-500" />
+                Weight Suggestions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {calibration.summary}
+              </p>
+              {calibration.suggestions.length > 0 && (
+                <div className="space-y-3">
+                  {calibration.suggestions.map((s) => (
+                    <div
+                      key={s.dimension}
+                      className="rounded-lg border bg-background p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{s.label}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {s.group === "pillar" ? "Life" : "Relationship"}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {s.currentWeight.toFixed(2)}
+                          </span>
+                          {s.delta > 0 ? (
+                            <ArrowUp className="h-3 w-3 text-green-500" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 text-red-500" />
+                          )}
+                          <span className="font-mono text-xs font-medium">
+                            {s.suggestedWeight.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {s.reasoning}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          // Apply the suggestion to current weights
+                          if (s.group === "pillar") {
+                            setWeights((prev) => ({
+                              ...prev,
+                              pillar: {
+                                ...prev.pillar,
+                                [s.dimension]: s.suggestedWeight,
+                              },
+                            }));
+                          } else {
+                            setWeights((prev) => ({
+                              ...prev,
+                              rel: {
+                                ...prev.rel,
+                                [s.dimension]: s.suggestedWeight,
+                              },
+                            }));
+                          }
+                        }}
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : logCount !== undefined && logCount < 14 ? (
+          <Card>
+            <CardContent className="py-6 text-center">
+              <Lightbulb className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Weight suggestions will be available after 14 days of logging.
+                You have {logCount} day{logCount !== 1 ? "s" : ""} so far.
+              </p>
+            </CardContent>
+          </Card>
+        ) : null}
       </TabsContent>
 
       <TabsContent value="billing">

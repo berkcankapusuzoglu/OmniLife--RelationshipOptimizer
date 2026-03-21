@@ -3,7 +3,7 @@
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import type { Features } from "@/lib/subscription/tiers";
+import { TIERS, type Features, type SubscriptionTier } from "@/lib/subscription/tiers";
 import { FEATURE_LABELS, FEATURE_DESCRIPTIONS } from "@/lib/subscription/tiers";
 
 interface PremiumGateProps {
@@ -13,7 +13,12 @@ interface PremiumGateProps {
 }
 
 export function PremiumGate({ userTier, feature, children }: PremiumGateProps) {
-  if (userTier === "premium") {
+  const tierKey = (userTier in TIERS ? userTier : "free") as SubscriptionTier;
+  const config = TIERS[tierKey].features;
+  const value = config[feature];
+  const allowed = typeof value === "boolean" ? value : (value as number) > 0;
+
+  if (allowed) {
     return <>{children}</>;
   }
 

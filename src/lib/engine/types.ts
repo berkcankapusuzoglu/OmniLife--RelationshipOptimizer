@@ -98,6 +98,7 @@ export interface Exercise {
   theoryBasis: string;
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
+  isJoint?: boolean;
 }
 
 export interface TheoryReference {

@@ -18,6 +18,7 @@ export const EXERCISES: Exercise[] = [
       'Switch roles and repeat.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-002',
@@ -35,6 +36,7 @@ export const EXERCISES: Exercise[] = [
       'Switch roles.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-003',
@@ -53,6 +55,7 @@ export const EXERCISES: Exercise[] = [
       'Your partner asks one clarifying question.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-004',
@@ -71,6 +74,7 @@ export const EXERCISES: Exercise[] = [
       'Close by each naming one thing you respect about the other for sharing.',
     ],
     difficulty: 'hard',
+    isJoint: true,
   },
 
   // ── Trust ──────────────────────────────────────────────────
@@ -90,6 +94,7 @@ export const EXERCISES: Exercise[] = [
       'End by summarizing what you learned about your partner.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-006',
@@ -107,6 +112,7 @@ export const EXERCISES: Exercise[] = [
       'Afterward, discuss how many bids each person noticed.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-007',
@@ -125,6 +131,7 @@ export const EXERCISES: Exercise[] = [
       'Set one new promise each for the coming week.',
     ],
     difficulty: 'hard',
+    isJoint: true,
   },
   {
     id: 'exercise-008',
@@ -142,6 +149,7 @@ export const EXERCISES: Exercise[] = [
       'Each person shares one thing they learned that they did not know.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
 
   // ── Fairness ───────────────────────────────────────────────
@@ -162,6 +170,7 @@ export const EXERCISES: Exercise[] = [
       'Schedule a follow-up check in one week.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-010',
@@ -179,6 +188,7 @@ export const EXERCISES: Exercise[] = [
       'Choose one invisible task each to take over from your partner this week.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-011',
@@ -196,6 +206,7 @@ export const EXERCISES: Exercise[] = [
       'Discuss how to amplify energizing behaviors and reduce draining ones.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
 
   // ── Communication ──────────────────────────────────────────
@@ -216,6 +227,7 @@ export const EXERCISES: Exercise[] = [
       'Switch roles.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-013',
@@ -234,6 +246,7 @@ export const EXERCISES: Exercise[] = [
       'End with a 20-second hug or other agreed-upon reconnection gesture.',
     ],
     difficulty: 'hard',
+    isJoint: true,
   },
   {
     id: 'exercise-014',
@@ -251,6 +264,7 @@ export const EXERCISES: Exercise[] = [
       'Partner reflects back what they heard and responds to the need.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-015',
@@ -267,6 +281,7 @@ export const EXERCISES: Exercise[] = [
       'End with a brief physical connection (hug, hand squeeze).',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-016',
@@ -284,6 +299,7 @@ export const EXERCISES: Exercise[] = [
       'Discuss what evidence led to the assumption and what was missing.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
 
   // ── Intimacy ───────────────────────────────────────────────
@@ -303,6 +319,7 @@ export const EXERCISES: Exercise[] = [
       'Set a reminder to do that specific action within 48 hours.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-018',
@@ -321,6 +338,7 @@ export const EXERCISES: Exercise[] = [
       'Commit to revisiting this topic monthly.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-019',
@@ -338,6 +356,7 @@ export const EXERCISES: Exercise[] = [
       'Agree on when, where, and how often.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-020',
@@ -354,6 +373,7 @@ export const EXERCISES: Exercise[] = [
       'Receive the appreciation with a simple "thank you."',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
 
   // ── Growth ─────────────────────────────────────────────────
@@ -374,6 +394,7 @@ export const EXERCISES: Exercise[] = [
       'Schedule a mid-month check-in.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-022',
@@ -391,6 +412,7 @@ export const EXERCISES: Exercise[] = [
       'Schedule the activity within the next week.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-023',
@@ -408,6 +430,7 @@ export const EXERCISES: Exercise[] = [
       'Agree to check in on progress in two weeks.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-024',
@@ -425,6 +448,7 @@ export const EXERCISES: Exercise[] = [
       'Brainstorm one action to address each person\'s lowest level.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
 
   // ── Stress ─────────────────────────────────────────────────
@@ -444,6 +468,7 @@ export const EXERCISES: Exercise[] = [
       'Switch roles for the remaining 5 minutes.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-026',
@@ -461,6 +486,7 @@ export const EXERCISES: Exercise[] = [
       'Each person names one physical sensation that shifted.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-027',
@@ -496,6 +522,7 @@ export const EXERCISES: Exercise[] = [
       'Create a code word your partner can use gently when they notice a signal.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-029',
@@ -532,6 +559,7 @@ export const EXERCISES: Exercise[] = [
       'Agree on one concrete change to support each person\'s autonomy.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-031',
@@ -550,6 +578,7 @@ export const EXERCISES: Exercise[] = [
       'Agree to revisit these boundaries in one month.',
     ],
     difficulty: 'hard',
+    isJoint: true,
   },
   {
     id: 'exercise-032',
@@ -567,6 +596,7 @@ export const EXERCISES: Exercise[] = [
       'Choose one neglected item to invest in this week.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-033',
@@ -584,6 +614,7 @@ export const EXERCISES: Exercise[] = [
       'Agree on the ideal balance for this season of life.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
 
   // ── Additional exercises to reach 35+ ─────────────────────
@@ -603,6 +634,7 @@ export const EXERCISES: Exercise[] = [
       'Brainstorm two small actions to improve it this week.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-035',
@@ -620,6 +652,7 @@ export const EXERCISES: Exercise[] = [
       'Commit to that option without second-guessing.',
     ],
     difficulty: 'easy',
+    isJoint: true,
   },
   {
     id: 'exercise-036',
@@ -638,6 +671,7 @@ export const EXERCISES: Exercise[] = [
       'Debrief on how it felt.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
   {
     id: 'exercise-037',
@@ -656,5 +690,6 @@ export const EXERCISES: Exercise[] = [
       'Express what their presence means to you.',
     ],
     difficulty: 'medium',
+    isJoint: true,
   },
 ];

@@ -96,6 +96,7 @@ export const users = pgTable("users", {
   currentStreak: integer("current_streak").default(0),
   longestStreak: integer("longest_streak").default(0),
   lastLogDate: date("last_log_date"),
+  onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -275,6 +276,31 @@ export const subscribers = pgTable("subscribers", {
   unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
 });
 
+// ── Partner Sync Events ───────────────────────────────────────────────────
+
+export const partnerSyncEvents = pgTable("partner_sync_events", {
+  id: uuid("id").primaryKey(),
+  coupleId: text("couple_id").notNull(),
+  type: text("type").notNull(), // "divergence", "milestone", etc.
+  data: jsonb("data"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Coaching Sessions ─────────────────────────────────────────────────────────
+
+export const coachingSessions = pgTable("coaching_sessions", {
+  id: uuid("id").primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  messages: jsonb("messages").notNull(), // Array of { role: "user" | "coach", content: string, timestamp: string }
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ── Relations ──────────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -296,6 +322,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   scenarioProfiles: many(scenarioProfiles),
   interventions: many(interventions),
   referrals: many(referrals),
+  coachingSessions: many(coachingSessions),
 }));
 
 export const dailyLogsRelations = relations(dailyLogs, ({ one, many }) => ({
@@ -370,3 +397,18 @@ export const referralsRelations = relations(referrals, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const partnerSyncEventsRelations = relations(
+  partnerSyncEvents,
+  () => ({})
+);
+
+export const coachingSessionsRelations = relations(
+  coachingSessions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [coachingSessions.userId],
+      references: [users.id],
+    }),
+  })
+);

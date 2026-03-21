@@ -3,6 +3,8 @@ import { getDb } from "@/lib/db";
 import { dailyLogs, scores } from "@/lib/db/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { DashboardClient } from "./dashboard-client";
+import { detectTrendViolations } from "@/lib/engine/trends";
+import { detectCrisisAlerts } from "@/lib/engine/alerts";
 
 export default async function DashboardPage() {
   const user = await requireAuth();
@@ -64,6 +66,19 @@ export default async function DashboardPage() {
     totalQuality: Number(s.totalQuality),
   }));
 
+  // Compute trend alerts and crisis warnings
+  const chronologicalLogs = [...recentLogs].reverse();
+  const trendViolations = detectTrendViolations(chronologicalLogs);
+  const crisisAlerts = detectCrisisAlerts(
+    chronologicalLogs,
+    scoreTrends.map((s) => ({ date: s.date, totalQuality: s.totalQuality })),
+  );
+
+  const trendAlerts = trendViolations.map((v) => ({
+    dimension: v.dimension,
+    message: `${v.dimension} has been declining (${v.threshold} → ${v.actual})`,
+  }));
+
   return (
     <DashboardClient
       currentScores={currentScores}
@@ -81,6 +96,8 @@ export default async function DashboardPage() {
       userName={user.name ?? "User"}
       currentStreak={user.currentStreak ?? 0}
       longestStreak={user.longestStreak ?? 0}
+      trendAlerts={trendAlerts}
+      crisisAlerts={crisisAlerts}
     />
   );
 }

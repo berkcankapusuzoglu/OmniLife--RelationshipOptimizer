@@ -26,6 +26,7 @@ interface ParetoChartProps {
   historicalPoints: HistoricalPoint[];
   frontierPoints: FrontierPoint[];
   currentPoint: { lifeScore: number; relScore: number };
+  partnerPoints?: HistoricalPoint[];
 }
 
 function CustomTooltip({
@@ -52,6 +53,7 @@ export function ParetoChart({
   historicalPoints,
   frontierPoints,
   currentPoint,
+  partnerPoints,
 }: ParetoChartProps) {
   // Sort frontier points by lifeScore for a clean line
   const sortedFrontier = [...frontierPoints].sort(
@@ -124,6 +126,18 @@ export function ParetoChart({
             r={6}
             shape="diamond"
           />
+
+          {/* Partner historical points - pink */}
+          {partnerPoints && partnerPoints.length > 0 && (
+            <Scatter
+              data={partnerPoints}
+              fill="oklch(0.65 0.2 350 / 0.4)"
+              stroke="oklch(0.65 0.2 350 / 0.6)"
+              strokeWidth={1}
+              r={3}
+              name="Partner"
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>

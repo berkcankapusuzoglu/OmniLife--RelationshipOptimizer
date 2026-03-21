@@ -19,18 +19,18 @@ export async function getUserTier(
 
   if (!user) return "free";
 
-  // Check if premium subscription is still active
-  if (user.subscriptionTier === "premium") {
+  // Check if paid subscription is still active
+  if (user.subscriptionTier === "premium" || user.subscriptionTier === "pro") {
     if (
       user.subscriptionExpiresAt &&
       new Date(user.subscriptionExpiresAt) < new Date()
     ) {
       return "free"; // expired
     }
-    return "premium";
+    return user.subscriptionTier as SubscriptionTier;
   }
 
-  // Check if trial is still active
+  // Check if trial is still active (trial grants premium)
   if (user.trialEndsAt && new Date(user.trialEndsAt) > new Date()) {
     return "premium";
   }
