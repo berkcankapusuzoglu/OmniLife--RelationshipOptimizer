@@ -14,9 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OmniLife — Relationship Optimizer",
+  title: "OmniLife — Optimize Your Relationship With Science",
   description:
-    "Multi-objective life and relationship optimization through psychology, philosophy, and mathematics",
+    "Track 9 relationship dimensions, get a science-backed score, and improve together with 37 psychology-grounded exercises. Free to start.",
+  keywords:
+    "relationship score, couples assessment, relationship quiz, relationship optimizer, couples app",
+  openGraph: {
+    title: "OmniLife — Optimize Your Relationship With Science",
+    description:
+      "Track 9 relationship dimensions, get a science-backed score, and improve together with 37 psychology-grounded exercises. Free to start.",
+    type: "website",
+    siteName: "OmniLife",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "OmniLife — Optimize Your Relationship With Science",
+    description:
+      "Track 9 relationship dimensions, get a science-backed score, and improve together with 37 psychology-grounded exercises. Free to start.",
+  },
 };
 
 export default function RootLayout({
