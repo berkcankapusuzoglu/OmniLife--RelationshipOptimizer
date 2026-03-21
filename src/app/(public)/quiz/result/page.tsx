@@ -14,10 +14,13 @@ function decodeScores(encoded: string): number[] | null {
 }
 
 function getInterpretation(score: number) {
-  if (score <= 40) return { label: "Needs Attention", emoji: "" };
-  if (score <= 60) return { label: "Room to Grow", emoji: "" };
-  if (score <= 80) return { label: "Strong Foundation", emoji: "" };
-  return { label: "Thriving", emoji: "" };
+  if (score < 40) return { label: "Critical" };
+  if (score < 50) return { label: "Needs Work" };
+  if (score < 60) return { label: "Developing" };
+  if (score < 70) return { label: "Growing" };
+  if (score < 80) return { label: "Strong" };
+  if (score < 90) return { label: "Thriving" };
+  return { label: "Exceptional" };
 }
 
 export async function generateMetadata({
@@ -47,7 +50,30 @@ export async function generateMetadata({
         : "Relationship Quiz Result — OmniLife",
       description:
         "How strong is your relationship? Find out in 60 seconds with our free quiz.",
+      ...(pulse
+        ? {
+            images: [
+              {
+                url: `/api/og?total=${pulse}&rel=${pulse}&life=${pulse}&date=${new Date().toISOString().split("T")[0]}`,
+                width: 1200,
+                height: 630,
+                alt: `OmniLife Relationship Pulse: ${pulse}/100`,
+              },
+            ],
+          }
+        : {}),
     },
+    ...(pulse
+      ? {
+          twitter: {
+            card: "summary_large_image" as const,
+            title: `My relationship scored ${pulse}/100 on OmniLife!`,
+            images: [
+              `/api/og?total=${pulse}&rel=${pulse}&life=${pulse}&date=${new Date().toISOString().split("T")[0]}`,
+            ],
+          },
+        }
+      : {}),
   };
 }
 

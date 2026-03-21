@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
     (
       <div
         style={{
-          width: "1200",
-          height: "630",
+          width: 1200,
+          height: 630,
           display: "flex",
           background: "linear-gradient(135deg, #1e1040 0%, #0f172a 50%, #0c2d3f 100%)",
           fontFamily: "system-ui, sans-serif",

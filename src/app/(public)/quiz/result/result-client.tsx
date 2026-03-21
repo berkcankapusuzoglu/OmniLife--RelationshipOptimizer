@@ -142,13 +142,13 @@ export function ResultClient({
   };
 
   const scoreColor =
-    pulse <= 40
+    pulse < 40
       ? "text-red-400"
-      : pulse <= 60
-        ? "text-yellow-400"
-        : pulse <= 80
-          ? "text-blue-400"
-          : "text-green-400";
+      : pulse < 60
+        ? "text-amber-400"
+        : pulse < 80
+          ? "text-purple-400"
+          : "text-emerald-400";
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-background via-background to-purple-950/20 px-6 py-12">

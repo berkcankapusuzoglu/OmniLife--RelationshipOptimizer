@@ -5,7 +5,7 @@ import { eq, desc } from "drizzle-orm";
 import { InsightsClient } from "./insights-client";
 import { findParetoFrontier } from "@/lib/engine/pareto";
 import { generateRecommendations } from "@/lib/recommendations/rules";
-import { getUserTier } from "@/lib/subscription/access";
+import { getUserTier, getFeatureLimits } from "@/lib/subscription/access";
 
 export default async function InsightsPage() {
   const user = await requireAuth();
@@ -58,7 +58,11 @@ export default async function InsightsPage() {
     ? generateRecommendations(currentScores.pillars, currentScores.relDims, [], [])
     : [];
 
-  const trendData = recentLogs.reverse().map((log) => ({
+  const limits = getFeatureLimits(userTier);
+  const historyLimit = limits.historyDays === Infinity ? recentLogs.length : limits.historyDays;
+  const limitedLogs = recentLogs.slice(0, historyLimit);
+
+  const trendData = limitedLogs.reverse().map((log) => ({
     date: log.date,
     vitality: log.vitalityScore,
     growth: log.growthScore,
