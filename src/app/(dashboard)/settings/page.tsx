@@ -17,6 +17,9 @@ export default async function SettingsPage() {
           id: user.id,
           name: user.name ?? "",
           email: user.email,
+          subscriptionTier: user.subscriptionTier ?? "free",
+          subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() ?? null,
+          stripeCustomerId: user.stripeCustomerId ?? null,
         }}
         weights={{
           alpha: Number(user.alphaWeight),
