@@ -11,6 +11,7 @@ import {
   Shield,
   Layers,
   Heart,
+  GitCompareArrows,
   TrendingUp,
   Settings,
 } from "lucide-react";
@@ -32,6 +33,7 @@ export const navItems: NavItem[] = [
   { label: "Constraints", href: "/constraints", icon: Shield },
   { label: "Scenarios", href: "/scenarios", icon: Layers },
   { label: "Partner", href: "/partner", icon: Heart },
+  { label: "Compare", href: "/compare", icon: GitCompareArrows },
   { label: "Insights", href: "/insights", icon: TrendingUp },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
