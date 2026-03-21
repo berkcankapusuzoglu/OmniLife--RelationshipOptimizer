@@ -13,6 +13,13 @@ export const metadata: Metadata = {
       "Research-backed articles on relationship scoring, couples assessment, and the psychology behind a healthier partnership.",
     type: "website",
     url: "https://omnilife.app/blog",
+    images: [
+      {
+        url: "/api/og?life=78&rel=82&total=80&date=2026-03-21",
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
 };
 

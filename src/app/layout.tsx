@@ -43,6 +43,13 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "OmniLife",
     locale: "en_US",
+    images: [
+      {
+        url: "/api/og?life=78&rel=82&total=80&date=2026-03-21",
+        width: 1200,
+        height: 630,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",

@@ -285,7 +285,7 @@ export default function LandingClient() {
               variant="outline"
               size="lg"
               className="h-12 gap-2 px-8 text-base"
-              render={<Link href="/register" />}
+              render={<Link href="/quiz" />}
             >
               Take Free Quiz
               <ChevronRight className="h-4 w-4" />

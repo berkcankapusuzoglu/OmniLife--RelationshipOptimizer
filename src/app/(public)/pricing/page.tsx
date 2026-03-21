@@ -1,4 +1,23 @@
+import type { Metadata } from "next";
 import { PricingClient } from "./pricing-client";
+
+export const metadata: Metadata = {
+  title: "Pricing — OmniLife",
+  description:
+    "Simple, transparent pricing. Start free, upgrade when you're ready.",
+  openGraph: {
+    title: "Pricing — OmniLife",
+    description:
+      "Simple, transparent pricing. Start free, upgrade when you're ready.",
+    images: [
+      {
+        url: "/api/og?life=78&rel=82&total=80&date=2026-03-21",
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
+};
 
 export default function PricingPage() {
   return (
