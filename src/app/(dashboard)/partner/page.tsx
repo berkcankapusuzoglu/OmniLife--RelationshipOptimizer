@@ -1,7 +1,8 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { users, scores } from "@/lib/db/schema";
+import { eq, desc } from "drizzle-orm";
+import { getCoupleBonus } from "@/lib/subscription/couple-bonus";
 import { PartnerClient } from "./partner-client";
 
 export default async function PartnerPage() {
@@ -9,6 +10,8 @@ export default async function PartnerPage() {
   const db = getDb();
 
   let partner = null;
+  let partnerScore: number | null = null;
+
   if (user.partnerId) {
     const [p] = await db
       .select({ id: users.id, name: users.name, email: users.email })
@@ -16,7 +19,28 @@ export default async function PartnerPage() {
       .where(eq(users.id, user.partnerId))
       .limit(1);
     partner = p ?? null;
+
+    if (partner) {
+      const [ps] = await db
+        .select({ totalQuality: scores.totalQuality })
+        .from(scores)
+        .where(eq(scores.userId, partner.id))
+        .orderBy(desc(scores.createdAt))
+        .limit(1);
+      partnerScore = ps ? Number(ps.totalQuality) : null;
+    }
   }
+
+  // Get user's latest score for the challenge card
+  const [userScoreRow] = await db
+    .select({ totalQuality: scores.totalQuality })
+    .from(scores)
+    .where(eq(scores.userId, user.id))
+    .orderBy(desc(scores.createdAt))
+    .limit(1);
+  const userScore = userScoreRow ? Number(userScoreRow.totalQuality) : null;
+
+  const coupleBonus = getCoupleBonus(!!user.partnerId);
 
   return (
     <div className="space-y-6">
@@ -28,8 +52,12 @@ export default async function PartnerPage() {
       </div>
       <PartnerClient
         userId={user.id}
+        userName={user.name?.split(" ")[0] ?? null}
         inviteCode={user.partnerInviteCode}
         partner={partner}
+        partnerScore={partnerScore}
+        userScore={userScore}
+        coupleBonus={coupleBonus}
       />
     </div>
   );

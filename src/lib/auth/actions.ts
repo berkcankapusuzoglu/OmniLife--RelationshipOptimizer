@@ -44,7 +44,32 @@ export async function registerAction(formData: FormData) {
     .values({ email, passwordHash })
     .returning({ id: users.id });
 
+  // Auto-link if invite code is present
+  const inviteCode = formData.get("invite") as string | null;
+  if (inviteCode) {
+    const [inviter] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.partnerInviteCode, inviteCode.toUpperCase()))
+      .limit(1);
+
+    if (inviter && inviter.id !== newUser.id) {
+      await db
+        .update(users)
+        .set({ partnerId: inviter.id })
+        .where(eq(users.id, newUser.id));
+      await db
+        .update(users)
+        .set({ partnerId: newUser.id })
+        .where(eq(users.id, inviter.id));
+    }
+  }
+
   await createSession(newUser.id);
+
+  if (inviteCode) {
+    redirect("/overview?welcome=partner");
+  }
   redirect("/overview");
 }
 
