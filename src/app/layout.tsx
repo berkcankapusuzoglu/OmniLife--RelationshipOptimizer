@@ -14,9 +14,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OmniLife — Relationship Optimizer",
+  title: {
+    default: "OmniLife — Relationship Optimizer",
+    template: "%s | OmniLife",
+  },
   description:
-    "Multi-objective life and relationship optimization through psychology, philosophy, and mathematics",
+    "Multi-objective life and relationship optimization through psychology, philosophy, and mathematics.",
+  metadataBase: new URL("https://omnilife.app"),
+  openGraph: {
+    title: "OmniLife — Relationship Optimizer",
+    description:
+      "Multi-objective life and relationship optimization through psychology, philosophy, and mathematics.",
+    type: "website",
+    siteName: "OmniLife",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "OmniLife — Relationship Optimizer",
+    description:
+      "Multi-objective life and relationship optimization through psychology, philosophy, and mathematics.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

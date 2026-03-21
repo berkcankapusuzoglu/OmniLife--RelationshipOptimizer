@@ -24,7 +24,7 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/overview", icon: LayoutDashboard },
   { label: "Daily Log", href: "/daily", icon: Calendar },
   { label: "Weekly Check-in", href: "/weekly", icon: CalendarDays },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
@@ -44,7 +44,7 @@ export function SidebarNav() {
       {navItems.map((item) => {
         const isActive =
           pathname === item.href ||
-          (item.href !== "/" && pathname.startsWith(item.href));
+          (item.href !== "/overview" && pathname.startsWith(item.href));
         const Icon = item.icon;
 
         return (
