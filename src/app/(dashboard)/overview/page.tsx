@@ -79,6 +79,8 @@ export default async function DashboardPage() {
       }
       scoreTrends={scoreTrends}
       userName={user.name ?? "User"}
+      currentStreak={user.currentStreak ?? 0}
+      longestStreak={user.longestStreak ?? 0}
     />
   );
 }

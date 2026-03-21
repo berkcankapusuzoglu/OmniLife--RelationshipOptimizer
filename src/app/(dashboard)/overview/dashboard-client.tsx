@@ -12,6 +12,7 @@ import {
   Brain,
   Calendar,
   Sparkles,
+  Flame,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
@@ -39,6 +40,8 @@ interface DashboardClientProps {
     totalQuality: number;
   }[];
   userName: string;
+  currentStreak: number;
+  longestStreak: number;
 }
 
 function ScoreCard({
@@ -101,6 +104,8 @@ export function DashboardClient({
   latestScore,
   scoreTrends,
   userName,
+  currentStreak,
+  longestStreak,
 }: DashboardClientProps) {
   const searchParams = useSearchParams();
 
@@ -187,6 +192,24 @@ export function DashboardClient({
           color="text-emerald-400"
         />
       </div>
+
+      {currentStreak > 0 && (
+        <Card>
+          <CardContent className="flex items-center gap-4 py-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10">
+              <Flame className="h-5 w-5 text-orange-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">
+                {currentStreak} day streak!
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Longest: {longestStreak} days
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Separator />
 
