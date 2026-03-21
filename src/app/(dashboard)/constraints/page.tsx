@@ -3,9 +3,11 @@ import { getDb } from "@/lib/db";
 import { constraints } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { ConstraintsClient } from "./constraints-client";
+import { getUserTier } from "@/lib/subscription/access";
 
 export default async function ConstraintsPage() {
   const user = await requireAuth();
+  const userTier = await getUserTier(user.id);
   const db = getDb();
 
   const userConstraints = await db
@@ -22,6 +24,7 @@ export default async function ConstraintsPage() {
         </p>
       </div>
       <ConstraintsClient
+        userTier={userTier}
         constraints={userConstraints.map((c) => ({
           id: c.id,
           name: c.name,

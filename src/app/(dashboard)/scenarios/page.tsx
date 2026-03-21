@@ -1,8 +1,10 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { ScenariosClient } from "./scenarios-client";
+import { getUserTier } from "@/lib/subscription/access";
 
 export default async function ScenariosPage() {
   const user = await requireAuth();
+  const userTier = await getUserTier(user.id);
 
   return (
     <div className="space-y-6">
@@ -15,6 +17,7 @@ export default async function ScenariosPage() {
       <ScenariosClient
         activeScenarioId={user.activeScenarioId}
         userId={user.id}
+        userTier={userTier}
         currentWeights={{
           alpha: Number(user.alphaWeight),
           beta: Number(user.betaWeight),

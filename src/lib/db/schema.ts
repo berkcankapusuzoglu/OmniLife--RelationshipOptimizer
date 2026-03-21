@@ -46,6 +46,11 @@ export const users = pgTable("users", {
   partnerId: uuid("partner_id"),
   partnerInviteCode: text("partner_invite_code").unique(),
   activeScenarioId: uuid("active_scenario_id"),
+  subscriptionTier: text("subscription_tier").default("free").notNull(),
+  subscriptionExpiresAt: timestamp("subscription_expires_at", {
+    withTimezone: true,
+  }),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
   alphaWeight: numeric("alpha_weight", { precision: 5, scale: 4 }).default(
     "0.5"
   ),

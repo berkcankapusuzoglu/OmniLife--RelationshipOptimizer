@@ -3,9 +3,11 @@ import { getDb } from "@/lib/db";
 import { dailyLogs, interventions } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { ExercisesClient } from "./exercises-client";
+import { getUserTier } from "@/lib/subscription/access";
 
 export default async function ExercisesPage() {
   const user = await requireAuth();
+  const userTier = await getUserTier(user.id);
   const db = getDb();
 
   const sevenDaysAgo = new Date();
@@ -67,6 +69,7 @@ export default async function ExercisesPage() {
         currentScores={currentScores}
         recentExerciseIds={recentExerciseIds}
         userId={user.id}
+        userTier={userTier}
       />
     </div>
   );
