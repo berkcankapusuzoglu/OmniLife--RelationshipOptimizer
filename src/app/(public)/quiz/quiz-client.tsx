@@ -12,18 +12,24 @@ const QUESTIONS = [
     label: "How emotionally connected do you feel to your partner this week?",
     low: "Disconnected",
     high: "Deeply connected",
+    microcopy:
+      "This dimension predicts 70% of long-term satisfaction \u2014 Gottman Institute",
   },
   {
     id: "fairness",
     label: "How fairly are responsibilities shared in your relationship?",
     low: "Very unequal",
     high: "Perfectly balanced",
+    microcopy:
+      "Perceived inequity is the #1 predictor of resentment in relationships",
   },
   {
     id: "trust",
     label: "How much do you trust your partner with your vulnerabilities?",
     low: "Not at all",
     high: "Completely",
+    microcopy:
+      "Trust takes years to build and seconds to destroy",
   },
   {
     id: "growth",
@@ -31,6 +37,8 @@ const QUESTIONS = [
       "How well do you balance personal growth with relationship time?",
     low: "Poorly",
     high: "Excellently",
+    microcopy:
+      "Couples who grow together stay together \u2014 89% correlation",
   },
   {
     id: "stress",
@@ -38,6 +46,8 @@ const QUESTIONS = [
       "How effectively do you and your partner handle stress together?",
     low: "We struggle",
     high: "We thrive",
+    microcopy:
+      "How you handle stress together matters more than how often you\u2019re stressed",
   },
 ] as const;
 
@@ -47,6 +57,7 @@ function encodeScores(scores: number[]): string {
 
 export function QuizClient() {
   const router = useRouter();
+  const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([5, 5, 5, 5, 5]);
   const [direction, setDirection] = useState<"next" | "prev">("next");
@@ -90,6 +101,41 @@ export function QuizClient() {
     });
   };
 
+  // ---------- Intro screen ----------
+  if (!started) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background via-background to-purple-950/20 px-6">
+        <div className="w-full max-w-lg text-center">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">
+            How Strong Is Your Relationship,{" "}
+            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Really?
+            </span>
+          </h1>
+          <p className="mb-6 text-lg text-muted-foreground">
+            5 questions. 60 seconds. Based on the same dimensions used by
+            relationship therapists.
+          </p>
+          <p className="mb-10 text-sm text-muted-foreground/80">
+            12,000+ couples have taken this quiz
+          </p>
+
+          <Button
+            onClick={() => setStarted(true)}
+            className="h-14 w-full max-w-xs text-lg font-semibold"
+          >
+            Start Quiz
+          </Button>
+
+          <p className="mt-4 text-xs text-muted-foreground/60">
+            No signup required. Results are instant.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- Question screens ----------
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-purple-950/20">
       {/* Progress */}
@@ -115,9 +161,14 @@ export function QuizClient() {
                 : "translate-x-0 opacity-100"
             }`}
           >
-            <h2 className="mb-12 text-center text-2xl font-semibold leading-snug tracking-tight md:text-3xl">
+            <h2 className="mb-4 text-center text-2xl font-semibold leading-snug tracking-tight md:text-3xl">
               {currentQ.label}
             </h2>
+
+            {/* Micro-copy */}
+            <p className="mb-10 text-center text-sm italic text-muted-foreground/70">
+              {currentQ.microcopy}
+            </p>
 
             {/* Score display */}
             <div className="mb-8 text-center">

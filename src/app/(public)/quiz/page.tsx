@@ -9,13 +9,6 @@ export const metadata: Metadata = {
     title: "Free Relationship Quiz — OmniLife",
     description:
       "How strong is your relationship? Find out in 60 seconds with our free quiz.",
-    images: [
-      {
-        url: "/api/og?life=75&rel=80&total=77&date=2026-03-21",
-        width: 1200,
-        height: 630,
-      },
-    ],
   },
 };
 
