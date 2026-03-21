@@ -19,6 +19,7 @@ interface ScoreCardProps {
   };
   date: string;
   variant?: "square" | "og";
+  streak?: number;
 }
 
 function getScoreColor(score: number): string {
@@ -159,6 +160,7 @@ export function ShareableScoreCard({
   relDims,
   date,
   variant = "square",
+  streak,
 }: ScoreCardProps) {
   const scoreColor = getScoreColor(totalQuality);
   const scoreLabel = getScoreLabel(totalQuality);
@@ -239,7 +241,14 @@ export function ShareableScoreCard({
 
         {/* Footer */}
         <div className="flex items-end justify-between">
-          <p className="font-mono text-xs text-white/30">{date}</p>
+          <div className="flex items-center gap-3">
+            <p className="font-mono text-xs text-white/30">{date}</p>
+            {streak && streak > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/15 px-2 py-0.5 text-xs font-medium text-orange-400">
+                <span>&#128293;</span> {streak}-day streak
+              </span>
+            )}
+          </div>
           <p className="text-xs font-medium text-white/30">omnilife.app</p>
         </div>
       </div>

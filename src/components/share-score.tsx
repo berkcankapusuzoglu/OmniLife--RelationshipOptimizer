@@ -2,13 +2,14 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Share2, Check, Copy } from "lucide-react";
+import { Share2, Check } from "lucide-react";
 
 interface ShareScoreProps {
   totalQuality: number;
   lifeScore: number;
   relScore: number;
   date: string;
+  streak?: number;
   pillars?: {
     vitality: number;
     growth: number;
@@ -57,7 +58,8 @@ export function ShareScore(props: ShareScoreProps) {
 
   const handleShare = useCallback(async () => {
     const url = buildShareUrl(props);
-    const shareText = `My relationship scored ${props.totalQuality.toFixed(0)}/100 on OmniLife! Take the free quiz:`;
+    const streakText = props.streak && props.streak > 0 ? ` (\u{1F525} ${props.streak}-day streak)` : "";
+    const shareText = `My relationship scored ${props.totalQuality.toFixed(0)}/100${streakText} on OmniLife! Take the free quiz:`;
 
     if (typeof navigator !== "undefined" && navigator.share) {
       try {

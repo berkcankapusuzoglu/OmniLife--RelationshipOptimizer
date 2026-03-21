@@ -4,6 +4,10 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarNav } from "@/components/nav/SidebarNav";
 import { MobileNav } from "@/components/nav/MobileNav";
 import { StreakBadge } from "@/components/streak-badge";
+import { WelcomeModal } from "@/components/welcome-modal";
+import { getDb } from "@/lib/db";
+import { dailyLogs } from "@/lib/db/schema";
+import { eq, count } from "drizzle-orm";
 
 export default async function DashboardLayout({
   children,
@@ -11,6 +15,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireAuth();
+  const db = getDb();
+  const [logCountResult] = await db
+    .select({ value: count() })
+    .from(dailyLogs)
+    .where(eq(dailyLogs.userId, user.id));
+  const hasLogs = (logCountResult?.value ?? 0) > 0;
 
   return (
     <div className="flex h-full min-h-screen">
@@ -55,6 +65,8 @@ export default async function DashboardLayout({
           {children}
         </main>
       </div>
+
+      <WelcomeModal hasLogs={hasLogs} />
     </div>
   );
 }
