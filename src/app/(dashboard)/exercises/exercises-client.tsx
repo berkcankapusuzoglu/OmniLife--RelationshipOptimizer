@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Clock, BookOpen, Star, Play, Check } from "lucide-react";
 import { getRecommendedExercises } from "@/lib/recommendations/engine";
 import { completeExercise } from "./actions";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
+import { TIERS } from "@/lib/subscription/tiers";
 import type { PillarScores, RelDimScores, Exercise } from "@/lib/engine/types";
 
 interface ExercisesClientProps {
@@ -17,13 +19,17 @@ interface ExercisesClientProps {
   } | null;
   recentExerciseIds: string[];
   userId: string;
+  userTier: string;
 }
 
 export function ExercisesClient({
   currentScores,
   recentExerciseIds,
   userId,
+  userTier,
 }: ExercisesClientProps) {
+  const tier = userTier as "free" | "premium";
+  const exerciseLimit = TIERS[tier].features.exerciseLimit;
   const defaultScores = {
     pillars: { vitality: 5, growth: 5, security: 5, connection: 5 },
     relDims: { emotional: 5, trust: 5, fairness: 5, stress: 5, autonomy: 5 },
@@ -151,9 +157,15 @@ export function ExercisesClient({
     );
   }
 
+  const visibleExercises =
+    exerciseLimit === Infinity
+      ? exercises
+      : exercises.slice(0, exerciseLimit);
+  const hasMore = exercises.length > visibleExercises.length;
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {exercises.map((exercise) => (
+      {visibleExercises.map((exercise) => (
         <Card key={exercise.id}>
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
@@ -195,7 +207,15 @@ export function ExercisesClient({
         </Card>
       ))}
 
-      {exercises.length === 0 && (
+      {hasMore && (
+        <div className="col-span-full">
+          <UpgradePrompt
+            featureDescription={`You're seeing ${exerciseLimit} of ${exercises.length} exercises. Upgrade to unlock all ${exercises.length} personalized exercises.`}
+          />
+        </div>
+      )}
+
+      {visibleExercises.length === 0 && (
         <Card className="col-span-full">
           <CardContent className="py-8 text-center text-muted-foreground">
             Log your daily scores to get personalized exercise recommendations.

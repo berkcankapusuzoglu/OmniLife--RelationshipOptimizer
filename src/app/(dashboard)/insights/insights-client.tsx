@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, Lightbulb, TrendingUp } from "lucide-react";
 import { ParetoChart } from "@/components/charts/ParetoChart";
+import { PremiumGate } from "@/components/premium-gate";
 import type { Recommendation } from "@/lib/engine/types";
 import {
   LineChart,
@@ -35,6 +36,7 @@ interface InsightsClientProps {
     stress: number;
     autonomy: number;
   }[];
+  userTier: string;
 }
 
 const PILLAR_COLORS: Record<string, string> = {
@@ -71,6 +73,7 @@ export function InsightsClient({
   currentPoint,
   recommendations,
   trendData,
+  userTier,
 }: InsightsClientProps) {
   return (
     <Tabs defaultValue="recommendations" className="space-y-4">
@@ -115,24 +118,26 @@ export function InsightsClient({
       </TabsContent>
 
       <TabsContent value="pareto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pareto Frontier</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {historicalPoints.length > 0 ? (
-              <ParetoChart
-                historicalPoints={historicalPoints}
-                frontierPoints={frontierPoints}
-                currentPoint={currentPoint!}
-              />
-            ) : (
-              <p className="py-8 text-center text-muted-foreground">
-                Need at least a few days of data to compute the Pareto frontier.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <PremiumGate userTier={userTier} feature="insights">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pareto Frontier</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {historicalPoints.length > 0 ? (
+                <ParetoChart
+                  historicalPoints={historicalPoints}
+                  frontierPoints={frontierPoints}
+                  currentPoint={currentPoint!}
+                />
+              ) : (
+                <p className="py-8 text-center text-muted-foreground">
+                  Need at least a few days of data to compute the Pareto frontier.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </PremiumGate>
       </TabsContent>
 
       <TabsContent value="trends" className="space-y-4">

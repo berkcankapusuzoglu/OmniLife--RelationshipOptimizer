@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Shield, Plus, Trash2 } from "lucide-react";
 import { addConstraint, toggleConstraint, removeConstraint } from "./actions";
+import { PremiumGate } from "@/components/premium-gate";
 
 interface ConstraintItem {
   id: string;
@@ -55,13 +56,16 @@ function getStatusColor(constraint: ConstraintItem) {
 export function ConstraintsClient({
   constraints: initialConstraints,
   userId,
+  userTier,
 }: {
   constraints: ConstraintItem[];
   userId: string;
+  userTier: string;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
+    <PremiumGate userTier={userTier} feature="constraints">
     <div className="space-y-4">
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
@@ -230,5 +234,6 @@ export function ConstraintsClient({
         )}
       </div>
     </div>
+    </PremiumGate>
   );
 }

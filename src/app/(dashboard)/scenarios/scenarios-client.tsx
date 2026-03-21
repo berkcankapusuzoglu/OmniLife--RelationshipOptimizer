@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { SCENARIO_PRESETS } from "@/lib/scenarios/presets";
 import { WeightSliders } from "@/components/forms/WeightSliders";
+import { PremiumGate } from "@/components/premium-gate";
 import { activateScenario } from "./actions";
 import type { Weights } from "@/lib/engine/types";
 
@@ -30,10 +31,12 @@ const SCENARIO_ICONS: Record<string, React.ReactNode> = {
 export function ScenariosClient({
   activeScenarioId,
   userId,
+  userTier,
   currentWeights,
 }: {
   activeScenarioId: string | null;
   userId: string;
+  userTier: string;
   currentWeights: Weights;
 }) {
   const [previewWeights, setPreviewWeights] = useState<Weights | null>(null);
@@ -60,6 +63,7 @@ export function ScenariosClient({
   }
 
   return (
+    <PremiumGate userTier={userTier} feature="scenarios">
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {SCENARIO_PRESETS.map((scenario) => {
@@ -135,5 +139,6 @@ export function ScenariosClient({
         </Card>
       )}
     </div>
+    </PremiumGate>
   );
 }

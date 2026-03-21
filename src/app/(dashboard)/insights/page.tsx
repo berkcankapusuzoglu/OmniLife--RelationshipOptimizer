@@ -5,9 +5,11 @@ import { eq, desc } from "drizzle-orm";
 import { InsightsClient } from "./insights-client";
 import { findParetoFrontier } from "@/lib/engine/pareto";
 import { generateRecommendations } from "@/lib/recommendations/rules";
+import { getUserTier } from "@/lib/subscription/access";
 
 export default async function InsightsPage() {
   const user = await requireAuth();
+  const userTier = await getUserTier(user.id);
   const db = getDb();
 
   const [allScores, recentLogs] = await Promise.all([
@@ -90,6 +92,7 @@ export default async function InsightsPage() {
         }
         recommendations={recommendations}
         trendData={trendData}
+        userTier={userTier}
       />
     </div>
   );
