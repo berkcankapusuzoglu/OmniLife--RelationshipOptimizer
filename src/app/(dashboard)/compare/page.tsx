@@ -34,8 +34,9 @@ export default async function ComparePage() {
 
   // Free users get 7 days, premium get 30
   // For now, treat all as free (7 days) — premium check can be added later
-  const isPremium = false;
-  const dayLimit = isPremium ? 30 : 7;
+  const { getUserTier } = await import("@/lib/subscription/access");
+  const userTier = await getUserTier(user.id);
+  const dayLimit = userTier === "premium" ? 30 : 7;
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - dayLimit);
@@ -93,7 +94,7 @@ export default async function ComparePage() {
         myLogs={myLogsPlain}
         partnerScores={partnerData.scores}
         partnerLogs={partnerData.logs}
-        isPremium={isPremium}
+        userTier={userTier}
       />
     </div>
   );

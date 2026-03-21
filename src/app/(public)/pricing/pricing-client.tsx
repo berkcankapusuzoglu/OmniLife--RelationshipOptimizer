@@ -90,7 +90,7 @@ export function PricingClient({
           </CardHeader>
           <CardContent className="space-y-4">
             <ul className="space-y-2">
-              {TIERS.free.features.map((f) => (
+              {TIERS.free.featureList.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
                   {f}
@@ -121,7 +121,7 @@ export function PricingClient({
           </CardHeader>
           <CardContent className="space-y-4">
             <ul className="space-y-2">
-              {TIERS.premium.features.map((f) => (
+              {TIERS.premium.featureList.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm">
                   <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
                   {f}

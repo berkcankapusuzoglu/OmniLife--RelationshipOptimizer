@@ -57,7 +57,7 @@ interface CompareClientProps {
   myLogs: LogEntry[];
   partnerScores: ScoreEntry[];
   partnerLogs: LogEntry[];
-  isPremium: boolean;
+  userTier: string;
 }
 
 // ── Dimension metadata ──────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ export function CompareClient({
   myLogs,
   partnerScores,
   partnerLogs,
-  isPremium,
+  userTier,
 }: CompareClientProps) {
   const [trendMetric, setTrendMetric] = useState<
     "totalQuality" | "lifeScore" | "relScore"
@@ -412,7 +412,7 @@ export function CompareClient({
       </Card>
 
       {/* ── Trend Comparison (Premium) ─────────────────────────────────── */}
-      <PremiumGate isPremium={isPremium} feature="30-day trend comparison">
+      <PremiumGate userTier={userTier} feature="insights">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Trend Comparison</CardTitle>
