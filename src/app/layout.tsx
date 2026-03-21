@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AnalyticsProvider } from "@/components/analytics-provider";
+import { ConversionTracker } from "@/components/conversion-tracker";
+import { Suspense } from "react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +33,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          <AnalyticsProvider>
+            {children}
+            <Suspense fallback={null}>
+              <ConversionTracker />
+            </Suspense>
+          </AnalyticsProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

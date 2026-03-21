@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { SidebarNav } from "@/components/nav/SidebarNav";
 import { MobileNav } from "@/components/nav/MobileNav";
+import { StreakBadge } from "@/components/streak-badge";
 
 export default async function DashboardLayout({
   children,
@@ -43,6 +44,7 @@ export default async function DashboardLayout({
           </span>
 
           <div className="ml-auto flex items-center gap-3">
+            <StreakBadge currentStreak={user.currentStreak ?? 0} />
             {user.activeScenarioId && (
               <Badge variant="secondary">{user.activeScenarioId}</Badge>
             )}

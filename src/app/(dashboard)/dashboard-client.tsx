@@ -12,6 +12,7 @@ import {
   Brain,
   Calendar,
   Sparkles,
+  Flame,
 } from "lucide-react";
 import Link from "next/link";
 import { InteractiveRadar } from "@/components/charts/InteractiveRadar";
@@ -36,6 +37,8 @@ interface DashboardClientProps {
     totalQuality: number;
   }[];
   userName: string;
+  currentStreak: number;
+  longestStreak: number;
 }
 
 function ScoreCard({
@@ -98,6 +101,8 @@ export function DashboardClient({
   latestScore,
   scoreTrends,
   userName,
+  currentStreak,
+  longestStreak,
 }: DashboardClientProps) {
   const defaultScores = {
     pillars: { vitality: 5, growth: 5, security: 5, connection: 5 },
@@ -158,6 +163,24 @@ export function DashboardClient({
           color="text-emerald-400"
         />
       </div>
+
+      {currentStreak > 0 && (
+        <Card>
+          <CardContent className="flex items-center gap-4 py-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10">
+              <Flame className="h-5 w-5 text-orange-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">
+                {currentStreak} day streak!
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Longest: {longestStreak} days
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Separator />
 

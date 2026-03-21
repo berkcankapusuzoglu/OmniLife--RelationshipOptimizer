@@ -1,13 +1,17 @@
 "use server";
 
 import { getDb } from "@/lib/db";
-import { dailyLogs, scores, users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { dailyLogs, scores, users, interventions, weeklyCheckins } from "@/lib/db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { computeAllScores } from "@/lib/engine/scoring";
 import { computeAllPenalties } from "@/lib/engine/penalties";
 import type { PillarScores, RelDimScores, Weights } from "@/lib/engine/types";
 import { v4 as uuid } from "uuid";
+import { updateStreak } from "@/lib/streaks";
+import { checkMilestones } from "@/lib/milestones";
+import type { Milestone } from "@/lib/milestones";
+import { trackEvent } from "@/lib/analytics/track";
 
 export async function submitDailyLog(data: {
   userId: string;
@@ -23,7 +27,7 @@ export async function submitDailyLog(data: {
   mood: number;
   energyLevel: number;
   notes: string;
-}) {
+}): Promise<{ milestones: Milestone[] }> {
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];
 
@@ -52,7 +56,7 @@ export async function submitDailyLog(data: {
     .where(eq(users.id, data.userId))
     .limit(1);
 
-  if (!user) return;
+  if (!user) return { milestones: [] };
 
   const pillars: PillarScores = {
     vitality: data.vitality,
@@ -103,5 +107,52 @@ export async function submitDailyLog(data: {
     weightsSnapshot: weights,
   });
 
+  // Update streak
+  const streakResult = await updateStreak(data.userId, today);
+
+  // Track analytics event
+  trackEvent("daily_log_submitted", {
+    totalQuality: computed.totalQuality,
+    currentStreak: streakResult.currentStreak,
+  }, data.userId);
+
+  // Gather milestone context
+  const [logCountResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(dailyLogs)
+    .where(eq(dailyLogs.userId, data.userId));
+
+  const [exerciseCountResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(interventions)
+    .where(
+      and(
+        eq(interventions.userId, data.userId),
+        eq(interventions.wasCompleted, true)
+      )
+    );
+
+  const [weeklyCountResult] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(weeklyCheckins)
+    .where(eq(weeklyCheckins.userId, data.userId));
+
+  const newMilestones = checkMilestones({
+    currentStreak: streakResult.currentStreak,
+    longestStreak: streakResult.longestStreak,
+    totalLogs: logCountResult?.count ?? 0,
+    exercisesCompleted: exerciseCountResult?.count ?? 0,
+    partnerLinked: !!user.partnerId,
+    latestTotalQuality: computed.totalQuality,
+    weeklyCheckinsCount: weeklyCountResult?.count ?? 0,
+    achieved: new Set<string>(), // TODO: persist achieved milestones
+  });
+
+  for (const m of newMilestones) {
+    trackEvent("milestone_achieved", { milestoneId: m.id, milestoneName: m.name }, data.userId);
+  }
+
   revalidatePath("/", "layout");
+
+  return { milestones: newMilestones };
 }

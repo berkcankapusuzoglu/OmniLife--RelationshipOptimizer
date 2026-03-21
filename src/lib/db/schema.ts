@@ -88,6 +88,9 @@ export const users = pgTable("users", {
     precision: 5,
     scale: 4,
   }).default("0.2"),
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  lastLogDate: date("last_log_date"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
