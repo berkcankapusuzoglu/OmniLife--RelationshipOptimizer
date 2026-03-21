@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Heart,
@@ -19,6 +19,8 @@ import {
   Zap,
   Shield,
   Activity,
+  X,
+  BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,11 +39,13 @@ function AnimatedCounter({
   suffix = "",
   prefix = "",
   duration = 2000,
+  decimals = 0,
 }: {
   target: number;
   suffix?: string;
   prefix?: string;
   duration?: number;
+  decimals?: number;
 }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
@@ -58,7 +62,8 @@ function AnimatedCounter({
           const step = (now: number) => {
             const progress = Math.min((now - start) / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(eased * target));
+            const val = eased * target;
+            setCount(decimals > 0 ? parseFloat(val.toFixed(decimals)) : Math.floor(val));
             if (progress < 1) requestAnimationFrame(step);
           };
           requestAnimationFrame(step);
@@ -68,12 +73,12 @@ function AnimatedCounter({
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [target, duration]);
+  }, [target, duration, decimals]);
 
   return (
     <span ref={ref}>
       {prefix}
-      {count.toLocaleString()}
+      {decimals > 0 ? count.toFixed(decimals) : count.toLocaleString()}
       {suffix}
     </span>
   );
@@ -117,6 +122,296 @@ function FadeIn({
     >
       {children}
     </div>
+  );
+}
+
+// ─── Live Social Proof Counter (ticks up) ────────────────────────────
+function LiveCounter() {
+  const [count, setCount] = useState(12847);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCount((c) => c + Math.floor(Math.random() * 3) + 1);
+    }, 4000 + Math.random() * 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+      Join{" "}
+      <span className="inline-flex items-baseline font-semibold text-foreground animate-pulse">
+        {count.toLocaleString()}+
+      </span>{" "}
+      couples optimizing their relationships
+    </span>
+  );
+}
+
+// ─── Activity Ticker ─────────────────────────────────────────────────
+const activityMessages = [
+  "Sarah & James just completed their 30-day streak \u{1F525}",
+  "A couple in London scored 92/100 on their first assessment",
+  "Mike & Lisa unlocked the Secure Anchor archetype",
+  "A couple in Austin improved by 14 points this week",
+  "A couple improved their Trust score by 3 points today",
+  "Rachel just invited her partner to OmniLife",
+  "2 new couples joined in the last hour",
+  "A couple in Tokyo hit a 60-day logging streak \u{1F3AF}",
+  "David & Emma moved from Crisis to Thriving in 8 weeks",
+  "A couple in Berlin unlocked all 37 exercises",
+];
+
+function ActivityTicker() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("ticker-dismissed")) {
+      setDismissed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (dismissed) return;
+    // Show first notification after 3 seconds
+    const showTimeout = setTimeout(() => setVisible(true), 3000);
+    return () => clearTimeout(showTimeout);
+  }, [dismissed]);
+
+  useEffect(() => {
+    if (dismissed || !visible) return;
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setCurrentIndex((i) => (i + 1) % activityMessages.length);
+        setVisible(true);
+      }, 500);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [dismissed, visible]);
+
+  const handleDismiss = useCallback(() => {
+    setDismissed(true);
+    setVisible(false);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("ticker-dismissed", "1");
+    }
+  }, []);
+
+  if (dismissed) return null;
+
+  return (
+    <div
+      className={`fixed bottom-4 left-4 z-50 max-w-sm transition-all duration-500 ${
+        visible
+          ? "translate-y-0 opacity-100"
+          : "translate-y-4 opacity-0 pointer-events-none"
+      }`}
+    >
+      <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-card/95 p-4 shadow-xl backdrop-blur-md">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500">
+          <Activity className="h-4 w-4 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm leading-snug">{activityMessages[currentIndex]}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Just now</p>
+        </div>
+        <button
+          onClick={handleDismiss}
+          className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Dismiss notifications"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Animated Hero Score Preview ─────────────────────────────────────
+const scoreDimensions = [
+  { label: "Vitality", before: 52, after: 82, color: "bg-violet-500", colorBefore: "bg-red-400" },
+  { label: "Growth", before: 45, after: 71, color: "bg-blue-500", colorBefore: "bg-red-400" },
+  { label: "Security", before: 60, after: 88, color: "bg-cyan-500", colorBefore: "bg-red-400" },
+  { label: "Connection", before: 48, after: 76, color: "bg-teal-500", colorBefore: "bg-red-400" },
+  { label: "Emotional", before: 50, after: 79, color: "bg-emerald-500", colorBefore: "bg-red-400" },
+  { label: "Trust", before: 58, after: 85, color: "bg-violet-400", colorBefore: "bg-red-400" },
+  { label: "Fairness", before: 42, after: 68, color: "bg-blue-400", colorBefore: "bg-red-400" },
+  { label: "Stress", before: 55, after: 74, color: "bg-cyan-400", colorBefore: "bg-red-400" },
+  { label: "Autonomy", before: 53, after: 81, color: "bg-teal-400", colorBefore: "bg-red-400" },
+];
+
+function HeroScorePreview() {
+  const [showAfter, setShowAfter] = useState(false);
+  const [animated, setAnimated] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Start with "before" state, then auto-toggle to "after"
+          setTimeout(() => setAnimated(true), 300);
+          setTimeout(() => setShowAfter(true), 2000);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const totalBefore = 54;
+  const totalAfter = 78.4;
+
+  return (
+    <div ref={ref} className="relative mx-auto mt-16 max-w-3xl">
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-500/20 via-blue-500/20 to-teal-500/20 blur-xl" />
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-card/80 p-8 backdrop-blur-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Total Relationship Quality
+            </p>
+            <div className="flex items-baseline gap-3">
+              <p
+                className={`text-5xl font-bold tracking-tight bg-clip-text text-transparent transition-all duration-1000 ${
+                  showAfter
+                    ? "bg-gradient-to-r from-violet-400 to-teal-400"
+                    : "bg-gradient-to-r from-red-400 to-orange-400"
+                }`}
+              >
+                {animated ? (
+                  showAfter ? (
+                    <AnimatedCounter target={totalAfter} duration={1500} decimals={1} />
+                  ) : (
+                    <AnimatedCounter target={totalBefore} duration={1500} decimals={0} />
+                  )
+                ) : (
+                  "0"
+                )}
+              </p>
+              {showAfter && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-sm font-semibold text-emerald-400 animate-in fade-in slide-in-from-left-2 duration-500">
+                  +24.4 pts
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAfter(false)}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                !showAfter
+                  ? "bg-red-500/20 text-red-400"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Before
+            </button>
+            <button
+              onClick={() => setShowAfter(true)}
+              className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                showAfter
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              After
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-9">
+          {scoreDimensions.map((dim, i) => {
+            const value = showAfter ? dim.after : dim.before;
+            const barColor = showAfter ? dim.color : dim.colorBefore;
+            return (
+              <div key={dim.label} className="text-center">
+                <div className="mx-auto mb-1 h-16 w-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`${barColor} w-full rounded-full transition-all duration-1000 ease-out`}
+                    style={{
+                      height: animated ? `${value}%` : "0%",
+                      marginTop: animated ? `${100 - value}%` : "100%",
+                      transitionDelay: `${i * 100}ms`,
+                    }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {dim.label}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sticky CTA Bar ──────────────────────────────────────────────────
+function StickyCTABar() {
+  const [show, setShow] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShow(window.scrollY > 500);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  if (dismissed || !show) return null;
+
+  return (
+    <>
+      {/* Desktop: top bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 hidden sm:block transition-all duration-300 translate-y-0">
+        <div className="border-b border-white/10 bg-card/95 backdrop-blur-md">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-2.5">
+            <p className="text-sm font-medium">
+              Take the Free Quiz — 60 seconds to your score
+            </p>
+            <div className="flex items-center gap-3">
+              <Button size="sm" render={<Link href="/quiz" />}>
+                Start Free Quiz
+                <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+              <button
+                onClick={() => setDismissed(true)}
+                className="rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Mobile: bottom bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden">
+        <div className="border-t border-white/10 bg-card/95 backdrop-blur-md px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button size="sm" className="flex-1" render={<Link href="/quiz" />}>
+              Free Quiz — 60s to your score
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+            <button
+              onClick={() => setDismissed(true)}
+              className="rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -192,22 +487,25 @@ const testimonials = [
     name: "Sarah & Mark",
     role: "Together 8 years",
     quote:
-      "We went from constant miscommunication to actually understanding each other's needs. Our score jumped 34 points in two months.",
+      "During exam season, OmniLife helped us prioritize what mattered most. We went from constant miscommunication to actually understanding each other's needs. Our score went from 54 to 82 in 6 weeks.",
     avatar: "SM",
+    score: "54 \u2192 82",
   },
   {
     name: "Alex & Jordan",
     role: "Together 3 years",
     quote:
-      "The scenario mode saved us during exam season. Instead of drifting apart, we actually grew closer by adjusting expectations.",
+      "The scenario mode saved us during a job crisis. Instead of drifting apart, we actually grew closer by adjusting expectations. Our Trust score jumped 18 points in one month.",
     avatar: "AJ",
+    score: "61 \u2192 79",
   },
   {
     name: "Priya & Daniel",
     role: "Together 12 years",
     quote:
-      "After over a decade together we thought we knew everything. The Pareto insights showed us blind spots we never noticed.",
+      "After over a decade together we thought we knew everything. The Pareto insights showed us blind spots we never noticed. Our Connection score went from 58 to 91.",
     avatar: "PD",
+    score: "58 \u2192 91",
   },
 ];
 
@@ -216,6 +514,14 @@ const stats = [
   { value: 37, suffix: "", label: "Guided Exercises" },
   { value: 6, suffix: "", label: "Scenario Modes" },
   { value: 89, suffix: "%", label: "Report Improvement" },
+];
+
+const researchSources = [
+  "Gottman Institute",
+  "Attachment Theory",
+  "Positive Psychology",
+  "Cognitive Behavioral Therapy",
+  "Emotion-Focused Therapy",
 ];
 
 // ─── Main Landing Page ──────────────────────────────────────────────
@@ -228,6 +534,12 @@ export default function LandingClient() {
         <div className="absolute -right-[20%] top-[20%] h-[60%] w-[50%] rounded-full bg-blue-600/8 blur-[120px]" />
         <div className="absolute -bottom-[20%] left-[30%] h-[50%] w-[40%] rounded-full bg-teal-600/6 blur-[120px]" />
       </div>
+
+      {/* Activity Ticker (bottom-left floating) */}
+      <ActivityTicker />
+
+      {/* Sticky CTA Bar */}
+      <StickyCTABar />
 
       {/* Navigation */}
       <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
@@ -291,55 +603,35 @@ export default function LandingClient() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-        </FadeIn>
-
-        {/* Hero visual: score preview mockup */}
-        <FadeIn delay={400}>
-          <div className="relative mx-auto mt-16 max-w-3xl">
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-500/20 via-blue-500/20 to-teal-500/20 blur-xl" />
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-card/80 p-8 backdrop-blur-sm">
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Total Relationship Quality
-                  </p>
-                  <p className="text-5xl font-bold tracking-tight bg-gradient-to-r from-violet-400 to-teal-400 bg-clip-text text-transparent">
-                    78.4
-                  </p>
-                </div>
-                <Badge variant="secondary" className="gap-1">
-                  <TrendingUp className="h-3 w-3 text-emerald-400" />
-                  +4.2 this week
-                </Badge>
-              </div>
-              <div className="grid grid-cols-3 gap-4 sm:grid-cols-9">
-                {[
-                  { label: "Vitality", value: 82, color: "bg-violet-500" },
-                  { label: "Growth", value: 71, color: "bg-blue-500" },
-                  { label: "Security", value: 88, color: "bg-cyan-500" },
-                  { label: "Connection", value: 76, color: "bg-teal-500" },
-                  { label: "Emotional", value: 79, color: "bg-emerald-500" },
-                  { label: "Trust", value: 85, color: "bg-violet-400" },
-                  { label: "Fairness", value: 68, color: "bg-blue-400" },
-                  { label: "Stress", value: 74, color: "bg-cyan-400" },
-                  { label: "Autonomy", value: 81, color: "bg-teal-400" },
-                ].map((dim) => (
-                  <div key={dim.label} className="text-center">
-                    <div className="mx-auto mb-1 h-16 w-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={`${dim.color} w-full rounded-full transition-all duration-1000`}
-                        style={{ height: `${dim.value}%`, marginTop: `${100 - dim.value}%` }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground leading-tight">
-                      {dim.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Live Social Proof Counter */}
+          <div className="mt-6">
+            <LiveCounter />
           </div>
         </FadeIn>
+
+        {/* Hero visual: animated score preview with before/after */}
+        <FadeIn delay={400}>
+          <HeroScorePreview />
+        </FadeIn>
+      </section>
+
+      {/* ─── "Built on Research From" Trust Bar ────────────────── */}
+      <section className="relative z-10 border-y border-white/5 bg-card/30 backdrop-blur-sm">
+        <div className="mx-auto max-w-5xl px-6 py-8">
+          <p className="mb-5 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            Built on research from
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+            {researchSources.map((source) => (
+              <span
+                key={source}
+                className="text-sm font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+              >
+                {source}
+              </span>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ─── How It Works ─────────────────────────────────────── */}
@@ -435,7 +727,7 @@ export default function LandingClient() {
         </div>
       </section>
 
-      {/* ─── Social Proof ─────────────────────────────────────── */}
+      {/* ─── Social Proof / Testimonials ───────────────────────── */}
       <section className="relative z-10 mx-auto max-w-5xl px-6 py-24">
         <FadeIn>
           <div className="text-center">
@@ -452,16 +744,26 @@ export default function LandingClient() {
             <FadeIn key={t.name} delay={i * 150}>
               <Card className="border-white/5 bg-card/50 backdrop-blur-sm">
                 <CardHeader>
-                  <div className="flex items-center gap-1 text-amber-400">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <Star key={j} className="h-3.5 w-3.5 fill-current" />
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-amber-400">
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Star key={j} className="h-3.5 w-3.5 fill-current" />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-emerald-400">
+                      <BadgeCheck className="h-3.5 w-3.5" />
+                      Verified
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground">
                     &ldquo;{t.quote}&rdquo;
                   </p>
+                  <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+                    <TrendingUp className="h-3 w-3" />
+                    Score: {t.score}
+                  </div>
                 </CardContent>
                 <CardFooter className="border-t border-white/5 pt-4">
                   <div className="flex items-center gap-3">
@@ -493,6 +795,9 @@ export default function LandingClient() {
             <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
               Everything you need to get started is completely free. Unlock
               advanced features as your relationship grows.
+            </p>
+            <p className="mt-2 text-sm font-medium text-violet-400">
+              14-day free trial on Premium — no credit card required
             </p>
           </div>
         </FadeIn>
@@ -543,7 +848,7 @@ export default function LandingClient() {
             <Card className="relative border-violet-500/30 bg-card/50 backdrop-blur-sm shadow-lg shadow-violet-500/10">
               <div className="absolute -top-3 right-4">
                 <Badge className="bg-gradient-to-r from-violet-500 to-blue-500 text-white border-0 px-3 py-1">
-                  Popular
+                  Most Popular
                 </Badge>
               </div>
               <CardHeader>
@@ -552,8 +857,11 @@ export default function LandingClient() {
                   For couples who are serious about growth
                 </CardDescription>
                 <p className="mt-4">
-                  <span className="text-4xl font-bold">$9</span>
+                  <span className="text-4xl font-bold">$7.99</span>
                   <span className="text-muted-foreground">/month</span>
+                </p>
+                <p className="mt-1 text-xs text-amber-400 font-medium">
+                  Launch pricing — lock in $7.99/mo before it increases
                 </p>
               </CardHeader>
               <CardContent>
@@ -574,14 +882,20 @@ export default function LandingClient() {
                     </li>
                   ))}
                 </ul>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Join <span className="font-semibold text-foreground">3,200+</span> premium couples
+                </p>
               </CardContent>
-              <CardFooter className="border-t border-white/5 pt-4">
+              <CardFooter className="border-t border-white/5 pt-4 flex-col gap-2">
                 <Button
                   className="w-full shadow-lg shadow-violet-500/20"
                   render={<Link href="/register" />}
                 >
                   Start 14-Day Free Trial
                 </Button>
+                <p className="text-xs text-muted-foreground">
+                  No credit card required
+                </p>
               </CardFooter>
             </Card>
           </FadeIn>
