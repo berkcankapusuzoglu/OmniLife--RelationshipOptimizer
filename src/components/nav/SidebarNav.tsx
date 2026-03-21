@@ -13,6 +13,7 @@ import {
   Heart,
   GitCompareArrows,
   TrendingUp,
+  Gift,
   Settings,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -35,6 +36,7 @@ export const navItems: NavItem[] = [
   { label: "Partner", href: "/partner", icon: Heart },
   { label: "Compare", href: "/compare", icon: GitCompareArrows },
   { label: "Insights", href: "/insights", icon: TrendingUp },
+  { label: "Refer Friends", href: "/refer", icon: Gift },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
