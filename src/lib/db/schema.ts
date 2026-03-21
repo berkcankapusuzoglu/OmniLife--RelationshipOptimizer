@@ -100,7 +100,6 @@ export const users = pgTable("users", {
     .notNull()
     .defaultNow(),
   referralCode: text("referral_code").unique(),
-  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

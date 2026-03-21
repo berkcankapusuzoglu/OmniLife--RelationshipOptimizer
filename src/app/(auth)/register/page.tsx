@@ -19,12 +19,9 @@ import { registerAction } from "@/lib/auth/actions";
 
 export default function RegisterPage() {
   const searchParams = useSearchParams();
-<<<<<<< HEAD
   const inviteCode = searchParams.get("invite");
   const fromName = searchParams.get("from");
-=======
   const ref = searchParams.get("ref");
->>>>>>> worktree-agent-a167151a
 
   const [state, formAction, isPending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
@@ -38,24 +35,18 @@ export default function RegisterPage() {
       <CardHeader>
         <CardTitle className="text-xl">Create account</CardTitle>
         <CardDescription>
-<<<<<<< HEAD
           {fromName
             ? `${fromName} invited you to optimize your relationship together`
-=======
-          {ref
-            ? "Your friend invited you — sign up to get started"
->>>>>>> worktree-agent-a167151a
-            : "Sign up to start optimizing your relationship"}
+            : ref
+              ? "Your friend invited you — sign up to get started"
+              : "Sign up to start optimizing your relationship"}
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
-<<<<<<< HEAD
         {inviteCode && (
           <input type="hidden" name="invite" value={inviteCode} />
         )}
-=======
         {ref && <input type="hidden" name="ref" value={ref} />}
->>>>>>> worktree-agent-a167151a
         <CardContent className="flex flex-col gap-4">
           {fromName && (
             <div className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/5 p-3">
