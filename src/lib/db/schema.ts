@@ -91,9 +91,23 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  referralCode: text("referral_code").unique(),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+});
+
+// ── Referrals ─────────────────────────────────────────────────────────────────
+
+export const referrals = pgTable("referrals", {
+  id: uuid("id").primaryKey(),
+  referrerId: uuid("referrer_id").notNull(),
+  referredEmail: text("referred_email").notNull(),
+  referredUserId: uuid("referred_user_id"),
+  status: text("status").notNull().default("pending"), // pending, signed_up, rewarded
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  convertedAt: timestamp("converted_at", { withTimezone: true }),
 });
 
 // ── Daily Logs ─────────────────────────────────────────────────────────────────
@@ -264,6 +278,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   constraints: many(constraints),
   scenarioProfiles: many(scenarioProfiles),
   interventions: many(interventions),
+  referrals: many(referrals),
 }));
 
 export const dailyLogsRelations = relations(dailyLogs, ({ one, many }) => ({
@@ -328,6 +343,13 @@ export const scenarioProfilesRelations = relations(
 export const interventionsRelations = relations(interventions, ({ one }) => ({
   user: one(users, {
     fields: [interventions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const referralsRelations = relations(referrals, ({ one }) => ({
+  referrer: one(users, {
+    fields: [referrals.referrerId],
     references: [users.id],
   }),
 }));

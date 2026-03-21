@@ -12,6 +12,7 @@ import {
   Layers,
   Heart,
   TrendingUp,
+  Gift,
   Settings,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -33,6 +34,7 @@ export const navItems: NavItem[] = [
   { label: "Scenarios", href: "/scenarios", icon: Layers },
   { label: "Partner", href: "/partner", icon: Heart },
   { label: "Insights", href: "/insights", icon: TrendingUp },
+  { label: "Refer Friends", href: "/refer", icon: Gift },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 

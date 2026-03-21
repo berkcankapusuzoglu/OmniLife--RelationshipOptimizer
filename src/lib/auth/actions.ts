@@ -7,6 +7,7 @@ import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "./password";
 import { createSession, deleteSession } from "./session";
+import { processReferral } from "@/lib/referrals";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -18,6 +19,7 @@ export async function registerAction(formData: FormData) {
     email: formData.get("email"),
     password: formData.get("password"),
   };
+  const ref = formData.get("ref") as string | null;
 
   const parsed = authSchema.safeParse(raw);
   if (!parsed.success) {
@@ -43,6 +45,15 @@ export async function registerAction(formData: FormData) {
     .insert(users)
     .values({ email, passwordHash })
     .returning({ id: users.id });
+
+  // Process referral if a referral code was provided
+  if (ref) {
+    try {
+      await processReferral(ref, newUser.id, email);
+    } catch {
+      // Don't block registration if referral processing fails
+    }
+  }
 
   await createSession(newUser.id);
   redirect("/");

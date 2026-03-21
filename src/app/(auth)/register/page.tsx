@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -16,6 +17,9 @@ import { Button } from "@/components/ui/button";
 import { registerAction } from "@/lib/auth/actions";
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const ref = searchParams.get("ref");
+
   const [state, formAction, isPending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
       return await registerAction(formData);
@@ -28,10 +32,13 @@ export default function RegisterPage() {
       <CardHeader>
         <CardTitle className="text-xl">Create account</CardTitle>
         <CardDescription>
-          Sign up to start optimizing your relationship
+          {ref
+            ? "Your friend invited you — sign up to get started"
+            : "Sign up to start optimizing your relationship"}
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
+        {ref && <input type="hidden" name="ref" value={ref} />}
         <CardContent className="flex flex-col gap-4">
           {state?.error && (
             <p className="text-sm text-destructive">{state.error}</p>
