@@ -252,6 +252,16 @@ export const interventions = pgTable("interventions", {
     .defaultNow(),
 });
 
+// ── Subscribers ───────────────────────────────────────────────────────────────
+
+export const subscribers = pgTable("subscribers", {
+  id: uuid("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  source: text("source").notNull(), // "blog", "footer", "quiz_result", "landing"
+  subscribedAt: timestamp("subscribed_at", { withTimezone: true }).defaultNow(),
+  unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+});
+
 // ── Relations ──────────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ one, many }) => ({

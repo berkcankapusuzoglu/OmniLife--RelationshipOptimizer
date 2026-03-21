@@ -23,6 +23,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 import {
   Card,
   CardHeader,
@@ -900,6 +901,23 @@ export default function LandingClient() {
             </Card>
           </FadeIn>
         </div>
+      </section>
+
+      {/* ─── Newsletter CTA ──────────────────────────────────── */}
+      <section className="relative z-10 mx-auto max-w-2xl px-6 py-16">
+        <FadeIn>
+          <div className="rounded-2xl border border-white/10 bg-card/50 p-8 text-center backdrop-blur-sm">
+            <h2 className="text-2xl font-bold tracking-tight">
+              Not ready to sign up? Get free weekly tips instead.
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-muted-foreground">
+              Science-backed relationship insights delivered every Tuesday. No account needed.
+            </p>
+            <div className="mx-auto mt-6 max-w-sm">
+              <NewsletterSignup source="landing" />
+            </div>
+          </div>
+        </FadeIn>
       </section>
 
       {/* ─── Final CTA ────────────────────────────────────────── */}

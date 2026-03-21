@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getAllSlugs, getPostBySlug } from "@/lib/blog/posts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -111,6 +112,15 @@ export default async function BlogPostPage({ params }: Props) {
           className="blog-prose max-w-none text-base sm:text-lg"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
+
+        {/* Newsletter CTA */}
+        <div className="my-12 rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/5 to-purple-500/5 p-6">
+          <NewsletterSignup
+            source="blog"
+            heading="Get weekly relationship insights — free"
+            description="Science-backed tips delivered every Tuesday. No spam, unsubscribe anytime."
+          />
+        </div>
 
         {/* CTA */}
         <div className="mt-16 rounded-xl bg-card p-8 text-center ring-1 ring-foreground/10">

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -450,6 +451,19 @@ export function ResultClient({
         >
           Retake Quiz
         </Button>
+      </div>
+
+      {/* Newsletter CTA */}
+      <div
+        className={`mt-10 w-full max-w-sm rounded-xl border border-violet-500/20 bg-card/50 p-6 backdrop-blur-sm transition-all duration-700 delay-700 ${
+          showContent ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+        }`}
+      >
+        <NewsletterSignup
+          source="quiz_result"
+          heading="Get personalized tips based on your score — delivered weekly"
+          description="Free relationship insights tailored to your archetype."
+        />
       </div>
     </div>
   );

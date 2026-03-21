@@ -3,6 +3,7 @@ import {
   OrganizationJsonLd,
   WebApplicationJsonLd,
 } from "@/components/seo/json-ld";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
 export default function PublicLayout({
   children,
@@ -43,6 +44,15 @@ export default function PublicLayout({
       <main className="flex-1">{children}</main>
       <footer className="border-t py-8">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-sm">
+              <NewsletterSignup
+                source="footer"
+                heading="Stay updated with relationship science"
+                description="Weekly insights backed by research. Free forever."
+              />
+            </div>
+          </div>
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-sm text-muted-foreground">
               &copy; 2026 OmniLife. All rights reserved.
