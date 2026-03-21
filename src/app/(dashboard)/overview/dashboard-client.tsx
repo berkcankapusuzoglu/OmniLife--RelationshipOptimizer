@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { InteractiveRadar } from "@/components/charts/InteractiveRadar";
 import { TrendSparkline } from "@/components/charts/TrendSparkline";
+import { ShareScore } from "@/components/share-score";
 import type { PillarScores, RelDimScores } from "@/lib/engine/types";
 
 interface DashboardClientProps {
@@ -132,6 +133,16 @@ export function DashboardClient({
             <Sparkles className="mr-2 h-4 w-4" />
             Exercise
           </Button>
+          {latestScore && currentScores && (
+            <ShareScore
+              totalQuality={latestScore.totalQuality}
+              lifeScore={latestScore.lifeScore}
+              relScore={latestScore.relScore}
+              date={new Date().toISOString().split("T")[0]}
+              pillars={currentScores.pillars}
+              relDims={currentScores.relDims}
+            />
+          )}
         </div>
       </div>
 
