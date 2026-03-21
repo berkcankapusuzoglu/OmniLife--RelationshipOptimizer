@@ -1,19 +1,17 @@
-import { getCurrentUser } from "@/lib/auth/guard";
-import { getUserTier } from "@/lib/subscription/access";
 import { PricingClient } from "./pricing-client";
 
-export const metadata = {
-  title: "Pricing — OmniLife",
-  description: "Choose the plan that fits your relationship optimization journey",
-};
-
-export default async function PricingPage() {
-  const user = await getCurrentUser();
-  let currentTier: string | null = null;
-
-  if (user) {
-    currentTier = await getUserTier(user.id);
-  }
-
-  return <PricingClient currentTier={currentTier} isLoggedIn={!!user} />;
+export default function PricingPage() {
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-16">
+      <div className="mb-12 text-center">
+        <h1 className="text-4xl font-bold tracking-tight">
+          Simple, transparent pricing
+        </h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          Start free. Upgrade when you&apos;re ready.
+        </p>
+      </div>
+      <PricingClient currentTier="free" />
+    </div>
+  );
 }

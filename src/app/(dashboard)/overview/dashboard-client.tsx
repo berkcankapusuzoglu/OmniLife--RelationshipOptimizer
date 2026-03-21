@@ -13,6 +13,8 @@ import {
   Calendar,
   Sparkles,
 } from "lucide-react";
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { InteractiveRadar } from "@/components/charts/InteractiveRadar";
 import { TrendSparkline } from "@/components/charts/TrendSparkline";
@@ -100,6 +102,22 @@ export function DashboardClient({
   scoreTrends,
   userName,
 }: DashboardClientProps) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("upgraded") === "true") {
+      // Remove param from URL without reload
+      window.history.replaceState({}, "", "/");
+      // Simple toast-style notification
+      const toast = document.createElement("div");
+      toast.className =
+        "fixed top-4 right-4 z-50 rounded-lg bg-green-600 px-4 py-3 text-white shadow-lg animate-in fade-in slide-in-from-top-2";
+      toast.textContent = "Welcome to Premium! Your upgrade was successful.";
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+    }
+  }, [searchParams]);
+
   const defaultScores = {
     pillars: { vitality: 5, growth: 5, security: 5, connection: 5 },
     relDims: {

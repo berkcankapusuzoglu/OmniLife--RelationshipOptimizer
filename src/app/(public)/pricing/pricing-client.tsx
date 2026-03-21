@@ -1,273 +1,159 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
-import {
-  TIERS,
-  FEATURE_LABELS,
-  type Features,
-} from "@/lib/subscription/tiers";
+import { Button } from "@/components/ui/button";
+import { TIERS } from "@/lib/subscription/tiers";
+import { Check, Loader2 } from "lucide-react";
 
-interface PricingClientProps {
-  currentTier: string | null;
-  isLoggedIn: boolean;
-}
-
-const FEATURE_ORDER: (keyof Features)[] = [
-  "dailyLog",
-  "basicScores",
-  "weeklyCheckin",
-  "partnerLinking",
-  "exerciseLimit",
-  "historyDays",
-  "insights",
-  "scenarios",
-  "constraints",
-  "exportReports",
-];
-
-function formatFeatureValue(
-  feature: keyof Features,
-  value: boolean | number
-): string | null {
-  if (typeof value === "boolean") return null;
-  if (value === Infinity) return "Unlimited";
-  if (feature === "exerciseLimit") return `${value} exercises`;
-  if (feature === "historyDays") return `${value} days`;
-  return `${value}`;
-}
-
-const FAQ = [
-  {
-    q: "Can I cancel anytime?",
-    a: "Yes. Cancel from your settings page and you'll keep Premium until the end of your billing period.",
-  },
-  {
-    q: "What happens to my data if I downgrade?",
-    a: "All your data is kept. You'll just lose access to premium features like insights and scenario modes.",
-  },
-  {
-    q: "Is there a free trial?",
-    a: "Yes! Start a 7-day free trial of Premium with no credit card required.",
-  },
-  {
-    q: "Can my partner and I share a subscription?",
-    a: "Each account needs its own subscription, but partner linking is free for everyone.",
-  },
-];
-
-export function PricingClient({ currentTier, isLoggedIn }: PricingClientProps) {
+export function PricingClient({
+  currentTier,
+}: {
+  currentTier: string;
+}) {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
-  const price =
-    billing === "monthly"
-      ? TIERS.premium.price.monthly
-      : TIERS.premium.price.yearly;
-  const perMonth =
-    billing === "yearly"
-      ? (TIERS.premium.price.yearly / 12).toFixed(2)
-      : null;
+  const [loading, setLoading] = useState(false);
+
+  const isPremium = currentTier === "premium";
+
+  async function handleCheckout() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceType: billing }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("Checkout error:", data.error);
+        setLoading(false);
+      }
+    } catch {
+      setLoading(false);
+    }
+  }
+
+  async function handleManageSubscription() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("Portal error:", data.error);
+        setLoading(false);
+      }
+    } catch {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16">
-      {/* Header */}
-      <div className="mb-4 text-center">
-        <Link
-          href="/"
-          className="text-sm text-muted-foreground hover:text-foreground"
-        >
-          OmniLife
-        </Link>
-      </div>
-      <div className="mb-12 text-center">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Invest in your relationship
-        </h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          Start free. Upgrade when you need deeper insights.
-        </p>
-      </div>
-
+    <div className="space-y-8">
       {/* Billing toggle */}
-      <div className="mb-8 flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-3">
         <button
           onClick={() => setBilling("monthly")}
-          className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             billing === "monthly"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
           Monthly
         </button>
         <button
           onClick={() => setBilling("yearly")}
-          className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             billing === "yearly"
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
           Yearly
-          <Badge variant="secondary" className="ml-2 text-xs">
-            Save 38%
-          </Badge>
+          <span className="ml-1.5 text-xs opacity-80">Save 37%</span>
         </button>
       </div>
 
-      {/* Plans */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Free Plan */}
+        {/* Free tier */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Free</CardTitle>
-            <div className="mt-2">
-              <span className="text-3xl font-bold">$0</span>
-              <span className="text-muted-foreground">/forever</span>
-            </div>
+            <CardTitle className="text-xl">{TIERS.free.name}</CardTitle>
+            <p className="text-3xl font-bold">
+              $0<span className="text-base font-normal text-muted-foreground">/mo</span>
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ul className="space-y-2">
+              {TIERS.free.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                  {f}
+                </li>
+              ))}
+            </ul>
             {currentTier === "free" && (
-              <Badge variant="secondary" className="mt-2 w-fit">
+              <Button variant="outline" disabled className="w-full">
                 Current Plan
-              </Badge>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isLoggedIn ? (
-              currentTier === "free" ? (
-                <Button variant="outline" className="w-full" disabled>
-                  Your Current Plan
-                </Button>
-              ) : (
-                <Button variant="outline" className="w-full" disabled>
-                  Downgrade
-                </Button>
-              )
-            ) : (
-              <Button
-                variant="outline"
-                className="w-full"
-                render={<Link href="/register" />}
-              >
-                Get Started Free
               </Button>
             )}
-            <ul className="space-y-3">
-              {FEATURE_ORDER.map((feature) => {
-                const value = TIERS.free.features[feature];
-                const enabled =
-                  typeof value === "boolean" ? value : value > 0;
-                const label = formatFeatureValue(feature, value);
-                return (
-                  <li key={feature} className="flex items-start gap-2 text-sm">
-                    {enabled ? (
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                    ) : (
-                      <X className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" />
-                    )}
-                    <span
-                      className={enabled ? "" : "text-muted-foreground/60"}
-                    >
-                      {FEATURE_LABELS[feature]}
-                      {label && (
-                        <span className="ml-1 text-muted-foreground">
-                          ({label})
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
           </CardContent>
         </Card>
 
-        {/* Premium Plan */}
-        <Card className="relative border-purple-500/30 shadow-lg shadow-purple-500/5">
-          <div className="absolute -top-3 right-4">
-            <Badge className="bg-gradient-to-r from-purple-600 to-violet-600 text-white">
-              Recommended
-            </Badge>
-          </div>
+        {/* Premium tier */}
+        <Card className="border-primary">
           <CardHeader>
-            <CardTitle className="text-xl">Premium</CardTitle>
-            <div className="mt-2">
-              <span className="text-3xl font-bold">
-                ${billing === "monthly" ? price : perMonth}
-              </span>
-              <span className="text-muted-foreground">/month</span>
-              {billing === "yearly" && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Billed ${price}/year
-                </p>
-              )}
-            </div>
-            {currentTier === "premium" && (
-              <Badge
-                variant="secondary"
-                className="mt-2 w-fit border-purple-500/30"
-              >
-                Current Plan
-              </Badge>
+            <CardTitle className="text-xl">{TIERS.premium.name}</CardTitle>
+            <p className="text-3xl font-bold">
+              ${billing === "monthly" ? TIERS.premium.monthlyPrice : (TIERS.premium.yearlyPrice / 12).toFixed(2)}
+              <span className="text-base font-normal text-muted-foreground">/mo</span>
+            </p>
+            {billing === "yearly" && (
+              <p className="text-sm text-muted-foreground">
+                Billed ${TIERS.premium.yearlyPrice}/year
+              </p>
             )}
           </CardHeader>
           <CardContent className="space-y-4">
-            {isLoggedIn ? (
-              currentTier === "premium" ? (
-                <Button className="w-full" disabled>
-                  Your Current Plan
-                </Button>
-              ) : (
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-500 hover:to-violet-500">
-                  Start 7-Day Free Trial
-                </Button>
-              )
+            <ul className="space-y-2">
+              {TIERS.premium.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-sm">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+            {isPremium ? (
+              <Button
+                className="w-full"
+                variant="outline"
+                disabled={loading}
+                onClick={handleManageSubscription}
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Manage Subscription
+              </Button>
             ) : (
               <Button
-                className="w-full bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-500 hover:to-violet-500"
-                render={<Link href="/register" />}
+                className="w-full"
+                disabled={loading}
+                onClick={handleCheckout}
               >
-                Start 7-Day Free Trial
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Go Premium
               </Button>
             )}
-            <ul className="space-y-3">
-              {FEATURE_ORDER.map((feature) => {
-                const value = TIERS.premium.features[feature];
-                const label = formatFeatureValue(feature, value);
-                return (
-                  <li key={feature} className="flex items-start gap-2 text-sm">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-purple-400" />
-                    <span>
-                      {FEATURE_LABELS[feature]}
-                      {label && (
-                        <span className="ml-1 text-muted-foreground">
-                          ({label})
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
           </CardContent>
         </Card>
-      </div>
-
-      {/* FAQ */}
-      <div className="mt-20">
-        <h2 className="mb-8 text-center text-2xl font-bold tracking-tight">
-          Frequently Asked Questions
-        </h2>
-        <div className="grid gap-6 md:grid-cols-2">
-          {FAQ.map((item) => (
-            <div key={item.q} className="space-y-2">
-              <h3 className="font-medium">{item.q}</h3>
-              <p className="text-sm text-muted-foreground">{item.a}</p>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
