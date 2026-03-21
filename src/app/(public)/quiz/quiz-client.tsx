@@ -81,7 +81,7 @@ export function QuizClient() {
     if (step > 0) goTo(step - 1, "prev");
   };
 
-  const updateAnswer = (val: number | number[]) => {
+  const updateAnswer = (val: number | readonly number[]) => {
     const v = Array.isArray(val) ? val[0] : val;
     setAnswers((prev) => {
       const next = [...prev];
