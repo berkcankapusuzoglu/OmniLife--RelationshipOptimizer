@@ -4,12 +4,9 @@ import { useEffect } from "react";
 export function CapacitorInit() {
   useEffect(() => {
     // Only run in native Capacitor context
-    if (
-      typeof window !== "undefined" &&
-      (window as Record<string, unknown>).Capacitor &&
-      typeof (window as Record<string, unknown> & { Capacitor: { isNativePlatform: () => boolean } }).Capacitor.isNativePlatform === "function" &&
-      (window as Record<string, unknown> & { Capacitor: { isNativePlatform: () => boolean } }).Capacitor.isNativePlatform()
-    ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cap = typeof window !== "undefined" ? (window as any)?.Capacitor : null;
+    if (cap?.isNativePlatform?.()) {
       import("@capacitor/status-bar")
         .then(({ StatusBar, Style }) => {
           StatusBar.setStyle({ style: Style.Dark });
