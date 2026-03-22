@@ -4,6 +4,7 @@ import { Flame } from "lucide-react";
 
 interface StreakBadgeProps {
   currentStreak: number;
+  hasLoggedToday?: boolean;
 }
 
 function getStreakColor(streak: number): string {
@@ -21,22 +22,35 @@ function getFlameScale(streak: number): string {
   return "scale-100";
 }
 
-export function StreakBadge({ currentStreak }: StreakBadgeProps) {
+export function StreakBadge({ currentStreak, hasLoggedToday = true }: StreakBadgeProps) {
   if (currentStreak <= 0) return null;
 
-  const color = getStreakColor(currentStreak);
+  const atRisk = currentStreak > 0 && !hasLoggedToday;
+  const color = atRisk ? "text-amber-500" : getStreakColor(currentStreak);
   const scale = getFlameScale(currentStreak);
 
   return (
-    <div className="flex items-center gap-1.5 rounded-full bg-card/80 px-3 py-1 text-sm font-medium">
+    <div
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+        atRisk
+          ? "animate-pulse border border-amber-500/30 bg-amber-500/10"
+          : "bg-card/80"
+      }`}
+    >
       <Flame
         className={`h-4 w-4 ${color} ${scale} transition-transform duration-300`}
         style={{
-          animation: currentStreak >= 7 ? "streak-pulse 1.5s ease-in-out infinite" : undefined,
+          animation: atRisk
+            ? "streak-pulse 1s ease-in-out infinite"
+            : currentStreak >= 7
+              ? "streak-pulse 1.5s ease-in-out infinite"
+              : undefined,
         }}
       />
       <span className={color}>
-        {currentStreak} day{currentStreak !== 1 ? "s" : ""}
+        {atRisk
+          ? "Log today to keep your streak!"
+          : `${currentStreak} day${currentStreak !== 1 ? "s" : ""}`}
       </span>
       <style jsx>{`
         @keyframes streak-pulse {

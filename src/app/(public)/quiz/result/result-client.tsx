@@ -215,7 +215,7 @@ function RadarChart({ dimensions }: { dimensions: Dimension[] }) {
 
 // ─── Reveal phases ───────────────────────────────────────────────────
 
-type Phase = "countdown" | "counting" | "done";
+type Phase = "counting" | "done";
 
 // ─── Main component ──────────────────────────────────────────────────
 
@@ -230,8 +230,7 @@ export function ResultClient({
   dimensions: Dimension[];
   shareParam: string;
 }) {
-  const [phase, setPhase] = useState<Phase>("countdown");
-  const [countdown, setCountdown] = useState(3);
+  const [phase, setPhase] = useState<Phase>("counting");
   const [displayScore, setDisplayScore] = useState(0);
   const [copied, setCopied] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -241,18 +240,7 @@ export function ResultClient({
   const archetype = getArchetype(dimensions);
   const percentile = getPercentile(pulse);
 
-  // Phase 1: countdown 3..2..1
-  useEffect(() => {
-    if (phase !== "countdown") return;
-    if (countdown <= 0) {
-      setPhase("counting");
-      return;
-    }
-    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [phase, countdown]);
-
-  // Phase 2: count up to score
+  // Phase 1: count up to score
   useEffect(() => {
     if (phase !== "counting") return;
     let current = 0;
@@ -329,26 +317,9 @@ export function ResultClient({
     setTimeout(() => setCopied(false), 2000);
   }, [partnerShareText, shareUrl]);
 
-  // ── Countdown screen ──
-  if (phase === "countdown") {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background via-background to-purple-950/20">
-        <p className="mb-6 text-lg text-muted-foreground">
-          Your Relationship Pulse is...
-        </p>
-        <span
-          key={countdown}
-          className="animate-bounce text-8xl font-bold text-primary"
-        >
-          {countdown}
-        </span>
-      </div>
-    );
-  }
-
   // ── Score counting + final result ──
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-background via-background to-purple-950/20 px-6 py-12">
+    <div className="flex min-h-[100dvh] flex-col items-center bg-gradient-to-br from-background via-background to-purple-950/20 px-6 py-12">
       {/* Pulse ring */}
       <div className="relative mb-8 flex items-center justify-center">
         {phase === "counting" && (

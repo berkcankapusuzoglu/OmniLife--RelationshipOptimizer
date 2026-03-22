@@ -114,7 +114,7 @@ export function DailyLogForm({ onSubmit }: DailyLogFormProps) {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {PILLAR_ITEMS.map(({ key, label }) => (
-            <div key={key}>
+            <div key={key} style={{ touchAction: "none" }}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-blue-300/80">{label}</span>
                 <span className="font-mono text-sm tabular-nums">
@@ -140,7 +140,7 @@ export function DailyLogForm({ onSubmit }: DailyLogFormProps) {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {REL_ITEMS.map(({ key, label }) => (
-            <div key={key}>
+            <div key={key} style={{ touchAction: "none" }}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-rose-300/80">{label}</span>
                 <span className="font-mono text-sm tabular-nums">

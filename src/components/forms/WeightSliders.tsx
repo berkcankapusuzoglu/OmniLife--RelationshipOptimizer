@@ -115,6 +115,7 @@ export function WeightSliders({
             <span>Life (alpha)</span>
             <span>Relationship (beta)</span>
           </div>
+          <div style={{ touchAction: "none" }}>
           <Slider
             value={[Math.round(weights.alpha * 100)]}
             onValueChange={handleAlphaChange}
@@ -123,6 +124,7 @@ export function WeightSliders({
             step={1}
             className="my-3"
           />
+          </div>
           <div className="flex items-center justify-between font-mono text-sm">
             <span>{weights.alpha.toFixed(2)}</span>
             <span>{weights.beta.toFixed(2)}</span>
@@ -138,7 +140,7 @@ export function WeightSliders({
         <CardContent className="flex flex-col gap-4">
           {(Object.keys(PILLAR_LABELS) as (keyof PillarWeights)[]).map(
             (key) => (
-              <div key={key}>
+              <div key={key} style={{ touchAction: "none" }}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm text-muted-foreground">
                     {PILLAR_LABELS[key]}
@@ -176,7 +178,7 @@ export function WeightSliders({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {(Object.keys(REL_LABELS) as (keyof RelWeights)[]).map((key) => (
-            <div key={key}>
+            <div key={key} style={{ touchAction: "none" }}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-muted-foreground">
                   {REL_LABELS[key]}

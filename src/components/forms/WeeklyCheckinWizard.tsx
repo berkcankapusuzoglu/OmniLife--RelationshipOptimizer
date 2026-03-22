@@ -177,7 +177,7 @@ export function WeeklyCheckinWizard({
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {LIFE_AREAS.map(({ key, label }) => (
-              <div key={key}>
+              <div key={key} style={{ touchAction: "none" }}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm text-muted-foreground">{label}</span>
                   <span className="font-mono text-sm tabular-nums">

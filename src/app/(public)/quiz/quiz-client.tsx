@@ -62,6 +62,7 @@ export function QuizClient() {
   const [answers, setAnswers] = useState<number[]>([5, 5, 5, 5, 5]);
   const [direction, setDirection] = useState<"next" | "prev">("next");
   const [animating, setAnimating] = useState(false);
+  const [touched, setTouched] = useState<boolean[]>([false, false, false, false, false]);
 
   const currentQ = QUESTIONS[step];
   const isLastQuestion = step === QUESTIONS.length - 1;
@@ -94,6 +95,11 @@ export function QuizClient() {
 
   const updateAnswer = (val: number | readonly number[]) => {
     const v = Array.isArray(val) ? val[0] : val;
+    setTouched((prev) => {
+      const next = [...prev];
+      next[step] = true;
+      return next;
+    });
     setAnswers((prev) => {
       const next = [...prev];
       next[step] = v;
@@ -104,7 +110,7 @@ export function QuizClient() {
   // ---------- Intro screen ----------
   if (!started) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background via-background to-purple-950/20 px-6">
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-gradient-to-br from-background via-background to-purple-950/20 px-6">
         <div className="w-full max-w-lg text-center">
           <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">
             How Strong Is Your Relationship,{" "}
@@ -137,7 +143,7 @@ export function QuizClient() {
 
   // ---------- Question screens ----------
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-purple-950/20">
+    <div className="flex min-h-[100dvh] flex-col bg-gradient-to-br from-background via-background to-purple-950/20">
       {/* Progress */}
       <div className="mx-auto w-full max-w-lg px-6 pt-8">
         <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
@@ -179,7 +185,7 @@ export function QuizClient() {
             </div>
 
             {/* Slider */}
-            <div className="mx-auto max-w-md px-2">
+            <div className="mx-auto max-w-md px-2" style={{ touchAction: "none" }}>
               <Slider
                 value={[answers[step]]}
                 onValueChange={updateAnswer}
@@ -206,7 +212,7 @@ export function QuizClient() {
         >
           Back
         </Button>
-        <Button onClick={handleNext} className="min-w-[120px]">
+        <Button onClick={handleNext} className="min-w-[120px]" disabled={!touched[step]}>
           {isLastQuestion ? "See My Score" : "Next"}
         </Button>
       </div>

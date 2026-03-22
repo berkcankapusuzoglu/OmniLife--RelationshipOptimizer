@@ -154,7 +154,7 @@ export function DashboardClient({
             Your life optimization dashboard
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="hidden gap-2 md:flex">
           <Button render={<Link href="/daily" />}>
             <Calendar className="mr-2 h-4 w-4" />
             Log Today
@@ -335,6 +335,36 @@ export function DashboardClient({
           </CardContent>
         </Card>
       </div>
+      {/* Mobile bottom action bar */}
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur-sm md:hidden" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+        <Button render={<Link href="/daily" />} className="mb-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold hover:from-purple-500 hover:to-pink-500">
+          <Calendar className="mr-2 h-5 w-5" />
+          Log Today
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" render={<Link href="/exercises" />} className="flex-1">
+            <Sparkles className="mr-2 h-4 w-4" />
+            Exercise
+          </Button>
+          {latestScore && currentScores ? (
+            <ShareScore
+              totalQuality={latestScore.totalQuality}
+              lifeScore={latestScore.lifeScore}
+              relScore={latestScore.relScore}
+              date={new Date().toISOString().split("T")[0]}
+              streak={currentStreak}
+              pillars={currentScores.pillars}
+              relDims={currentScores.relDims}
+            />
+          ) : (
+            <Button variant="outline" className="flex-1" disabled>
+              Share
+            </Button>
+          )}
+        </div>
+      </div>
+      {/* Spacer for mobile bottom bar */}
+      <div className="h-32 md:hidden" />
     </div>
   );
 }

@@ -61,11 +61,22 @@ export default function RegisterPage() {
             <p className="text-sm text-destructive">{state.error}</p>
           )}
           <div className="flex flex-col gap-2">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              placeholder="Your name"
+              autoComplete="given-name"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               name="email"
               type="email"
+              inputMode="email"
               placeholder="you@example.com"
               required
               autoComplete="email"

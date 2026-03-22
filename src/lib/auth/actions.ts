@@ -19,6 +19,7 @@ export async function registerAction(formData: FormData) {
     email: formData.get("email"),
     password: formData.get("password"),
   };
+  const name = (formData.get("name") as string | null)?.trim() || null;
   const ref = formData.get("ref") as string | null;
 
   const parsed = authSchema.safeParse(raw);
@@ -43,7 +44,7 @@ export async function registerAction(formData: FormData) {
 
   const [newUser] = await db
     .insert(users)
-    .values({ email, passwordHash })
+    .values({ email, passwordHash, name })
     .returning({ id: users.id });
 
   // Auto-link if invite code is present
