@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieConsent } from "@/components/cookie-consent";
+import { CapacitorInit } from "@/components/capacitor-init";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,6 +40,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground">
         <TooltipProvider>
+          <CapacitorInit />
           {children}
           <CookieConsent />
         </TooltipProvider>
