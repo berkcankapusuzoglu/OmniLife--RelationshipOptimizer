@@ -133,7 +133,7 @@ export default async function InsightsPage() {
       <div>
         <h1 className="text-2xl font-medium tracking-tight">Insights</h1>
         <p className="text-sm text-muted-foreground">
-          Pareto frontier, trends, and personalized recommendations
+          Balance analysis, trends, and personalized recommendations
         </p>
       </div>
       <InsightsClient

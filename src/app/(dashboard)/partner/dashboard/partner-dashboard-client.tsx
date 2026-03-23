@@ -73,7 +73,7 @@ function ScoreCardDisplay({
       </CardHeader>
       <CardContent className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Total Quality</span>
+          <span className="text-sm text-muted-foreground">Overall Score</span>
           <span className="font-mono text-lg font-semibold">
             {scoreCard.totalQuality.toFixed(1)}
           </span>

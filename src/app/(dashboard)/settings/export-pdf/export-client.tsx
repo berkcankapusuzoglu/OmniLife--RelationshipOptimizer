@@ -155,7 +155,7 @@ export function ExportClient({ userTier, userName }: ExportClientProps) {
               <Card>
                 <CardContent className="py-4 text-center">
                   <p className="text-xs text-muted-foreground">
-                    Total Quality
+                    Overall Score
                   </p>
                   <p className="text-2xl font-bold">
                     {reportData.scoreSummary.latestTotalQuality?.toFixed(1) ??

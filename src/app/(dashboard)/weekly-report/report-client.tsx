@@ -240,7 +240,7 @@ export function WeeklyReportClient({
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">
-                Avg Total Quality
+                Avg Overall Score
               </p>
               <p className="text-2xl font-bold text-primary">
                 {thisAvgTotal.toFixed(1)}
@@ -278,7 +278,7 @@ export function WeeklyReportClient({
           <CardContent>
             <p className="text-sm font-medium">{bestDay.date}</p>
             <p className="text-sm text-muted-foreground">
-              Total Quality: {bestDay.totalQuality.toFixed(1)}
+              Overall Score: {bestDay.totalQuality.toFixed(1)}
             </p>
           </CardContent>
         </Card>
@@ -293,7 +293,7 @@ export function WeeklyReportClient({
           <CardContent>
             <p className="text-sm font-medium">{worstDay.date}</p>
             <p className="text-sm text-muted-foreground">
-              Total Quality: {worstDay.totalQuality.toFixed(1)}
+              Overall Score: {worstDay.totalQuality.toFixed(1)}
             </p>
           </CardContent>
         </Card>
