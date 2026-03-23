@@ -42,7 +42,7 @@ const DIM_LABELS: Record<string, string> = {
   trust: "Trust",
   fairness: "Fairness",
   stress: "Stress",
-  autonomy: "Autonomy",
+  autonomy: "Personal Space",
 };
 
 function ScoreCardDisplay({

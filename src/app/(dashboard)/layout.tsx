@@ -7,8 +7,9 @@ import { MobileNav } from "@/components/nav/MobileNav";
 import { StreakBadge } from "@/components/streak-badge";
 import { WelcomeModal } from "@/components/welcome-modal";
 import { getDb } from "@/lib/db";
-import { dailyLogs } from "@/lib/db/schema";
+import { dailyLogs, scenarioProfiles } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
+import { SCENARIO_PRESETS } from "@/lib/scenarios/presets";
 import { headers } from "next/headers";
 
 export default async function DashboardLayout({
@@ -37,6 +38,22 @@ export default async function DashboardLayout({
     .from(dailyLogs)
     .where(eq(dailyLogs.userId, user.id));
   const hasLogs = (logCountResult?.value ?? 0) > 0;
+
+  // Resolve scenario name
+  let scenarioName: string | null = null;
+  if (user.activeScenarioId) {
+    const preset = SCENARIO_PRESETS.find((p) => p.id === user.activeScenarioId);
+    if (preset) {
+      scenarioName = preset.name;
+    } else {
+      const [dbScenario] = await db
+        .select({ name: scenarioProfiles.name })
+        .from(scenarioProfiles)
+        .where(eq(scenarioProfiles.id, user.activeScenarioId))
+        .limit(1);
+      scenarioName = dbScenario?.name ?? null;
+    }
+  }
 
   return (
     <div className="flex h-full min-h-screen">
@@ -71,8 +88,8 @@ export default async function DashboardLayout({
 
           <div className="ml-auto flex items-center gap-3">
             <StreakBadge currentStreak={user.currentStreak ?? 0} />
-            {user.activeScenarioId && (
-              <Badge variant="secondary">{user.activeScenarioId}</Badge>
+            {scenarioName && scenarioName !== "Default" && (
+              <Badge variant="secondary">{scenarioName}</Badge>
             )}
           </div>
         </header>

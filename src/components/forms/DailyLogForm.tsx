@@ -42,7 +42,7 @@ const REL_ITEMS = [
   { key: "trust" as const, label: "Trust" },
   { key: "fairness" as const, label: "Fairness" },
   { key: "stress" as const, label: "Stress Mgmt" },
-  { key: "autonomy" as const, label: "Autonomy" },
+  { key: "autonomy" as const, label: "Personal Space" },
 ];
 
 const MOODS = [

@@ -91,7 +91,7 @@ const DIMENSION_LABELS: Record<string, { label: string; description: string }> =
     description: "Current stress and conflict (lower is better)",
   },
   autonomy: {
-    label: "Autonomy",
+    label: "Personal Space",
     description: "Personal space, independence, and individual identity",
   },
 };

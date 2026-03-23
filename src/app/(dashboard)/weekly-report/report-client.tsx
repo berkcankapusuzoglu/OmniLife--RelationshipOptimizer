@@ -65,7 +65,7 @@ const DIMENSION_LABELS: Record<string, string> = {
   trust: "Trust",
   fairness: "Fairness",
   stress: "Stress",
-  autonomy: "Autonomy",
+  autonomy: "Personal Space",
 };
 
 const ALL_DIMENSIONS = Object.keys(DIMENSION_LABELS);

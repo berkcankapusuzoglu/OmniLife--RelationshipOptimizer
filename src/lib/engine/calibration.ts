@@ -47,7 +47,7 @@ const REL_LABELS: Record<string, string> = {
   trust: "Trust",
   fairness: "Fairness",
   stress: "Stress Management",
-  autonomy: "Autonomy",
+  autonomy: "Personal Space",
 };
 
 function getLogDimensionValue(log: LogEntry, dim: string): number {

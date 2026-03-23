@@ -71,7 +71,7 @@ const DIMENSIONS = [
   { key: "trustScore", label: "Trust", category: "rel" },
   { key: "fairnessScore", label: "Fairness", category: "rel" },
   { key: "stressScore", label: "Stress", category: "rel" },
-  { key: "autonomyScore", label: "Autonomy", category: "rel" },
+  { key: "autonomyScore", label: "Personal Space", category: "rel" },
 ] as const;
 
 type DimKey = (typeof DIMENSIONS)[number]["key"];

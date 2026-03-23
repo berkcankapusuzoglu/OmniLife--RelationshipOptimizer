@@ -53,21 +53,42 @@ function AnimatedCounter({
   const hasAnimated = useRef(false);
 
   useEffect(() => {
+    // Reset on target change so re-mounts animate properly
+    hasAnimated.current = false;
+    setCount(0);
+  }, [target]);
+
+  useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || hasAnimated.current) return;
+
+    const runAnimation = () => {
+      if (hasAnimated.current) return;
+      hasAnimated.current = true;
+      const start = performance.now();
+      const step = (now: number) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const val = eased * target;
+        setCount(decimals > 0 ? parseFloat(val.toFixed(decimals)) : Math.floor(val));
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+
+    // If already visible, animate immediately
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      runAnimation();
+      return;
+    }
+
+    // Otherwise wait for visibility
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated.current) {
-          hasAnimated.current = true;
-          const start = performance.now();
-          const step = (now: number) => {
-            const progress = Math.min((now - start) / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            const val = eased * target;
-            setCount(decimals > 0 ? parseFloat(val.toFixed(decimals)) : Math.floor(val));
-            if (progress < 1) requestAnimationFrame(step);
-          };
-          requestAnimationFrame(step);
+        if (entry.isIntersecting) {
+          runAnimation();
+          observer.disconnect();
         }
       },
       { threshold: 0.3 }
@@ -240,7 +261,7 @@ const scoreDimensions = [
   { label: "Trust", before: 58, after: 85, color: "bg-violet-400", colorBefore: "bg-red-400" },
   { label: "Fairness", before: 42, after: 68, color: "bg-blue-400", colorBefore: "bg-red-400" },
   { label: "Stress", before: 55, after: 74, color: "bg-cyan-400", colorBefore: "bg-red-400" },
-  { label: "Autonomy", before: 53, after: 81, color: "bg-teal-400", colorBefore: "bg-red-400" },
+  { label: "Space", before: 53, after: 81, color: "bg-teal-400", colorBefore: "bg-red-400" },
 ];
 
 function HeroScorePreview() {
@@ -276,7 +297,7 @@ function HeroScorePreview() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">
-              Total Relationship Quality
+              Overall Relationship Score
             </p>
             <div className="flex items-baseline gap-3">
               <p
@@ -514,7 +535,7 @@ const stats = [
   { value: 9, suffix: "", label: "Score Dimensions" },
   { value: 37, suffix: "", label: "Guided Exercises" },
   { value: 6, suffix: "", label: "Scenario Modes" },
-  { value: 89, suffix: "%", label: "Report Improvement" },
+  { value: 2, suffix: " min", label: "Quick Daily Log" },
 ];
 
 const researchSources = [

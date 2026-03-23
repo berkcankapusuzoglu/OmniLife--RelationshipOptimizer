@@ -28,7 +28,7 @@ const REL_LABELS: Record<keyof RelWeights, string> = {
   trust: "Trust",
   fairness: "Fairness",
   stress: "Stress Mgmt",
-  autonomy: "Autonomy",
+  autonomy: "Personal Space",
 };
 
 function toNumberArray(value: number | readonly number[]): number[] {

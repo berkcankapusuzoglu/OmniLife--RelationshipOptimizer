@@ -49,7 +49,7 @@ const LIFE_AREAS = [
   { key: "trust", label: "Trust" },
   { key: "fairness", label: "Fairness" },
   { key: "stress", label: "Stress Management" },
-  { key: "autonomy", label: "Autonomy" },
+  { key: "autonomy", label: "Personal Space" },
 ] as const;
 
 const DIMENSIONS = [
