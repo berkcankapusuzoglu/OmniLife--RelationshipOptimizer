@@ -443,7 +443,7 @@ const features = [
     icon: Activity,
     title: "9-Dimension Scoring",
     description:
-      "Life score (vitality, growth, security, connection) and relationship score (emotional, trust, fairness, stress, autonomy) combine into one total quality metric.",
+      "Life score (vitality, growth, security, connection) and relationship score (emotional, trust, fairness, stress, personal space) combine into one overall score.",
     gradient: "from-violet-500 to-blue-500",
   },
   {
@@ -469,7 +469,7 @@ const features = [
   },
   {
     icon: Lightbulb,
-    title: "Insights & Pareto",
+    title: "Smart Insights",
     description:
       "See which 20% of changes will drive 80% of improvement. Weekly trend analysis with actionable takeaways.",
     gradient: "from-emerald-500 to-violet-500",
@@ -504,7 +504,7 @@ const testimonials = [
     name: "Priya & Daniel",
     role: "Together 12 years",
     quote:
-      "After over a decade together we thought we knew everything. The Pareto insights showed us blind spots we never noticed. Our Connection score went from 58 to 91.",
+      "After over a decade together we thought we knew everything. The balance insights showed us blind spots we never noticed. Our Connection score went from 58 to 91.",
     avatar: "PD",
     score: "58 \u2192 91",
   },
@@ -872,7 +872,7 @@ export default function LandingClient() {
                     "All 37 exercises unlocked",
                     "Partner linking & shared view",
                     "6 scenario modes",
-                    "Pareto analysis & deep insights",
+                    "Balance analysis & deep insights",
                     "Household task fairness tracking",
                     "Export & data portability",
                     "Priority support",

@@ -24,6 +24,7 @@ import { TrendSparkline } from "@/components/charts/TrendSparkline";
 import { ShareScore } from "@/components/share-score";
 import type { PillarScores, RelDimScores } from "@/lib/engine/types";
 import type { CrisisAlert } from "@/lib/engine/alerts";
+import { HelpTip } from "@/components/help-tip";
 
 interface DashboardClientProps {
   currentScores: {
@@ -55,12 +56,14 @@ function ScoreCard({
   trend,
   icon,
   color,
+  helpText,
 }: {
   title: string;
   value: number | null;
   trend?: number[];
   icon: React.ReactNode;
   color: string;
+  helpText?: string;
 }) {
   const trendDirection =
     trend && trend.length >= 2
@@ -70,8 +73,9 @@ function ScoreCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
           {title}
+          {helpText && <HelpTip text={helpText} />}
         </CardTitle>
         {icon}
       </CardHeader>
@@ -151,7 +155,7 @@ export function DashboardClient({
             Welcome back, {userName}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Your life optimization dashboard
+            Your relationship dashboard
           </p>
         </div>
         <div className="hidden gap-2 md:flex">
@@ -184,6 +188,7 @@ export function DashboardClient({
           trend={scoreTrends.map((s) => s.lifeScore)}
           icon={<Brain className="h-4 w-4 text-muted-foreground" />}
           color="text-blue-400"
+          helpText="Average of vitality, growth, security, and connection — how you're doing personally."
         />
         <ScoreCard
           title="Relationship Score"
@@ -191,13 +196,15 @@ export function DashboardClient({
           trend={scoreTrends.map((s) => s.relScore)}
           icon={<Heart className="h-4 w-4 text-muted-foreground" />}
           color="text-rose-400"
+          helpText="Average of emotional bond, trust, fairness, stress management, and personal space."
         />
         <ScoreCard
-          title="Total Quality"
+          title="Overall Score"
           value={latestScore?.totalQuality ?? null}
           trend={scoreTrends.map((s) => s.totalQuality)}
           icon={<Activity className="h-4 w-4 text-muted-foreground" />}
           color="text-emerald-400"
+          helpText="Combined life + relationship health. Adjusts down if any area is very low or unbalanced."
         />
       </div>
 
@@ -328,7 +335,7 @@ export function DashboardClient({
               <div className="text-left">
                 <div className="font-medium">View Insights</div>
                 <div className="text-xs text-muted-foreground">
-                  Pareto frontier & recommendations
+                  Insights & recommendations
                 </div>
               </div>
             </Button>

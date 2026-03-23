@@ -291,7 +291,7 @@ export function CompareClient({
           <CardContent className="flex flex-wrap items-center justify-center gap-6 py-4">
             {(
               [
-                ["Total Quality", "totalQuality"],
+                ["Overall Score", "totalQuality"],
                 ["Life Score", "lifeScore"],
                 ["Rel Score", "relScore"],
               ] as const
@@ -427,7 +427,7 @@ export function CompareClient({
               }
             >
               <TabsList>
-                <TabsTrigger value="totalQuality">Total Quality</TabsTrigger>
+                <TabsTrigger value="totalQuality">Overall Score</TabsTrigger>
                 <TabsTrigger value="lifeScore">Life Score</TabsTrigger>
                 <TabsTrigger value="relScore">Rel Score</TabsTrigger>
               </TabsList>
@@ -546,7 +546,7 @@ function ScoreCard({
       <CardContent className="space-y-2">
         <div>
           <p className="text-3xl font-bold">{score.totalQuality.toFixed(1)}</p>
-          <p className="text-xs text-muted-foreground">Total Quality</p>
+          <p className="text-xs text-muted-foreground">Overall Score</p>
         </div>
         <div className="flex gap-4">
           <div>

@@ -102,7 +102,7 @@ export function ConstraintsClient({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="redline">
-                      Redline (minimum floor)
+                      Minimum Score
                     </SelectItem>
                     <SelectItem value="time_budget">Time Budget</SelectItem>
                     <SelectItem value="energy_budget">Energy Budget</SelectItem>
@@ -225,7 +225,7 @@ export function ConstraintsClient({
         {initialConstraints.length === 0 && (
           <Card className="col-span-full">
             <CardContent className="py-8 text-center text-muted-foreground">
-              No constraints set. Add redlines and budgets to protect your
+              No limits set yet. Add minimum scores and budgets to protect your
               well-being.
             </CardContent>
           </Card>

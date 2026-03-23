@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
                   letterSpacing: "3px",
                 }}
               >
-                Total Quality Score
+                Overall Score
               </span>
               <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
                 <span

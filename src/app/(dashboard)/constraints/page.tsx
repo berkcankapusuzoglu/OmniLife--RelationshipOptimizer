@@ -18,9 +18,9 @@ export default async function ConstraintsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-medium tracking-tight">Constraints</h1>
+        <h1 className="text-2xl font-medium tracking-tight">Limits & Boundaries</h1>
         <p className="text-sm text-muted-foreground">
-          Set redlines, time budgets, and energy limits
+          Set minimum scores, time budgets, and energy limits
         </p>
       </div>
       <ConstraintsClient

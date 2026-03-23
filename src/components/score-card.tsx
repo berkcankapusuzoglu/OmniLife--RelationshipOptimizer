@@ -198,7 +198,7 @@ export function ShareableScoreCard({
           {/* Main Score */}
           <div className="flex flex-col items-center">
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-white/40">
-              Total Quality
+              Overall Score
             </p>
             <div className="relative">
               <span

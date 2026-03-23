@@ -85,7 +85,7 @@ export function InsightsClient({
       <TabsList>
         <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         <TabsTrigger value="action-plan">Action Plan</TabsTrigger>
-        <TabsTrigger value="pareto">Pareto Frontier</TabsTrigger>
+        <TabsTrigger value="pareto">Balance Chart</TabsTrigger>
         <TabsTrigger value="trends">Trends</TabsTrigger>
       </TabsList>
 
@@ -176,7 +176,7 @@ export function InsightsClient({
         <PremiumGate userTier={userTier} feature="insights">
           <Card>
             <CardHeader>
-              <CardTitle>Pareto Frontier</CardTitle>
+              <CardTitle>Life–Relationship Balance</CardTitle>
             </CardHeader>
             <CardContent>
               {historicalPoints.length > 0 ? (
@@ -188,7 +188,7 @@ export function InsightsClient({
                 />
               ) : (
                 <p className="py-8 text-center text-muted-foreground">
-                  Need at least a few days of data to compute the Pareto frontier.
+                  Need at least a few days of data to see your balance chart.
                 </p>
               )}
             </CardContent>

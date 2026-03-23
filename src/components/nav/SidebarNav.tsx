@@ -17,6 +17,7 @@ import {
   Settings,
   BotMessageSquare,
   ClipboardList,
+  HelpCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,7 @@ export const navItems: NavItem[] = [
   { label: "Weekly Check-in", href: "/weekly", icon: CalendarDays },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Exercises", href: "/exercises", icon: Dumbbell },
-  { label: "Constraints", href: "/constraints", icon: Shield },
+  { label: "Limits", href: "/constraints", icon: Shield },
   { label: "Scenarios", href: "/scenarios", icon: Layers },
   { label: "Partner", href: "/partner", icon: Heart },
   { label: "Compare", href: "/compare", icon: GitCompareArrows },
@@ -41,6 +42,7 @@ export const navItems: NavItem[] = [
   { label: "Weekly Report", href: "/weekly-report", icon: ClipboardList },
   { label: "AI Coach", href: "/coaching", icon: BotMessageSquare },
   { label: "Refer Friends", href: "/refer", icon: Gift },
+  { label: "How It Works", href: "/guide", icon: HelpCircle },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 

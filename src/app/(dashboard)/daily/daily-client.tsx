@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -42,7 +42,7 @@ interface NotesStep {
 
 type Step = SliderStep | DualSliderStep | NotesStep;
 
-const STEPS: Step[] = [
+const DETAILED_STEPS: Step[] = [
   {
     type: "slider",
     id: "vitality",
@@ -110,7 +110,7 @@ const STEPS: Step[] = [
   {
     type: "slider",
     id: "autonomy",
-    label: "Autonomy",
+    label: "Personal Space",
     description: "How much personal freedom do you feel in your relationship?",
     low: "Restricted",
     high: "Fully free",
@@ -133,18 +133,93 @@ const STEPS: Step[] = [
   },
 ];
 
-const TOTAL_STEPS = STEPS.length;
+const QUICK_STEPS: Step[] = [
+  {
+    type: "dual",
+    id: "mood_energy",
+    label: "Mood & Energy",
+    description: "How are you feeling today?",
+    sliders: [
+      { key: "mood", sublabel: "Mood", low: "Low", high: "Great" },
+      { key: "energy", sublabel: "Energy", low: "Drained", high: "Energized" },
+    ],
+  },
+  {
+    type: "slider",
+    id: "connection",
+    label: "Connection",
+    description: "How connected do you feel to your partner?",
+    low: "Distant",
+    high: "Deeply connected",
+  },
+  {
+    type: "slider",
+    id: "emotional",
+    label: "Communication",
+    description: "How well are you communicating with each other?",
+    low: "Poorly",
+    high: "Really well",
+  },
+  {
+    type: "slider",
+    id: "trust",
+    label: "Trust",
+    description: "How much do you trust each other right now?",
+    low: "Guarded",
+    high: "Completely",
+  },
+  {
+    type: "notes",
+    id: "notes",
+    label: "Notes",
+    description: "Anything on your mind? (optional)",
+  },
+];
+
+type Mode = "quick" | "detailed";
+
+// In Quick mode, derive the missing dimensions from the ones we do ask
+function deriveQuickScores(values: Record<string, number | string>) {
+  const mood = values.mood as number;
+  const energy = values.energy as number;
+  const connection = values.connection as number;
+  const emotional = values.emotional as number;
+  const trust = values.trust as number;
+
+  return {
+    vitality: energy,
+    growth: 5,
+    security: 5,
+    connection,
+    emotional,
+    trust,
+    fairness: Math.round((emotional + trust) / 2),
+    stress: Math.min(10, Math.max(0, mood)),
+    autonomy: 5,
+    mood,
+    energy,
+  };
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function DailyLogWizard({ userId }: { userId: string }) {
   const router = useRouter();
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("dailyLogMode") as Mode) || "quick";
+    }
+    return "quick";
+  });
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<"next" | "prev">("next");
   const [animating, setAnimating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [submitted, setSubmitted] = useState(false);
+
+  const steps = mode === "quick" ? QUICK_STEPS : DETAILED_STEPS;
+  const totalSteps = steps.length;
 
   // All values stored in a flat record
   const [values, setValues] = useState<Record<string, number | string>>({
@@ -162,8 +237,17 @@ export function DailyLogWizard({ userId }: { userId: string }) {
     notes: "",
   });
 
-  const currentStep = STEPS[step];
-  const isLast = step === TOTAL_STEPS - 1;
+  useEffect(() => {
+    localStorage.setItem("dailyLogMode", mode);
+  }, [mode]);
+
+  const switchMode = (newMode: Mode) => {
+    setMode(newMode);
+    setStep(0);
+  };
+
+  const currentStep = steps[step];
+  const isLast = step === totalSteps - 1;
 
   const goTo = useCallback(
     (next: number, dir: "next" | "prev") => {
@@ -198,19 +282,22 @@ export function DailyLogWizard({ userId }: { userId: string }) {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      const scores =
+        mode === "quick" ? deriveQuickScores(values) : values;
+
       const result = await submitDailyLog({
         userId,
-        vitality: values.vitality as number,
-        growth: values.growth as number,
-        security: values.security as number,
-        connection: values.connection as number,
-        emotional: values.emotional as number,
-        trust: values.trust as number,
-        fairness: values.fairness as number,
-        stress: values.stress as number,
-        autonomy: values.autonomy as number,
-        mood: values.mood as number,
-        energyLevel: values.energy as number,
+        vitality: scores.vitality as number,
+        growth: scores.growth as number,
+        security: scores.security as number,
+        connection: scores.connection as number,
+        emotional: scores.emotional as number,
+        trust: scores.trust as number,
+        fairness: scores.fairness as number,
+        stress: scores.stress as number,
+        autonomy: scores.autonomy as number,
+        mood: scores.mood as number,
+        energyLevel: scores.energy as number,
         notes: (values.notes as string) || "",
       });
 
@@ -258,15 +345,39 @@ export function DailyLogWizard({ userId }: { userId: string }) {
   return (
     <>
       <div className="flex min-h-[100dvh] flex-col">
-        {/* Progress bar */}
+        {/* Mode toggle + Progress bar */}
         <div className="mx-auto w-full max-w-lg px-6 pt-6">
+          {/* Mode toggle */}
+          <div className="mb-4 flex items-center justify-center gap-1 rounded-full bg-muted p-1">
+            <button
+              onClick={() => switchMode("quick")}
+              className={`flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                mode === "quick"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Quick (2 min)
+            </button>
+            <button
+              onClick={() => switchMode("detailed")}
+              className={`flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                mode === "detailed"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Detailed (5 min)
+            </button>
+          </div>
+
           <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              Step {step + 1} of {TOTAL_STEPS}
+              Step {step + 1} of {totalSteps}
             </span>
-            <span>{Math.round(((step + 1) / TOTAL_STEPS) * 100)}%</span>
+            <span>{Math.round(((step + 1) / totalSteps) * 100)}%</span>
           </div>
-          <Progress value={((step + 1) / TOTAL_STEPS) * 100} />
+          <Progress value={((step + 1) / totalSteps) * 100} />
         </div>
 
         {/* Question area */}
