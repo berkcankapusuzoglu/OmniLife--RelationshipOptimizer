@@ -61,21 +61,24 @@ export function SettingsClient({
   const [weights, setWeights] = useState<Weights>(initialWeights);
   const [saving, setSaving] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
 
   const isPremium = user.subscriptionTier === "premium";
 
   async function handleManageSubscription() {
     setBillingLoading(true);
+    setBillingError(null);
     try {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
-        console.error("Portal error:", data.error);
+        setBillingError("Billing portal is not available. Please contact support.");
         setBillingLoading(false);
       }
     } catch {
+      setBillingError("Something went wrong. Please try again.");
       setBillingLoading(false);
     }
   }
@@ -144,6 +147,20 @@ export function SettingsClient({
             <CardTitle>Optimization Weights</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="rounded-lg border border-border/40 bg-muted/30 p-4 text-sm text-muted-foreground space-y-2 mb-4">
+              <p className="font-semibold text-foreground">What do weights do?</p>
+              <p>
+                Your Overall Score is a <strong>weighted average</strong> of your Life Score and Relationship Score.
+                Within each category, individual dimensions contribute according to their relative weights.
+              </p>
+              <p>
+                <strong>Example:</strong> If sleep and energy are your priority, increase Vitality weight. If trust is
+                the focus, raise Trust weight. The app ranks higher-weighted dimensions more prominently in scores and exercise suggestions.
+              </p>
+              <p>
+                Adjusting one dimension redistributes the remaining weight proportionally across the others. Use the number input for precise control or &ldquo;Reset equal&rdquo; to start over.
+              </p>
+            </div>
             <WeightSliders weights={weights} onChange={setWeights} />
             <Button
               disabled={saving}
@@ -258,6 +275,11 @@ export function SettingsClient({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {billingError && (
+              <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {billingError}
+              </p>
+            )}
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div>
                 <p className="font-medium">

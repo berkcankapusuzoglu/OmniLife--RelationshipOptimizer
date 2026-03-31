@@ -5,6 +5,8 @@ import type { Weights, PillarWeights, RelWeights } from "@/lib/engine/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 
 interface WeightSlidersProps {
   weights: Weights;
@@ -103,6 +105,20 @@ export function WeightSliders({
     [weights, onChange]
   );
 
+  const handleResetPillars = useCallback(() => {
+    onChange({
+      ...weights,
+      pillar: { vitality: 0.25, growth: 0.25, security: 0.25, connection: 0.25 },
+    });
+  }, [weights, onChange]);
+
+  const handleResetRel = useCallback(() => {
+    onChange({
+      ...weights,
+      rel: { emotional: 0.2, trust: 0.2, fairness: 0.2, stress: 0.2, autonomy: 0.2 },
+    });
+  }, [weights, onChange]);
+
   return (
     <div className="flex flex-col gap-4">
       {/* Alpha / Beta balance */}
@@ -135,27 +151,41 @@ export function WeightSliders({
       {/* Life pillar weights */}
       <Card>
         <CardHeader>
-          <CardTitle>Life Pillar Weights</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Life Pillar Weights</CardTitle>
+            <Button variant="ghost" size="sm" onClick={handleResetPillars} className="h-7 gap-1 text-xs text-muted-foreground">
+              <RotateCcw className="h-3 w-3" />
+              Reset equal
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {(Object.keys(PILLAR_LABELS) as (keyof PillarWeights)[]).map(
             (key) => (
-              <div key={key} style={{ touchAction: "none" }}>
+              <div key={key}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm text-muted-foreground">
                     {PILLAR_LABELS[key]}
                   </span>
-                  <span className="font-mono text-sm">
-                    {weights.pillar[key].toFixed(2)}
-                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={Math.round(weights.pillar[key] * 100)}
+                    onChange={(e) => handlePillarChange(key, [Number(e.target.value)])}
+                    className="w-14 rounded border border-input bg-background px-2 py-0.5 text-right font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
                 </div>
-                <Slider
-                  value={[Math.round(weights.pillar[key] * 100)]}
-                  onValueChange={(v) => handlePillarChange(key, v)}
-                  min={0}
-                  max={100}
-                  step={1}
-                />
+                <div style={{ touchAction: "none" }}>
+                  <Slider
+                    value={[Math.round(weights.pillar[key] * 100)]}
+                    onValueChange={(v) => handlePillarChange(key, v)}
+                    min={0}
+                    max={100}
+                    step={1}
+                  />
+                </div>
               </div>
             )
           )}
@@ -174,26 +204,40 @@ export function WeightSliders({
       {/* Relationship dimension weights */}
       <Card>
         <CardHeader>
-          <CardTitle>Relationship Dimension Weights</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Relationship Dimension Weights</CardTitle>
+            <Button variant="ghost" size="sm" onClick={handleResetRel} className="h-7 gap-1 text-xs text-muted-foreground">
+              <RotateCcw className="h-3 w-3" />
+              Reset equal
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {(Object.keys(REL_LABELS) as (keyof RelWeights)[]).map((key) => (
-            <div key={key} style={{ touchAction: "none" }}>
+            <div key={key}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm text-muted-foreground">
                   {REL_LABELS[key]}
                 </span>
-                <span className="font-mono text-sm">
-                  {weights.rel[key].toFixed(2)}
-                </span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={Math.round(weights.rel[key] * 100)}
+                  onChange={(e) => handleRelChange(key, [Number(e.target.value)])}
+                  className="w-14 rounded border border-input bg-background px-2 py-0.5 text-right font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                />
               </div>
-              <Slider
-                value={[Math.round(weights.rel[key] * 100)]}
-                onValueChange={(v) => handleRelChange(key, v)}
-                min={0}
-                max={100}
-                step={1}
-              />
+              <div style={{ touchAction: "none" }}>
+                <Slider
+                  value={[Math.round(weights.rel[key] * 100)]}
+                  onValueChange={(v) => handleRelChange(key, v)}
+                  min={0}
+                  max={100}
+                  step={1}
+                />
+              </div>
             </div>
           ))}
           <Separator />
