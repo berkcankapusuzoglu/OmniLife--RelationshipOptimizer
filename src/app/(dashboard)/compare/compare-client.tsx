@@ -339,17 +339,19 @@ export function CompareClient({
                 <PolarGrid stroke="hsl(var(--border))" />
                 <PolarAngleAxis
                   dataKey="dimension"
-                  tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+                  tick={({ x, y, payload }: { x: string | number; y: string | number; payload: { value: string } }) => {
+                    const nx = Number(x);
+                    const ny = Number(y);
                     const item = radarData.find((d) => d.dimension === payload.value);
                     const myVal = item ? (item[userName] as number) : null;
                     const pVal = item ? (item[partnerName] as number) : null;
                     return (
                       <g>
-                        <text x={x} y={y - 4} textAnchor="middle" fill="#e2e8f0" fontSize={11} fontWeight={500}>
+                        <text x={nx} y={ny - 4} textAnchor="middle" fill="#e2e8f0" fontSize={11} fontWeight={500}>
                           {payload.value}
                         </text>
                         {myVal !== null && pVal !== null && (
-                          <text x={x} y={y + 10} textAnchor="middle" fontSize={9} fill="#94a3b8">
+                          <text x={nx} y={ny + 10} textAnchor="middle" fontSize={9} fill="#94a3b8">
                             {myVal} / {pVal}
                           </text>
                         )}
@@ -378,7 +380,6 @@ export function CompareClient({
                   fillOpacity={0.2}
                 />
                 <Tooltip
-                  formatter={(value: number, name: string) => [value.toFixed(1), name]}
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
