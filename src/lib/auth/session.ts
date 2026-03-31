@@ -48,6 +48,12 @@ export async function getSession(): Promise<{ userId: string } | null> {
   }
 }
 
+export async function renewSession(userId: string): Promise<void> {
+  const existing = await getSession();
+  if (!existing || existing.userId !== userId) return;
+  await createSession(userId);
+}
+
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
