@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { getUserTier } from "@/lib/subscription/access";
 import { CoachingClient } from "./coaching-client";
+import { BackButton } from "@/components/back-button";
 import { getRecentSession } from "./actions";
 
 export default async function CoachingPage() {
@@ -12,7 +13,10 @@ export default async function CoachingPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-medium tracking-tight">AI Coach</h1>
+        <div className="flex items-center gap-3 mb-1">
+          <BackButton />
+          <h1 className="text-2xl font-medium tracking-tight">AI Coach</h1>
+        </div>
         <p className="text-sm text-muted-foreground">
           Get personalized relationship guidance based on your data
         </p>

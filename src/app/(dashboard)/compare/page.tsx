@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { BackButton } from "@/components/back-button";
 
 export default async function ComparePage() {
   const user = await requireAuth();
@@ -79,9 +80,12 @@ export default async function ComparePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-medium tracking-tight">
-          Couples Comparison
-        </h1>
+        <div className="flex items-center gap-3 mb-1">
+          <BackButton />
+          <h1 className="text-2xl font-medium tracking-tight">
+            Couples Comparison
+          </h1>
+        </div>
         <p className="text-sm text-muted-foreground">
           See how you and {partnerData.partner?.name ?? "your partner"} align
           across all dimensions

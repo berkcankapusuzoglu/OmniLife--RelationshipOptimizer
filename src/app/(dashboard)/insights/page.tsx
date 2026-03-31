@@ -7,6 +7,7 @@ import { findParetoFrontier } from "@/lib/engine/pareto";
 import { generateRecommendations } from "@/lib/recommendations/rules";
 import { detectTrendViolations } from "@/lib/engine/trends";
 import { getUserTier, getFeatureLimits } from "@/lib/subscription/access";
+import { BackButton } from "@/components/back-button";
 import type { Constraint } from "@/lib/engine/types";
 
 export default async function InsightsPage() {
@@ -131,7 +132,10 @@ export default async function InsightsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-medium tracking-tight">Insights</h1>
+        <div className="flex items-center gap-3 mb-1">
+          <BackButton />
+          <h1 className="text-2xl font-medium tracking-tight">Insights</h1>
+        </div>
         <p className="text-sm text-muted-foreground">
           Balance analysis, trends, and personalized recommendations
         </p>

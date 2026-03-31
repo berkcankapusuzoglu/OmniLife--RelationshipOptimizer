@@ -4,6 +4,7 @@ import { users, scores } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { getCoupleBonus } from "@/lib/subscription/couple-bonus";
 import { PartnerClient } from "./partner-client";
+import { BackButton } from "@/components/back-button";
 
 export default async function PartnerPage() {
   const user = await requireAuth();
@@ -45,7 +46,10 @@ export default async function PartnerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-medium tracking-tight">Partner</h1>
+        <div className="flex items-center gap-3 mb-1">
+          <BackButton />
+          <h1 className="text-2xl font-medium tracking-tight">Partner</h1>
+        </div>
         <p className="text-sm text-muted-foreground">
           Link accounts to share tasks and insights
         </p>
