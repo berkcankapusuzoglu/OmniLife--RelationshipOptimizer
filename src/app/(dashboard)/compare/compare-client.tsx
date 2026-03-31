@@ -457,12 +457,10 @@ export function CompareClient({
       </Card>
 
       {/* ── Trend Comparison (Premium) ─────────────────────────────────── */}
-      <PremiumGate userTier={userTier} feature="insights">
-        <Card>
-          <CardHeader>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-base">Trend Comparison</CardTitle>
-          </CardHeader>
-          <CardContent>
             <Tabs
               value={trendMetric}
               onValueChange={(v) =>
@@ -472,12 +470,16 @@ export function CompareClient({
               }
             >
               <TabsList>
-                <TabsTrigger value="totalQuality">Overall Score</TabsTrigger>
-                <TabsTrigger value="lifeScore">Life Score</TabsTrigger>
-                <TabsTrigger value="relScore">Rel Score</TabsTrigger>
+                <TabsTrigger value="totalQuality">Overall</TabsTrigger>
+                <TabsTrigger value="lifeScore">Life</TabsTrigger>
+                <TabsTrigger value="relScore">Rel</TabsTrigger>
               </TabsList>
             </Tabs>
-            <div className="mt-4 h-64">
+          </div>
+        </CardHeader>
+        <CardContent>
+          <PremiumGate userTier={userTier} feature="insights">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData}>
                   <CartesianGrid
@@ -526,9 +528,9 @@ export function CompareClient({
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
-      </PremiumGate>
+          </PremiumGate>
+        </CardContent>
+      </Card>
 
       {/* ── Communication Prompts ──────────────────────────────────────── */}
       {prompts.length > 0 && (
