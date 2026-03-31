@@ -326,12 +326,29 @@ export function CompareClient({
                 <PolarGrid stroke="hsl(var(--border))" />
                 <PolarAngleAxis
                   dataKey="dimension"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                  tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+                    const item = radarData.find((d) => d.dimension === payload.value);
+                    const myVal = item ? (item[userName] as number) : null;
+                    const pVal = item ? (item[partnerName] as number) : null;
+                    return (
+                      <g>
+                        <text x={x} y={y - 4} textAnchor="middle" fill="#e2e8f0" fontSize={11} fontWeight={500}>
+                          {payload.value}
+                        </text>
+                        {myVal !== null && pVal !== null && (
+                          <text x={x} y={y + 10} textAnchor="middle" fontSize={9} fill="#94a3b8">
+                            {myVal} / {pVal}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  }}
                 />
                 <PolarRadiusAxis
                   angle={90}
                   domain={[0, 10]}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                  tick={{ fill: "#64748b", fontSize: 10 }}
+                  tickCount={6}
                 />
                 <Radar
                   name={userName}
@@ -346,6 +363,16 @@ export function CompareClient({
                   stroke="#2dd4bf"
                   fill="#2dd4bf"
                   fillOpacity={0.2}
+                />
+                <Tooltip
+                  formatter={(value: number, name: string) => [value.toFixed(1), name]}
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                    color: "hsl(var(--foreground))",
+                  }}
                 />
                 <Legend />
               </RadarChart>
