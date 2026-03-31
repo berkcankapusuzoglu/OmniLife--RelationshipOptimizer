@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from "react";
+import { initAndroidBackHandler } from "@/lib/capacitor/back-handler";
 
 export function CapacitorInit() {
   useEffect(() => {
@@ -7,6 +8,8 @@ export function CapacitorInit() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cap = typeof window !== "undefined" ? (window as any)?.Capacitor : null;
     if (cap?.isNativePlatform?.()) {
+      initAndroidBackHandler();
+
       import("@capacitor/status-bar")
         .then(({ StatusBar, Style }) => {
           StatusBar.setStyle({ style: Style.Dark });
