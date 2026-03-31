@@ -48,6 +48,7 @@ interface DashboardClientProps {
   longestStreak: number;
   trendAlerts?: { dimension: string; message: string }[];
   crisisAlerts?: CrisisAlert[];
+  latestNotes?: string | null;
 }
 
 function ScoreCard({
@@ -117,6 +118,7 @@ export function DashboardClient({
   longestStreak,
   trendAlerts = [],
   crisisAlerts = [],
+  latestNotes,
 }: DashboardClientProps) {
   const searchParams = useSearchParams();
 
@@ -342,6 +344,17 @@ export function DashboardClient({
           </CardContent>
         </Card>
       </div>
+      {latestNotes && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Today&apos;s Note</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed">{latestNotes}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Mobile bottom action bar */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur-sm md:hidden" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
         <Button render={<Link href="/daily" />} className="mb-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold hover:from-purple-500 hover:to-pink-500">

@@ -98,6 +98,7 @@ export default async function DashboardPage() {
       longestStreak={user.longestStreak ?? 0}
       trendAlerts={trendAlerts}
       crisisAlerts={crisisAlerts}
+      latestNotes={latestLog?.notes ?? null}
     />
   );
 }
