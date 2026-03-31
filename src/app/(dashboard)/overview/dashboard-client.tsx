@@ -283,6 +283,12 @@ export function DashboardClient({
             )}
           </CardContent>
         </Card>
+        <p className="text-center text-xs text-muted-foreground -mt-2">
+          Customize dimension importance in{" "}
+          <Link href="/settings?tab=weights" className="underline underline-offset-2 hover:text-foreground transition-colors">
+            Settings → Weights
+          </Link>
+        </p>
 
         <Card>
           <CardHeader>
