@@ -76,6 +76,18 @@ const DIMENSIONS = [
 
 type DimKey = (typeof DIMENSIONS)[number]["key"];
 
+const DIMENSION_DEFS: Record<string, string> = {
+  vitalityScore: "How physically energized and healthy you feel — sleep, exercise, and daily energy levels.",
+  growthScore: "Your sense of learning, progress, and personal development right now.",
+  securityScore: "Stability in finances, career, housing, and confidence in the future.",
+  connectionScore: "Depth of emotional bond and quality time spent with your partner.",
+  emotionalScore: "How supported, heard, and emotionally safe you feel in the relationship.",
+  trustScore: "Reliability, honesty, and confidence you have in each other.",
+  fairnessScore: "Whether responsibilities, effort, and resources feel equally shared.",
+  stressScore: "How well you are managing stress — higher score means less stressed.",
+  autonomyScore: "Your sense of personal space, independence, and identity within the relationship.",
+};
+
 // ── Insight generators ──────────────────────────────────────────────────────
 
 function gapInsight(dim: string, myVal: number, partnerVal: number): string {
@@ -193,6 +205,7 @@ export function CompareClient({
   const [trendMetric, setTrendMetric] = useState<
     "totalQuality" | "lifeScore" | "relScore"
   >("totalQuality");
+  const [expandedDim, setExpandedDim] = useState<string | null>(null);
 
   const myLatestScore = myScores[0] ?? null;
   const partnerLatestScore = partnerScores[0] ?? null;
@@ -404,9 +417,9 @@ export function CompareClient({
               <tbody>
                 {gapData.map((row) => (
                   <tr key={row.dim} className="border-b border-border/50">
-                    <td className="py-2.5 pr-4">
+                    <td className="py-2.5 pr-4 cursor-pointer" onClick={() => setExpandedDim(expandedDim === row.dim ? null : row.dim)}>
                       <div className="flex items-center gap-2">
-                        {row.label}
+                        <span className="font-medium">{row.label}</span>
                         <Badge
                           variant="outline"
                           className="text-[10px] px-1.5 py-0"
@@ -414,6 +427,11 @@ export function CompareClient({
                           {row.category === "life" ? "Life" : "Rel"}
                         </Badge>
                       </div>
+                      {expandedDim === row.dim && (
+                        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                          {DIMENSION_DEFS[row.dim]}
+                        </p>
+                      )}
                     </td>
                     <td className="py-2.5 pr-4 text-right font-medium text-purple-400">
                       {row.myVal}
