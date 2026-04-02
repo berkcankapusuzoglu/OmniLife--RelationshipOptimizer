@@ -8,7 +8,14 @@
 // NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 export function getAppUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  // NEXT_PUBLIC_ vars are embedded at build time in client bundles but may not
+  // be available as runtime env vars in server functions — use NEXT_PUBLIC_APP_URL
+  // with a fallback to the known production URL.
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.APP_URL ??
+    "https://omnilife-relationship-optimizer.vercel.app"
+  );
 }
 
 export function getStripePriceId(

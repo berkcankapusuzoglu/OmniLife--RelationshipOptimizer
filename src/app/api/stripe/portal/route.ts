@@ -26,13 +26,18 @@ export async function POST() {
     );
   }
 
-  const stripe = getStripe();
   const appUrl = getAppUrl();
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: user.stripeCustomerId,
-    return_url: `${appUrl}/settings`,
-  });
-
-  return NextResponse.json({ url: portalSession.url });
+  try {
+    const stripe = getStripe();
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: `${appUrl}/settings`,
+    });
+    return NextResponse.json({ url: portalSession.url });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Stripe error";
+    console.error("Stripe portal error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

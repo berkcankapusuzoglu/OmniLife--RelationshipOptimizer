@@ -178,6 +178,39 @@ const QUICK_STEPS: Step[] = [
 
 type Mode = "quick" | "detailed";
 
+// Adaptive steps — shown in quick mode when mood drops significantly
+const ADAPTIVE_STRESS_STEP: Step = {
+  type: "slider",
+  id: "stress",
+  label: "Stress Management",
+  description: "You seem to be having a tough day. How well are you handling stress together?",
+  low: "Struggling",
+  high: "Managing well",
+};
+
+const ADAPTIVE_SECURITY_STEP: Step = {
+  type: "slider",
+  id: "security",
+  label: "Security",
+  description: "How secure and stable does your life feel right now?",
+  low: "Uncertain",
+  high: "Rock solid",
+};
+
+// Weekly calibration step — shown once per week to fine-tune derived scores
+const CALIBRATION_STEP: Step = {
+  type: "calibration" as "dual", // rendered specially, typed as dual for TS compat
+  id: "calibration",
+  label: "Weekly Fine-tune",
+  description: "Quick check — are these estimates still accurate for you?",
+  sliders: [
+    { key: "growth", sublabel: "Growth", low: "Stagnant", high: "Flourishing" },
+    { key: "security", sublabel: "Security", low: "Uncertain", high: "Rock solid" },
+    { key: "fairness", sublabel: "Fairness", low: "Very unequal", high: "Balanced" },
+    { key: "autonomy", sublabel: "Personal Space", low: "Restricted", high: "Fully free" },
+  ],
+};
+
 // In Quick mode, derive the missing dimensions from the ones we do ask
 function deriveQuickScores(values: Record<string, number | string>) {
   const mood = values.mood as number;
@@ -188,22 +221,56 @@ function deriveQuickScores(values: Record<string, number | string>) {
 
   return {
     vitality: energy,
-    growth: 5,
-    security: 5,
+    growth: values.growth as number,
+    security: values.security as number,
     connection,
     emotional,
     trust,
-    fairness: Math.round((emotional + trust) / 2),
-    stress: Math.min(10, Math.max(0, mood)),
-    autonomy: 5,
+    fairness: values.fairness as number,
+    stress: values.stress as number,
+    autonomy: values.autonomy as number,
     mood,
     energy,
   };
 }
 
+function isCalibrationDue(): boolean {
+  if (typeof window === "undefined") return false;
+  const last = localStorage.getItem("lastCalibrationDate");
+  if (!last) return true;
+  const daysSince = Math.floor(
+    (Date.now() - new Date(last).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return daysSince >= 7;
+}
+
+function markCalibrationDone() {
+  localStorage.setItem(
+    "lastCalibrationDate",
+    new Date().toISOString().split("T")[0]
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DailyLogWizard({ userId }: { userId: string }) {
+interface DailyLogWizardProps {
+  userId: string;
+  recentMoodAvg: number | null;
+  totalLogs: number;
+  calibrationDefaults: {
+    growth: number;
+    security: number;
+    fairness: number;
+    autonomy: number;
+  } | null;
+}
+
+export function DailyLogWizard({
+  userId,
+  recentMoodAvg,
+  totalLogs,
+  calibrationDefaults,
+}: DailyLogWizardProps) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(() => {
     if (typeof window !== "undefined") {
@@ -218,24 +285,45 @@ export function DailyLogWizard({ userId }: { userId: string }) {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [submitted, setSubmitted] = useState(false);
 
-  const steps = mode === "quick" ? QUICK_STEPS : DETAILED_STEPS;
+  // Adaptive: track whether mood dropped enough to show extra steps
+  const [adaptiveTriggered, setAdaptiveTriggered] = useState(false);
+
+  // Calibration: show once per week after 5+ logs
+  const [showCalibration] = useState(
+    () => mode === "quick" && totalLogs >= 5 && isCalibrationDue()
+  );
+
+  // Build dynamic quick steps based on adaptive + calibration state
+  const steps = (() => {
+    if (mode === "detailed") return DETAILED_STEPS;
+    const base = [...QUICK_STEPS];
+    // Insert adaptive steps before notes (last step)
+    if (adaptiveTriggered) {
+      base.splice(base.length - 1, 0, ADAPTIVE_STRESS_STEP, ADAPTIVE_SECURITY_STEP);
+    }
+    // Insert calibration before notes
+    if (showCalibration) {
+      base.splice(base.length - 1, 0, CALIBRATION_STEP);
+    }
+    return base;
+  })();
   const totalSteps = steps.length;
 
-  // All values stored in a flat record
-  const [values, setValues] = useState<Record<string, number | string>>({
+  // All values stored in a flat record — calibration defaults pre-fill derived dims
+  const [values, setValues] = useState<Record<string, number | string>>(() => ({
     vitality: 5,
-    growth: 5,
-    security: 5,
+    growth: calibrationDefaults?.growth ?? 5,
+    security: calibrationDefaults?.security ?? 5,
     connection: 5,
     emotional: 5,
     trust: 5,
-    fairness: 5,
+    fairness: calibrationDefaults?.fairness ?? 5,
     stress: 5,
-    autonomy: 5,
+    autonomy: calibrationDefaults?.autonomy ?? 5,
     mood: 5,
     energy: 5,
     notes: "",
-  });
+  }));
 
   useEffect(() => {
     localStorage.setItem("dailyLogMode", mode);
@@ -277,13 +365,37 @@ export function DailyLogWizard({ userId }: { userId: string }) {
   const updateValue = (key: string, val: number | readonly number[]) => {
     const v = Array.isArray(val) ? val[0] : val;
     setValues((prev) => ({ ...prev, [key]: v }));
+
+    // Adaptive: if mood drops 2+ below recent average, trigger extra steps
+    if (
+      key === "mood" &&
+      mode === "quick" &&
+      !adaptiveTriggered &&
+      recentMoodAvg !== null &&
+      typeof v === "number" &&
+      v <= recentMoodAvg - 2
+    ) {
+      setAdaptiveTriggered(true);
+    }
   };
 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      // In quick mode without adaptive, stress defaults to mood value
+      const finalValues = { ...values };
+      if (mode === "quick" && !adaptiveTriggered) {
+        finalValues.stress = Math.min(10, Math.max(0, finalValues.mood as number));
+        finalValues.fairness = Math.round(
+          ((finalValues.emotional as number) + (finalValues.trust as number)) / 2
+        );
+      }
+      // If calibration was shown, mark it done
+      if (mode === "quick" && showCalibration) {
+        markCalibrationDone();
+      }
       const scores =
-        mode === "quick" ? deriveQuickScores(values) : values;
+        mode === "quick" ? deriveQuickScores(finalValues) : finalValues;
 
       const result = await submitDailyLog({
         userId,
@@ -412,9 +524,14 @@ export function DailyLogWizard({ userId }: { userId: string }) {
                 />
               )}
 
-              {/* Dual slider step */}
+              {/* Dual slider step (also used for calibration) */}
               {currentStep.type === "dual" && (
                 <div className="space-y-10">
+                  {currentStep.id === "calibration" && (
+                    <p className="text-center text-sm text-muted-foreground">
+                      These are estimated from your recent logs. Adjust anything that feels off.
+                    </p>
+                  )}
                   {currentStep.sliders.map((s) => (
                     <div key={s.key}>
                       <div className="mb-4 text-center text-sm font-medium text-muted-foreground">

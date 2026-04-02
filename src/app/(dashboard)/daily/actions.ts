@@ -15,6 +15,8 @@ import { updateStreak } from "@/lib/streaks";
 import { checkMilestones } from "@/lib/milestones";
 import type { Milestone } from "@/lib/milestones";
 import { trackEvent } from "@/lib/analytics/track";
+import { optimizeAllocations } from "@/lib/engine/optimizer";
+import type { OptimizerResult } from "@/lib/engine/types";
 
 export async function submitDailyLog(data: {
   userId: string;
@@ -30,7 +32,7 @@ export async function submitDailyLog(data: {
   mood: number;
   energyLevel: number;
   notes: string;
-}): Promise<{ milestones: Milestone[] }> {
+}): Promise<{ milestones: Milestone[]; optimizerResult?: OptimizerResult }> {
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];
 
@@ -255,7 +257,28 @@ export async function submitDailyLog(data: {
     trackEvent("milestone_achieved", { milestoneId: m.id, milestoneName: m.name }, data.userId);
   }
 
+  // Run Nelder-Mead optimizer to suggest optimal allocations
+  let optimizerResult: OptimizerResult | undefined;
+  try {
+    const optResult = optimizeAllocations(
+      { pillars, relDims },
+      weights,
+      typedConstraints,
+    );
+    const gainFromOptimization =
+      Math.round(
+        (optResult.predictedScores.totalQuality - computed.totalQuality) * 100,
+      ) / 100;
+    optimizerResult = {
+      ...optResult,
+      currentTotalQuality: computed.totalQuality,
+      gainFromOptimization,
+    };
+  } catch {
+    // optimizer is non-critical — never block the log submission
+  }
+
   revalidatePath("/", "layout");
 
-  return { milestones: newMilestones };
+  return { milestones: newMilestones, optimizerResult };
 }

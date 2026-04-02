@@ -37,4 +37,5 @@ export async function submitWeeklyCheckin(data: {
   });
 
   revalidatePath("/", "layout");
+  redirect("/overview");
 }

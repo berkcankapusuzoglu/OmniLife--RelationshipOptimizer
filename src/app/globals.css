@@ -131,6 +131,14 @@
   }
 }
 
+/* Native app safe area support */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Prose-like typography for blog content */
 .blog-prose {
   line-height: 1.75;

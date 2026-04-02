@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { getDb } from "@/lib/db";
 import { dailyLogs, scores } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { DailyLogWizard } from "./daily-client";
 import Link from "next/link";
 
@@ -82,5 +82,44 @@ export default async function DailyPage() {
     );
   }
 
-  return <DailyLogWizard userId={user.id} />;
+  // Fetch recent logs for adaptive prompting + calibration
+  const recentLogs = await db
+    .select({
+      mood: dailyLogs.mood,
+      date: dailyLogs.date,
+      growth: dailyLogs.growthScore,
+      security: dailyLogs.securityScore,
+      fairness: dailyLogs.fairnessScore,
+      autonomy: dailyLogs.autonomyScore,
+    })
+    .from(dailyLogs)
+    .where(eq(dailyLogs.userId, user.id))
+    .orderBy(desc(dailyLogs.date))
+    .limit(10);
+
+  const totalQuickLogs = recentLogs.length;
+  const recentMoodAvg =
+    recentLogs.length > 0
+      ? recentLogs.reduce((sum, l) => sum + l.mood, 0) / recentLogs.length
+      : null;
+
+  // Compute recent averages for calibration pre-fill
+  const calibrationDefaults =
+    recentLogs.length >= 3
+      ? {
+          growth: Math.round(recentLogs.reduce((s, l) => s + l.growth, 0) / recentLogs.length),
+          security: Math.round(recentLogs.reduce((s, l) => s + l.security, 0) / recentLogs.length),
+          fairness: Math.round(recentLogs.reduce((s, l) => s + l.fairness, 0) / recentLogs.length),
+          autonomy: Math.round(recentLogs.reduce((s, l) => s + l.autonomy, 0) / recentLogs.length),
+        }
+      : null;
+
+  return (
+    <DailyLogWizard
+      userId={user.id}
+      recentMoodAvg={recentMoodAvg}
+      totalLogs={totalQuickLogs}
+      calibrationDefaults={calibrationDefaults}
+    />
+  );
 }

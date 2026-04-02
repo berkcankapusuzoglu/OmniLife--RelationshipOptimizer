@@ -107,3 +107,20 @@ export interface TheoryReference {
   actionableInsight: string;
   sourceReference: string;
 }
+
+export interface OptimizerResult {
+  recommendedAllocations: Record<string, number>;
+  predictedScores: { lifeScore: number; relScore: number; totalQuality: number };
+  tradeoffs: string[];
+  currentTotalQuality: number;
+  gainFromOptimization: number;
+}
+
+export interface ParetoAnalysis {
+  isOnFrontier: boolean;
+  distanceFromFrontier: number;
+  nearestFrontierPoint: { lifeScore: number; relScore: number } | null;
+  lifeScoreGap: number;
+  relScoreGap: number;
+  laggingDimensions: string[];
+}

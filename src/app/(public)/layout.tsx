@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackButton } from "@/components/back-button";
 
 export default function PublicLayout({
   children,
@@ -8,12 +9,15 @@ export default function PublicLayout({
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-border/40 px-6 py-4">
-        <Link
-          href="/"
-          className="text-lg font-semibold tracking-tight text-foreground"
-        >
-          OmniLife
-        </Link>
+        <div className="flex items-center gap-4">
+          <BackButton />
+          <Link
+            href="/"
+            className="text-lg font-semibold tracking-tight text-foreground"
+          >
+            OmniLife
+          </Link>
+        </div>
       </header>
       <main className="flex-1">{children}</main>
       <footer className="border-t border-border/40 px-6 py-6 text-sm text-muted-foreground">

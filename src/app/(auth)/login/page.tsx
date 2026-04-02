@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -15,7 +16,18 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { loginAction } from "@/lib/auth/actions";
 
-export default function LoginPage() {
+function ResetSuccessBanner() {
+  const searchParams = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "success";
+  if (!resetSuccess) return null;
+  return (
+    <p className="text-sm text-emerald-500">
+      Password reset successfully. Sign in with your new password.
+    </p>
+  );
+}
+
+function LoginForm() {
   const [state, formAction, isPending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
       return await loginAction(formData);
@@ -33,6 +45,9 @@ export default function LoginPage() {
       </CardHeader>
       <form action={formAction}>
         <CardContent className="flex flex-col gap-4">
+          <Suspense fallback={null}>
+            <ResetSuccessBanner />
+          </Suspense>
           {state?.error && (
             <p className="text-sm text-destructive">{state.error}</p>
           )}
@@ -49,7 +64,15 @@ export default function LoginPage() {
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-muted-foreground hover:text-primary"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <Input
               id="password"
               name="password"
@@ -75,4 +98,8 @@ export default function LoginPage() {
       </form>
     </Card>
   );
+}
+
+export default function LoginPage() {
+  return <LoginForm />;
 }

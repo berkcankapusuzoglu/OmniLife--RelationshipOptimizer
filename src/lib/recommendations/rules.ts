@@ -7,6 +7,14 @@ import type {
 import { EXERCISES } from './exercises';
 import { THEORY_REFERENCES } from './psychology';
 
+export interface ParetoRuleInput {
+  isOnFrontier: boolean;
+  nearestFrontierPoint: { lifeScore: number; relScore: number } | null;
+  currentLifeScore: number;
+  currentRelScore: number;
+  laggingDimensions: string[];
+}
+
 function pickExercise(
   targetDimension: string,
   recentExerciseIds: string[],
@@ -58,6 +66,7 @@ export function generateRecommendations(
   relDims: RelDimScores,
   violations: ConstraintViolation[],
   recentExerciseIds: string[],
+  paretoInput?: ParetoRuleInput,
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
   let idCounter = 1;
@@ -113,6 +122,24 @@ export function generateRecommendations(
       theoryBasis: theoryFor("Gottman's Sound Relationship House"),
       targetDimension: violation.dimension,
       priority: 7,
+    });
+  }
+
+  // ── Rule 3b: Pareto frontier — off the frontier ──
+  if (paretoInput && !paretoInput.isOnFrontier && paretoInput.nearestFrontierPoint) {
+    const { nearestFrontierPoint, currentLifeScore, currentRelScore, laggingDimensions } = paretoInput;
+    const primaryLag = laggingDimensions[0] ?? 'emotional';
+    const exerciseId = pickExercise(primaryLag, recentExerciseIds);
+    const lifeGap = Math.round((nearestFrontierPoint.lifeScore - currentLifeScore) * 10) / 10;
+    const relGap = Math.round((nearestFrontierPoint.relScore - currentRelScore) * 10) / 10;
+    recommendations.push({
+      id: nextId(),
+      type: 'improvement',
+      title: "You're below your historical best",
+      description: `Your past self achieved Life ${nearestFrontierPoint.lifeScore.toFixed(1)} / Rel ${nearestFrontierPoint.relScore.toFixed(1)}. You're currently ${lifeGap > 0 ? lifeGap + ' life points' : ''} ${relGap > 0 ? (lifeGap > 0 ? 'and ' : '') + relGap + ' rel points' : ''} behind that peak. Focus on ${laggingDimensions.slice(0, 2).join(' and ')} to return to the frontier.${exerciseId ? ` Try exercise ${exerciseId}.` : ''}`,
+      theoryBasis: theoryFor('Positive Psychology (PERMA)'),
+      targetDimension: primaryLag,
+      priority: 8,
     });
   }
 

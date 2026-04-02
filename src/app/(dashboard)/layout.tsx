@@ -22,11 +22,7 @@ export default async function DashboardLayout({
   // Redirect to onboarding if not completed (avoid infinite redirect loop on /onboarding itself)
   if (!user.onboardingCompleted) {
     const headersList = await headers();
-    // Next.js sets x-invoke-path internally for server components
-    const pathname =
-      headersList.get("x-invoke-path") ??
-      headersList.get("x-next-url") ??
-      "";
+    const pathname = headersList.get("x-pathname") ?? "";
     if (!pathname.startsWith("/onboarding")) {
       redirect("/onboarding");
     }
@@ -78,23 +74,25 @@ export default async function DashboardLayout({
 
       {/* Main content area */}
       <div className="flex flex-1 flex-col">
-        {/* Top bar */}
-        <header className="flex h-14 items-center gap-3 border-b bg-card px-4">
-          <MobileNav />
+        {/* Top bar — safe-top adds padding for status bar on native */}
+        <header className="safe-top flex items-center gap-3 border-b bg-card px-4">
+          <div className="flex h-14 w-full items-center gap-3">
+            <MobileNav />
 
-          <span className="text-lg font-bold tracking-tight md:hidden">
-            OmniLife
-          </span>
+            <span className="text-lg font-bold tracking-tight md:hidden">
+              OmniLife
+            </span>
 
-          <div className="ml-auto flex items-center gap-3">
-            <StreakBadge currentStreak={user.currentStreak ?? 0} />
-            {scenarioName && scenarioName !== "Default" && (
-              <Badge variant="secondary">{scenarioName}</Badge>
-            )}
+            <div className="ml-auto flex items-center gap-3">
+              <StreakBadge currentStreak={user.currentStreak ?? 0} />
+              {scenarioName && scenarioName !== "Default" && (
+                <Badge variant="secondary">{scenarioName}</Badge>
+              )}
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 pb-20 sm:p-6 sm:pb-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-6">
           {children}
         </main>
       </div>

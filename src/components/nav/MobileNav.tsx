@@ -62,8 +62,8 @@ export function MobileNav() {
         </SheetContent>
       </Sheet>
 
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background sm:hidden">
-        <nav className="flex items-center justify-around py-1.5">
+      <div className="safe-bottom fixed inset-x-0 bottom-0 z-50 border-t bg-card sm:hidden">
+        <nav className="flex items-center justify-around py-2">
           {bottomTabs.map((tab) => {
             const isActive =
               pathname === tab.href ||
@@ -75,13 +75,18 @@ export function MobileNav() {
                 key={tab.href}
                 href={tab.href}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium transition-colors",
+                  "flex flex-col items-center gap-1 px-3 py-1 text-[10px] font-medium transition-colors",
                   isActive
                     ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon
+                  className={cn(
+                    "h-5 w-5",
+                    isActive && "stroke-[2.5px]"
+                  )}
+                />
                 <span>{tab.label}</span>
               </Link>
             );

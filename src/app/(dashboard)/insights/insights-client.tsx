@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Lightbulb, TrendingUp, Target } from "lucide-react";
+import { AlertTriangle, Lightbulb, TrendingUp, Target, Zap, MapPin } from "lucide-react";
 import { ParetoChart } from "@/components/charts/ParetoChart";
 import { PremiumGate } from "@/components/premium-gate";
-import type { Recommendation } from "@/lib/engine/types";
+import type { Recommendation, OptimizerResult, ParetoAnalysis } from "@/lib/engine/types";
 import type { ActionPlanItem } from "@/lib/recommendations/action-plan";
 import {
   LineChart,
@@ -40,6 +40,8 @@ interface InsightsClientProps {
   userTier: string;
   actionPlan?: ActionPlanItem[];
   partnerPoints?: { lifeScore: number; relScore: number; date: string }[];
+  paretoAnalysis?: ParetoAnalysis | null;
+  optimizerResult?: OptimizerResult | null;
 }
 
 const PILLAR_COLORS: Record<string, string> = {
@@ -79,6 +81,8 @@ export function InsightsClient({
   userTier,
   actionPlan = [],
   partnerPoints,
+  paretoAnalysis,
+  optimizerResult,
 }: InsightsClientProps) {
   return (
     <Tabs defaultValue="recommendations" className="space-y-4">
@@ -86,6 +90,7 @@ export function InsightsClient({
         <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         <TabsTrigger value="action-plan">Action Plan</TabsTrigger>
         <TabsTrigger value="pareto">Balance Chart</TabsTrigger>
+        <TabsTrigger value="optimizer">Optimizer</TabsTrigger>
         <TabsTrigger value="trends">Trends</TabsTrigger>
       </TabsList>
 
@@ -194,6 +199,143 @@ export function InsightsClient({
             </CardContent>
           </Card>
         </PremiumGate>
+      </TabsContent>
+
+      <TabsContent value="optimizer" className="space-y-4">
+        {/* Pareto frontier status */}
+        {paretoAnalysis ? (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <MapPin className={`h-4 w-4 ${paretoAnalysis.isOnFrontier ? "text-emerald-400" : "text-amber-400"}`} />
+                <CardTitle className="text-base">Pareto Frontier Status</CardTitle>
+                <Badge variant={paretoAnalysis.isOnFrontier ? "secondary" : "default"} className="ml-auto">
+                  {paretoAnalysis.isOnFrontier ? "On Frontier" : "Below Frontier"}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {paretoAnalysis.isOnFrontier ? (
+                <p className="text-sm text-emerald-400">
+                  You are on your Pareto frontier — today&apos;s state is among your historical best. Keep it up!
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm">
+                    You are <span className="font-medium">{paretoAnalysis.distanceFromFrontier.toFixed(1)} points</span> below
+                    your historical frontier. Your past best was Life{" "}
+                    <span className="font-mono font-medium text-blue-400">
+                      {paretoAnalysis.nearestFrontierPoint?.lifeScore.toFixed(1)}
+                    </span>{" "}
+                    / Rel{" "}
+                    <span className="font-mono font-medium text-pink-400">
+                      {paretoAnalysis.nearestFrontierPoint?.relScore.toFixed(1)}
+                    </span>
+                    .
+                  </p>
+                  <div className="flex gap-4 text-sm">
+                    {paretoAnalysis.lifeScoreGap > 0 && (
+                      <span className="text-muted-foreground">
+                        Life gap: <span className="font-mono text-blue-400">+{paretoAnalysis.lifeScoreGap}</span>
+                      </span>
+                    )}
+                    {paretoAnalysis.relScoreGap > 0 && (
+                      <span className="text-muted-foreground">
+                        Rel gap: <span className="font-mono text-pink-400">+{paretoAnalysis.relScoreGap}</span>
+                      </span>
+                    )}
+                  </div>
+                  {paretoAnalysis.laggingDimensions.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-xs text-muted-foreground">Lagging dimensions:</span>
+                      {paretoAnalysis.laggingDimensions.map((dim) => (
+                        <Badge key={dim} variant="outline" className="text-xs capitalize">{dim}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="py-6 text-center text-muted-foreground text-sm">
+              Log more days to enable Pareto frontier analysis.
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Optimizer result */}
+        {optimizerResult ? (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-yellow-400" />
+                <CardTitle className="text-base">Nelder-Mead Optimizer</CardTitle>
+                <Badge
+                  variant={optimizerResult.gainFromOptimization > 1 ? "default" : "secondary"}
+                  className="ml-auto"
+                >
+                  {optimizerResult.gainFromOptimization > 0
+                    ? `+${optimizerResult.gainFromOptimization.toFixed(1)} pts`
+                    : "Optimal"}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-4 text-sm">
+                <span className="text-muted-foreground">
+                  Current quality:{" "}
+                  <span className="font-mono font-medium text-foreground">
+                    {optimizerResult.currentTotalQuality.toFixed(1)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">→</span>
+                <span className="text-muted-foreground">
+                  Predicted:{" "}
+                  <span className="font-mono font-medium text-emerald-400">
+                    {optimizerResult.predictedScores.totalQuality.toFixed(1)}
+                  </span>
+                </span>
+              </div>
+
+              {optimizerResult.gainFromOptimization > 0.5 && (
+                <>
+                  <Separator />
+                  <p className="text-xs font-medium text-muted-foreground">Suggested focus allocations (0–10 scale):</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(optimizerResult.recommendedAllocations).map(([dim, val]) => (
+                      <div key={dim} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
+                        <span className="capitalize text-muted-foreground">{dim}</span>
+                        <span className="font-mono font-medium">{val.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {optimizerResult.tradeoffs.length > 0 && (
+                <>
+                  <Separator />
+                  <p className="text-xs font-medium text-muted-foreground">Tradeoffs:</p>
+                  <ul className="space-y-1">
+                    {optimizerResult.tradeoffs.map((t, i) => (
+                      <li key={i} className="text-xs text-muted-foreground">
+                        • {t}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="py-6 text-center text-muted-foreground text-sm">
+              Log your daily scores to run the optimizer.
+            </CardContent>
+          </Card>
+        )}
       </TabsContent>
 
       <TabsContent value="trends" className="space-y-4">

@@ -1,0 +1,10 @@
+node_modules/
+.next/
+out/
+android/
+ios/
+package-lock.json
+drizzle/
+*.png
+*.ico
+*.svg

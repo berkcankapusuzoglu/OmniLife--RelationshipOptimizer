@@ -266,6 +266,21 @@ export const interventions = pgTable("interventions", {
     .defaultNow(),
 });
 
+// ── Password Resets ───────────────────────────────────────────────────────────
+
+export const passwordResets = pgTable("password_resets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ── Subscribers ───────────────────────────────────────────────────────────────
 
 export const subscribers = pgTable("subscribers", {

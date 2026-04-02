@@ -27,17 +27,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const appUrl = getAppUrl();
-  const stripe = getStripe();
+  // Derive app URL from the incoming request to avoid env var issues
+  const origin = request.headers.get("origin") ?? request.headers.get("x-forwarded-host");
+  const appUrl = origin?.startsWith("http")
+    ? origin
+    : `https://${origin ?? "omnilife-relationship-optimizer.vercel.app"}`;
 
-  const checkoutSession = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    payment_method_types: ["card"],
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${appUrl}/overview?upgraded=true`,
-    cancel_url: `${appUrl}/pricing`,
-    client_reference_id: session.userId,
-  });
-
-  return NextResponse.json({ url: checkoutSession.url });
+  try {
+    const stripe = getStripe();
+    const checkoutSession = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${appUrl}/overview?upgraded=true`,
+      cancel_url: `${appUrl}/pricing`,
+      client_reference_id: session.userId,
+    });
+    return NextResponse.json({ url: checkoutSession.url });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Stripe error";
+    console.error("Stripe checkout error:", message, "appUrl:", appUrl, "priceId:", priceId);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
