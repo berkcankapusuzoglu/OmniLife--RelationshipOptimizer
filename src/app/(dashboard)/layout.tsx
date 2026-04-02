@@ -19,10 +19,11 @@ export default async function DashboardLayout({
 }) {
   const user = await requireAuth();
 
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+
   // Redirect to onboarding if not completed (avoid infinite redirect loop on /onboarding itself)
   if (!user.onboardingCompleted) {
-    const headersList = await headers();
-    const pathname = headersList.get("x-pathname") ?? "";
     if (!pathname.startsWith("/onboarding")) {
       redirect("/onboarding");
     }
@@ -97,7 +98,8 @@ export default async function DashboardLayout({
         </main>
       </div>
 
-      <WelcomeModal hasLogs={hasLogs} />
+      {/* Don't show welcome modal during onboarding — it would cover the onboarding form */}
+      {!pathname.startsWith("/onboarding") && <WelcomeModal hasLogs={hasLogs} />}
     </div>
   );
 }

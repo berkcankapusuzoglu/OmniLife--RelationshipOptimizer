@@ -7,8 +7,8 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border/40 px-6 py-4">
+    <div className="flex min-h-[100dvh] flex-col">
+      <header className="safe-top border-b border-border/40 px-6 py-4">
         <div className="flex items-center gap-4">
           <BackButton />
           <Link
