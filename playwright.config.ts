@@ -9,7 +9,7 @@ export default defineConfig({
     {
       // iPhone 14 Pro viewport: 393×852, notch simulated via safe-area CSS.
       // Uses Chromium (not WebKit) so only chromium browser binary is needed.
-      name: 'iPhone 14',
+      name: 'iphone14',
       use: {
         ...devices['iPhone 14'],
         browserName: 'chromium',
@@ -24,14 +24,14 @@ export default defineConfig({
     },
     {
       // Pixel 7 viewport: 412×915
-      name: 'Pixel 7',
+      name: 'pixel7',
       use: {
         ...devices['Pixel 7'],
         browserName: 'chromium',
       },
     },
     {
-      name: 'Desktop Chrome',
+      name: 'desktop',
       use: { ...devices['Desktop Chrome'], browserName: 'chromium' },
     },
   ],
