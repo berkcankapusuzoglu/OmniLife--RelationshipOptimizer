@@ -62,6 +62,8 @@ export function SettingsClient({
 }) {
   const [weights, setWeights] = useState<Weights>(initialWeights);
   const [saving, setSaving] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
 
@@ -102,8 +104,14 @@ export function SettingsClient({
           </CardHeader>
           <CardContent>
             <form
-              action={async (formData) => {
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setProfileSaving(true);
+                const formData = new FormData(e.currentTarget);
                 await updateProfile(formData);
+                setProfileSaving(false);
+                setProfileSaved(true);
+                setTimeout(() => setProfileSaved(false), 3000);
               }}
               className="space-y-4"
             >
@@ -126,9 +134,9 @@ export function SettingsClient({
                   disabled
                 />
               </div>
-              <Button type="submit">
+              <Button type="submit" disabled={profileSaving}>
                 <Save className="mr-2 h-4 w-4" />
-                Save Changes
+                {profileSaving ? "Saving..." : profileSaved ? "Saved ✓" : "Save Changes"}
               </Button>
             </form>
 

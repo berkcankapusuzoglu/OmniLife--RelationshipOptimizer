@@ -19,8 +19,16 @@ export function getAppUrl(): string {
 }
 
 export function getStripePriceId(
-  priceType: "monthly" | "yearly"
+  priceType: "monthly" | "yearly",
+  tier: "pro" | "premium" = "premium"
 ): string {
+  if (tier === "pro") {
+    // Pro-specific price IDs — fall back to premium price IDs if not configured yet
+    if (priceType === "monthly") {
+      return process.env.STRIPE_PRO_MONTHLY_PRICE_ID ?? process.env.STRIPE_MONTHLY_PRICE_ID ?? "";
+    }
+    return process.env.STRIPE_PRO_YEARLY_PRICE_ID ?? process.env.STRIPE_YEARLY_PRICE_ID ?? "";
+  }
   if (priceType === "monthly") {
     return process.env.STRIPE_MONTHLY_PRICE_ID ?? "";
   }

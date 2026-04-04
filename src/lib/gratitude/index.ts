@@ -12,49 +12,49 @@ type DimensionScores = {
 
 const TEMPLATES: Record<keyof DimensionScores, string[]> = {
   vitality: [
-    "feeling more energetic today",
-    "my body feeling stronger",
-    "having more physical energy",
+    "the energy I felt in my body today",
+    "my physical strength and vitality",
+    "the boost of energy I experienced today",
   ],
   growth: [
-    "learning something new today",
-    "making progress on my goals",
-    "growing as a person",
+    "the opportunity to learn and grow today",
+    "the progress I made toward my goals",
+    "my continued personal growth",
   ],
   security: [
-    "feeling more financially secure",
-    "having stability in my life",
+    "the financial security I have in my life",
+    "the stability I have in my life",
     "the sense of safety I feel",
   ],
   connection: [
     "the meaningful connections in my life",
-    "feeling more socially connected",
+    "the social bonds I have",
     "the people who care about me",
   ],
   emotional: [
-    "feeling more emotionally connected with my partner",
+    "the emotional connection I share with my partner",
     "the emotional closeness we share",
-    "feeling understood",
+    "the feeling of being truly understood",
   ],
   trust: [
     "the trust in my relationship",
     "my partner's reliability",
-    "feeling more secure with my partner",
+    "the sense of security I have with my partner",
   ],
   fairness: [
-    "feeling the balance in my relationship",
+    "the balance in my relationship",
     "the mutual respect we have",
-    "things feeling more equal",
+    "the sense of equality we share",
   ],
   stress: [
-    "feeling calmer today than yesterday",
-    "reduced stress in my life",
-    "having more peace of mind",
+    "the calm I felt today",
+    "a reduction in my stress today",
+    "the peace of mind I have right now",
   ],
   autonomy: [
-    "having more personal freedom",
-    "being able to pursue my own goals",
-    "feeling more independent",
+    "the personal freedom I have",
+    "the ability to pursue my own goals",
+    "my sense of independence",
   ],
 };
 

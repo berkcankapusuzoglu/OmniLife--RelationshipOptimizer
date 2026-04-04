@@ -124,7 +124,7 @@ const RESOURCE_LINKS: Record<string, { label: string; url: string }[]> = {
     { label: "Building Energy and Vitality", url: "https://www.helpguide.org/articles/healthy-living/how-to-have-more-energy.htm" },
   ],
   growth: [
-    { label: "Personal Growth Strategies", url: "https://www.mindtools.com/pages/article/personal-development.htm" },
+    { label: "Personal Growth Strategies", url: "https://jamesclear.com/continuous-improvement" },
   ],
   security: [
     { label: "Financial Security Planning", url: "https://www.consumer.ftc.gov/topics/money-credit" },
@@ -133,7 +133,7 @@ const RESOURCE_LINKS: Record<string, { label: string; url: string }[]> = {
     { label: "Building Stronger Social Connections", url: "https://www.helpguide.org/articles/relationships-communication/making-good-friends.htm" },
   ],
   imbalance: [
-    { label: "Life Balance Assessment", url: "https://www.mindtools.com/pages/article/newHTE_93.htm" },
+    { label: "Life Balance Assessment", url: "https://www.berkeleywellbeing.com/work-life-balance.html" },
   ],
   pareto: [
     { label: "Habit Stacking for Improvement", url: "https://jamesclear.com/habit-stacking" },

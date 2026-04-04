@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const priceType = body.priceType as "monthly" | "yearly";
+  const tier = (body.tier === "pro" ? "pro" : "premium") as "pro" | "premium";
 
   if (priceType !== "monthly" && priceType !== "yearly") {
     return NextResponse.json(
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const priceId = getStripePriceId(priceType);
+  const priceId = getStripePriceId(priceType, tier);
   if (!priceId) {
     return NextResponse.json(
       { error: "Stripe price ID not configured" },
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       success_url: `${appUrl}/overview?upgraded=true`,
       cancel_url: `${appUrl}/pricing`,
       client_reference_id: session.userId,
+      metadata: { tier },
     });
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err) {

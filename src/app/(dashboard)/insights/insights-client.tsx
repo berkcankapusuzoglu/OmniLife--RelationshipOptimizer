@@ -19,9 +19,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  ScatterChart,
-  Scatter,
-  ReferenceLine,
 } from "recharts";
 
 interface InsightsClientProps {
@@ -128,10 +125,8 @@ export function InsightsClient({
       <div className="overflow-x-auto">
         <TabsList className="w-max min-w-full">
           <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-          <TabsTrigger value="action-plan">Action Plan</TabsTrigger>
-          <TabsTrigger value="pareto">Balance Chart</TabsTrigger>
-          <TabsTrigger value="optimizer">Optimizer</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
+          <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced</TabsTrigger>
         </TabsList>
       </div>
 
@@ -195,7 +190,97 @@ export function InsightsClient({
         )}
       </TabsContent>
 
-      <TabsContent value="action-plan" className="space-y-4">
+      <TabsContent value="progress" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Life Pillar Trends</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trendData.length > 1 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: "#999", fontSize: 12 }}
+                    tickFormatter={(v) => v.slice(5)}
+                  />
+                  <YAxis domain={[0, 10]} tick={{ fill: "#999", fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1c1c1c",
+                      border: "1px solid #333",
+                      borderRadius: 8,
+                    }}
+                  />
+                  <Legend />
+                  {Object.entries(PILLAR_COLORS).map(([key, color]) => (
+                    <Line
+                      key={key}
+                      type="monotone"
+                      dataKey={key}
+                      stroke={color}
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="py-8 text-center text-muted-foreground">
+                Log for multiple days to see trends.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Relationship Dimension Trends</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trendData.length > 1 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: "#999", fontSize: 12 }}
+                    tickFormatter={(v) => v.slice(5)}
+                  />
+                  <YAxis domain={[0, 10]} tick={{ fill: "#999", fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1c1c1c",
+                      border: "1px solid #333",
+                      borderRadius: 8,
+                    }}
+                  />
+                  <Legend />
+                  {Object.entries(REL_COLORS).map(([key, color]) => (
+                    <Line
+                      key={key}
+                      type="monotone"
+                      dataKey={key}
+                      stroke={color}
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="py-8 text-center text-muted-foreground">
+                Log for multiple days to see trends.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="advanced" className="space-y-4">
+        {/* Action Plan section */}
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Action Plan</h3>
         {actionPlan.length > 0 ? (
           actionPlan.map((item) => (
             <Card key={item.dimension} className="overflow-hidden">
@@ -242,9 +327,9 @@ export function InsightsClient({
             </CardContent>
           </Card>
         )}
-      </TabsContent>
 
-      <TabsContent value="pareto">
+        {/* Balance Chart section */}
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 mt-6">Life–Relationship Balance</h3>
         <PremiumGate userTier={userTier} feature="insights">
           <Card>
             <CardHeader>
@@ -266,100 +351,34 @@ export function InsightsClient({
             </CardContent>
           </Card>
         </PremiumGate>
-      </TabsContent>
 
-      <TabsContent value="optimizer" className="space-y-4">
-        {/* Pareto frontier scatter plot */}
-        {historicalPoints.length > 1 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Life vs. Relationship Score History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={260}>
-                <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis
-                    type="number"
-                    dataKey="lifeScore"
-                    name="Life"
-                    domain={[0, 100]}
-                    tick={{ fill: "#999", fontSize: 11 }}
-                    label={{ value: "Life Score", position: "insideBottom", offset: -2, fill: "#999", fontSize: 11 }}
-                  />
-                  <YAxis
-                    type="number"
-                    dataKey="relScore"
-                    name="Rel"
-                    domain={[0, 100]}
-                    tick={{ fill: "#999", fontSize: 11 }}
-                    label={{ value: "Rel Score", angle: -90, position: "insideLeft", fill: "#999", fontSize: 11 }}
-                  />
-                  <Tooltip
-                    cursor={{ strokeDasharray: "3 3" }}
-                    contentStyle={{ backgroundColor: "#1c1c1c", border: "1px solid #333", borderRadius: 8 }}
-                    formatter={(v: unknown) => typeof v === "number" ? v.toFixed(1) : String(v)}
-                  />
-                  {/* Historical points */}
-                  <Scatter
-                    name="History"
-                    data={historicalPoints}
-                    fill="#6b7280"
-                    opacity={0.5}
-                    r={4}
-                  />
-                  {/* Frontier points */}
-                  <Scatter
-                    name="Frontier"
-                    data={frontierPoints}
-                    fill="#fbbf24"
-                    r={6}
-                  />
-                  {/* Current point */}
-                  {currentPoint && (
-                    <Scatter
-                      name="Today"
-                      data={[currentPoint]}
-                      fill="#ef4444"
-                      r={8}
-                    />
-                  )}
-                </ScatterChart>
-              </ResponsiveContainer>
-              <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-500 opacity-60" />Historical</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />Frontier best</span>
-                <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />Today</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Optimizer section */}
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3 mt-6">Focus Optimizer</h3>
 
-        {/* Pareto frontier status */}
+        {/* How You Compare to Your Best */}
         {paretoAnalysis ? (
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <MapPin className={`h-4 w-4 shrink-0 ${paretoAnalysis.isOnFrontier ? "text-emerald-400" : "text-amber-400"}`} />
                 <CardTitle className="text-base flex-1 min-w-0">
-                  Pareto Frontier Status
-                  <InfoTooltip text="The Pareto frontier shows the best combinations of Life Score and Relationship Score you've ever achieved. If you're 'below the frontier', it means you've been in a better overall state before — the suggestions below show which areas to focus on to get back there." />
+                  How You Compare to Your Best
+                  <InfoTooltip text="This compares today's scores to every day you've ever logged. 'At Your Best' means today is one of your strongest days ever. 'Room to Improve' means you've been in a better balanced state before — the gaps below show what to work on." />
                 </CardTitle>
                 <Badge variant={paretoAnalysis.isOnFrontier ? "secondary" : "default"} className="ml-auto shrink-0">
-                  {paretoAnalysis.isOnFrontier ? "On Frontier" : "Below Frontier"}
+                  {paretoAnalysis.isOnFrontier ? "At Your Best" : "Room to Improve"}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {paretoAnalysis.isOnFrontier ? (
                 <p className="text-sm text-emerald-400">
-                  You are on your Pareto frontier — today&apos;s state is among your historical best. Keep it up!
+                  You are at your personal best — today matches your strongest historical state. Keep it up!
                 </p>
               ) : (
                 <>
                   <p className="text-sm">
-                    You are <span className="font-medium">{paretoAnalysis.distanceFromFrontier.toFixed(1)} points</span> below
-                    your historical frontier. Your past best was Life{" "}
+                    You&apos;ve been <span className="font-medium">{paretoAnalysis.distanceFromFrontier.toFixed(1)} points</span> stronger before. Your past best was Life{" "}
                     <span className="font-mono font-medium text-blue-400">
                       {paretoAnalysis.nearestFrontierPoint?.lifeScore.toFixed(1)}
                     </span>{" "}
@@ -396,7 +415,7 @@ export function InsightsClient({
         ) : (
           <Card>
             <CardContent className="py-6 text-center text-muted-foreground text-sm">
-              Log more days to enable Pareto frontier analysis.
+              Log more days to enable this analysis.
             </CardContent>
           </Card>
         )}
@@ -498,94 +517,6 @@ export function InsightsClient({
             </CardContent>
           </Card>
         )}
-      </TabsContent>
-
-      <TabsContent value="trends" className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Life Pillar Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {trendData.length > 1 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: "#999", fontSize: 12 }}
-                    tickFormatter={(v) => v.slice(5)}
-                  />
-                  <YAxis domain={[0, 10]} tick={{ fill: "#999", fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1c1c1c",
-                      border: "1px solid #333",
-                      borderRadius: 8,
-                    }}
-                  />
-                  <Legend />
-                  {Object.entries(PILLAR_COLORS).map(([key, color]) => (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={color}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="py-8 text-center text-muted-foreground">
-                Log for multiple days to see trends.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Relationship Dimension Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {trendData.length > 1 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: "#999", fontSize: 12 }}
-                    tickFormatter={(v) => v.slice(5)}
-                  />
-                  <YAxis domain={[0, 10]} tick={{ fill: "#999", fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1c1c1c",
-                      border: "1px solid #333",
-                      borderRadius: 8,
-                    }}
-                  />
-                  <Legend />
-                  {Object.entries(REL_COLORS).map(([key, color]) => (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={color}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="py-8 text-center text-muted-foreground">
-                Log for multiple days to see trends.
-              </p>
-            )}
-          </CardContent>
-        </Card>
       </TabsContent>
     </Tabs>
   );

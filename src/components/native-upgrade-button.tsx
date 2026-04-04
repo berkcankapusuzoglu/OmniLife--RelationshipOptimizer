@@ -41,8 +41,18 @@ export function NativeUpgradeButton({
 
     try {
       if (!Capacitor.isNativePlatform()) {
-        // Web: hand off to Stripe pricing page
-        router.push("/pricing");
+        // Web: create Stripe checkout session and redirect
+        const res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ priceType: interval, tier }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) {
+          setError(data.error ?? "Checkout unavailable. Please try again.");
+          return;
+        }
+        window.location.href = data.url;
         return;
       }
 

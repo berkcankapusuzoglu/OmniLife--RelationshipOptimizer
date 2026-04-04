@@ -15,6 +15,7 @@ import {
   Flame,
   AlertTriangle,
   ShieldAlert,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -157,19 +158,6 @@ export function DashboardClient({
       setTimeout(() => toast.remove(), 5000);
     }
   }, [searchParams]);
-
-  const defaultScores = {
-    pillars: { vitality: 5, growth: 5, security: 5, connection: 5 },
-    relDims: {
-      emotional: 5,
-      trust: 5,
-      fairness: 5,
-      stress: 5,
-      autonomy: 5,
-    },
-  };
-
-  const displayScores = currentScores ?? defaultScores;
 
   return (
     <div className="space-y-6">
@@ -340,16 +328,26 @@ export function DashboardClient({
             <CardTitle className="text-lg">Life & Relationship Radar</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-center">
-              <InteractiveRadar
-                currentScores={displayScores}
-                interactive={false}
-              />
-            </div>
-            {!currentScores && (
-              <p className="mt-2 text-center text-sm text-muted-foreground">
-                Log your first day to see your radar
-              </p>
+            {currentScores ? (
+              <div className="flex items-center justify-center">
+                <InteractiveRadar
+                  currentScores={currentScores}
+                  interactive={false}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                <BarChart3 className="h-10 w-10 text-muted-foreground/40" />
+                <div>
+                  <p className="font-medium">No data yet</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Complete your first daily log to see your scores visualized here.
+                  </p>
+                </div>
+                <Button render={<Link href="/daily" />} size="sm" className="mt-1">
+                  Log Today →
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -365,19 +363,21 @@ export function DashboardClient({
             <CardTitle className="text-lg">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Button
-              variant="outline"
-              className="h-auto justify-start py-3"
-              render={<Link href="/daily" />}
-            >
-              <Calendar className="mr-3 h-5 w-5 text-blue-400" />
-              <div className="text-left">
-                <div className="font-medium">Daily Log</div>
-                <div className="text-xs text-muted-foreground">
-                  Track your 9 life dimensions
+            {!hasLoggedToday && (
+              <Button
+                variant="outline"
+                className="h-auto justify-start py-3"
+                render={<Link href="/daily" />}
+              >
+                <Calendar className="mr-3 h-5 w-5 text-blue-400" />
+                <div className="text-left">
+                  <div className="font-medium">Daily Log</div>
+                  <div className="text-xs text-muted-foreground">
+                    Track your 9 life dimensions
+                  </div>
                 </div>
-              </div>
-            </Button>
+              </Button>
+            )}
             <Button
               variant="outline"
               className="h-auto justify-start py-3"
@@ -417,6 +417,21 @@ export function DashboardClient({
                 </div>
               </div>
             </Button>
+            {hasLoggedToday && (
+              <Button
+                variant="outline"
+                className="h-auto justify-start py-3"
+                render={<Link href="/insights" />}
+              >
+                <Calendar className="mr-3 h-5 w-5 text-blue-400" />
+                <div className="text-left">
+                  <div className="font-medium">View Today&apos;s Log</div>
+                  <div className="text-xs text-muted-foreground">
+                    Review your daily entry
+                  </div>
+                </div>
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -438,6 +453,7 @@ export function DashboardClient({
               <Heart className="h-4 w-4 text-rose-400" />
               Today&apos;s Gratitude
             </CardTitle>
+            <p className="text-xs text-muted-foreground">Based on your log improvements today</p>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
@@ -454,10 +470,17 @@ export function DashboardClient({
 
       {/* Mobile bottom action bar */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur-sm md:hidden" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
-        <Button render={<Link href="/daily" />} className="mb-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold hover:from-purple-500 hover:to-pink-500">
-          <Calendar className="mr-2 h-5 w-5" />
-          Log Today
-        </Button>
+        {hasLoggedToday ? (
+          <Button render={<Link href="/insights" />} className="mb-2 w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-base font-semibold hover:from-emerald-500 hover:to-teal-500">
+            <TrendingUp className="mr-2 h-5 w-5" />
+            View Insights
+          </Button>
+        ) : (
+          <Button render={<Link href="/daily" />} className="mb-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-base font-semibold hover:from-purple-500 hover:to-pink-500">
+            <Calendar className="mr-2 h-5 w-5" />
+            Log Today
+          </Button>
+        )}
         <div className="flex gap-2">
           <Button variant="outline" render={<Link href="/exercises" />} className="flex-1">
             <Sparkles className="mr-2 h-4 w-4" />

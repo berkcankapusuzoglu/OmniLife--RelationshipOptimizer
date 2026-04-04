@@ -54,10 +54,14 @@ export async function POST(request: NextRequest) {
           ? session.customer
           : session.customer?.id;
 
+      // Read tier from metadata (set at checkout creation); default to "premium"
+      const purchasedTier =
+        session.metadata?.tier === "pro" ? "pro" : "premium";
+
       await db
         .update(users)
         .set({
-          subscriptionTier: "premium",
+          subscriptionTier: purchasedTier,
           stripeCustomerId: customerId ?? null,
           stripeSubscriptionId: subscriptionId ?? null,
           updatedAt: new Date(),
@@ -74,7 +78,17 @@ export async function POST(request: NextRequest) {
           : subscription.customer.id;
 
       const status = subscription.status;
-      const tier = status === "active" || status === "trialing" ? "premium" : "free";
+      // Determine tier from price ID: pro price IDs get "pro", otherwise "premium"
+      const proMonthlyId = process.env.STRIPE_PRO_MONTHLY_PRICE_ID;
+      const proYearlyId = process.env.STRIPE_PRO_YEARLY_PRICE_ID;
+      const priceId = subscription.items?.data?.[0]?.price?.id ?? "";
+      const isProPrice = !!priceId && (priceId === proMonthlyId || priceId === proYearlyId);
+      const tier =
+        status === "active" || status === "trialing"
+          ? isProPrice
+            ? "pro"
+            : "premium"
+          : "free";
       const expiresAt =
         subscription.current_period_end
           ? new Date(subscription.current_period_end * 1000)

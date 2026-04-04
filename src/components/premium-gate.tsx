@@ -3,8 +3,12 @@
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { TIERS, type Features, type SubscriptionTier } from "@/lib/subscription/tiers";
-import { FEATURE_LABELS, FEATURE_DESCRIPTIONS } from "@/lib/subscription/tiers";
+import { TIERS, type Features, type SubscriptionTier, FEATURE_LABELS, FEATURE_DESCRIPTIONS } from "@/lib/subscription/tiers";
+
+// Features unlocked at Pro tier (not Premium-only)
+const PRO_FEATURES: (keyof Features)[] = [
+  "insights", "scenarios", "constraints", "exportReports", "partnerLinking", "weeklyCheckin",
+];
 
 interface PremiumGateProps {
   userTier: string;
@@ -47,10 +51,10 @@ export function PremiumGate({ userTier, feature, children }: PremiumGateProps) {
             render={<Link href="/pricing" />}
             className="bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-500 hover:to-violet-500"
           >
-            Upgrade to Premium
+            {PRO_FEATURES.includes(feature) ? "Upgrade to Pro" : "Upgrade to Premium"}
           </Button>
           <p className="text-xs text-muted-foreground">
-            Starting at $7.99/mo
+            {PRO_FEATURES.includes(feature) ? "Starting at $4.99/mo" : "Starting at $7.99/mo"}
           </p>
         </div>
       </div>

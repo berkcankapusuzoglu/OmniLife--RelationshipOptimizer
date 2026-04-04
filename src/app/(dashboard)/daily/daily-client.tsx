@@ -47,7 +47,7 @@ const DETAILED_STEPS: Step[] = [
     type: "slider",
     id: "vitality",
     label: "Vitality",
-    description: "How vital and alive do you feel today?",
+    description: "How physically energized and healthy do you feel today?",
     low: "Depleted",
     high: "Thriving",
   },
@@ -155,10 +155,10 @@ const QUICK_STEPS: Step[] = [
   {
     type: "slider",
     id: "emotional",
-    label: "Communication",
-    description: "How well are you communicating with each other?",
-    low: "Poorly",
-    high: "Really well",
+    label: "Emotional Connection",
+    description: "How emotionally connected do you feel with your partner?",
+    low: "Distant",
+    high: "Deeply connected",
   },
   {
     type: "slider",
@@ -434,7 +434,7 @@ export function DailyLogWizard({
       }
 
       setSubmitted(true);
-      setTimeout(() => router.push("/overview"), 2000);
+      setTimeout(() => router.push("/overview"), 3000);
     } catch {
       setSubmitting(false);
     }
