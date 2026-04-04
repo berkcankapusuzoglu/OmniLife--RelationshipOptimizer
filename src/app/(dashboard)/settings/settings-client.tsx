@@ -12,6 +12,7 @@ import { updateProfile, updateWeights, exportData } from "./actions";
 import { logoutAction } from "@/lib/auth/actions";
 import type { Weights } from "@/lib/engine/types";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import {
   LogOut,
   Download,
@@ -22,6 +23,7 @@ import {
   Lightbulb,
   ArrowUp,
   ArrowDown,
+  Heart,
 } from "lucide-react";
 
 interface WeightSuggestionData {
@@ -89,6 +91,7 @@ export function SettingsClient({
         <TabsTrigger value="profile">Profile</TabsTrigger>
         <TabsTrigger value="weights">Weights</TabsTrigger>
         <TabsTrigger value="billing">Billing</TabsTrigger>
+        <TabsTrigger value="partner">Partner</TabsTrigger>
         <TabsTrigger value="data">Data</TabsTrigger>
       </TabsList>
 
@@ -346,6 +349,25 @@ export function SettingsClient({
             >
               <Download className="mr-2 h-4 w-4" />
               Export Data
+            </Button>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="partner">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              Partner
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Link your account with your partner to share insights and track your relationship together.
+            </p>
+            <Button render={<Link href="/partner" />}>
+              Manage Partner Link
             </Button>
           </CardContent>
         </Card>

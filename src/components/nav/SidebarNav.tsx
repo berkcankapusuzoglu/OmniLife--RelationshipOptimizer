@@ -11,7 +11,6 @@ import {
   Shield,
   Layers,
   Heart,
-  GitCompareArrows,
   TrendingUp,
   Gift,
   Settings,
@@ -29,15 +28,14 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/overview", icon: LayoutDashboard },
+  { label: "Home", href: "/overview", icon: LayoutDashboard },
   { label: "Daily Log", href: "/daily", icon: Calendar },
   { label: "Weekly Check-in", href: "/weekly", icon: CalendarDays },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Exercises", href: "/exercises", icon: Dumbbell },
   { label: "Limits", href: "/constraints", icon: Shield },
   { label: "Scenarios", href: "/scenarios", icon: Layers },
-  { label: "Partner", href: "/partner", icon: Heart },
-  { label: "Compare", href: "/compare", icon: GitCompareArrows },
+  { label: "Partner Insights", href: "/compare", icon: Heart },
   { label: "Insights", href: "/insights", icon: TrendingUp },
   { label: "Weekly Report", href: "/weekly-report", icon: ClipboardList },
   { label: "AI Coach", href: "/coaching", icon: BotMessageSquare },
@@ -46,7 +44,11 @@ export const navItems: NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function SidebarNav() {
+interface SidebarNavProps {
+  onNavigate?: () => void;
+}
+
+export function SidebarNav({ onNavigate }: SidebarNavProps = {}) {
   const pathname = usePathname();
 
   return (
@@ -61,6 +63,7 @@ export function SidebarNav() {
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               isActive

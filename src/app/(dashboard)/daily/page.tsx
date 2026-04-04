@@ -87,10 +87,16 @@ export default async function DailyPage() {
     .select({
       mood: dailyLogs.mood,
       date: dailyLogs.date,
+      vitality: dailyLogs.vitalityScore,
       growth: dailyLogs.growthScore,
       security: dailyLogs.securityScore,
+      connection: dailyLogs.connectionScore,
+      emotional: dailyLogs.emotionalScore,
+      trust: dailyLogs.trustScore,
       fairness: dailyLogs.fairnessScore,
+      stress: dailyLogs.stressScore,
       autonomy: dailyLogs.autonomyScore,
+      energyLevel: dailyLogs.energyLevel,
     })
     .from(dailyLogs)
     .where(eq(dailyLogs.userId, user.id))
@@ -114,12 +120,31 @@ export default async function DailyPage() {
         }
       : null;
 
+  // Previous log values used as carry-forward defaults for non-asked quick-mode dimensions
+  const prevLog = recentLogs[0] ?? null;
+  const previousLogValues = prevLog
+    ? {
+        vitality: prevLog.vitality,
+        growth: prevLog.growth,
+        security: prevLog.security,
+        connection: prevLog.connection,
+        emotional: prevLog.emotional,
+        trust: prevLog.trust,
+        fairness: prevLog.fairness,
+        stress: prevLog.stress,
+        autonomy: prevLog.autonomy,
+        mood: prevLog.mood,
+        energy: prevLog.energyLevel,
+      }
+    : null;
+
   return (
     <DailyLogWizard
       userId={user.id}
       recentMoodAvg={recentMoodAvg}
       totalLogs={totalQuickLogs}
       calibrationDefaults={calibrationDefaults}
+      previousLogValues={previousLogValues}
     />
   );
 }

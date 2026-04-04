@@ -47,7 +47,7 @@ const DETAILED_STEPS: Step[] = [
     type: "slider",
     id: "vitality",
     label: "Vitality",
-    description: "How vital and energetic do you feel today?",
+    description: "How vital and alive do you feel today?",
     low: "Depleted",
     high: "Thriving",
   },
@@ -263,6 +263,19 @@ interface DailyLogWizardProps {
     fairness: number;
     autonomy: number;
   } | null;
+  previousLogValues: {
+    vitality: number;
+    growth: number;
+    security: number;
+    connection: number;
+    emotional: number;
+    trust: number;
+    fairness: number;
+    stress: number;
+    autonomy: number;
+    mood: number;
+    energy: number;
+  } | null;
 }
 
 export function DailyLogWizard({
@@ -270,6 +283,7 @@ export function DailyLogWizard({
   recentMoodAvg,
   totalLogs,
   calibrationDefaults,
+  previousLogValues,
 }: DailyLogWizardProps) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(() => {
@@ -309,19 +323,21 @@ export function DailyLogWizard({
   })();
   const totalSteps = steps.length;
 
-  // All values stored in a flat record — calibration defaults pre-fill derived dims
+  // All values stored in a flat record.
+  // For quick mode, non-asked dimensions carry forward from the previous log (fall back to 5).
+  // calibrationDefaults override the carry-forward for the calibration weekly fine-tune step.
   const [values, setValues] = useState<Record<string, number | string>>(() => ({
-    vitality: 5,
-    growth: calibrationDefaults?.growth ?? 5,
-    security: calibrationDefaults?.security ?? 5,
-    connection: 5,
-    emotional: 5,
-    trust: 5,
-    fairness: calibrationDefaults?.fairness ?? 5,
-    stress: 5,
-    autonomy: calibrationDefaults?.autonomy ?? 5,
-    mood: 5,
-    energy: 5,
+    vitality: previousLogValues?.vitality ?? 5,
+    growth: calibrationDefaults?.growth ?? previousLogValues?.growth ?? 5,
+    security: calibrationDefaults?.security ?? previousLogValues?.security ?? 5,
+    connection: previousLogValues?.connection ?? 5,
+    emotional: previousLogValues?.emotional ?? 5,
+    trust: previousLogValues?.trust ?? 5,
+    fairness: calibrationDefaults?.fairness ?? previousLogValues?.fairness ?? 5,
+    stress: previousLogValues?.stress ?? 5,
+    autonomy: calibrationDefaults?.autonomy ?? previousLogValues?.autonomy ?? 5,
+    mood: previousLogValues?.mood ?? 5,
+    energy: previousLogValues?.energy ?? 5,
     notes: "",
   }));
 
@@ -456,9 +472,9 @@ export function DailyLogWizard({
   // ── Wizard ──────────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="flex min-h-[100dvh] flex-col">
-        {/* Mode toggle + Progress bar */}
-        <div className="mx-auto w-full max-w-lg px-6 pt-6">
+      <div className="flex h-[100dvh] flex-col">
+        {/* Mode toggle + Progress bar — fixed header */}
+        <div className="shrink-0 mx-auto w-full max-w-lg px-6 pt-6">
           {/* Mode toggle */}
           <div className="mb-4 flex items-center justify-center gap-1 rounded-full bg-muted p-1">
             <button
@@ -492,9 +508,9 @@ export function DailyLogWizard({
           <Progress value={((step + 1) / totalSteps) * 100} />
         </div>
 
-        {/* Question area */}
-        <div className="flex flex-1 items-center justify-center px-6">
-          <div className="w-full max-w-lg">
+        {/* Question area — scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="mx-auto w-full max-w-lg">
             <div
               className={`transition-all duration-250 ease-out ${
                 animating
@@ -569,8 +585,8 @@ export function DailyLogWizard({
           </div>
         </div>
 
-        {/* Navigation buttons */}
-        <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-4 px-6 pb-10 pt-4">
+        {/* Navigation buttons — pinned at bottom, never scrolled off screen */}
+        <div className="shrink-0 border-t border-border bg-background mx-auto flex w-full max-w-lg items-center justify-between gap-4 px-6 pt-4" style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))" }}>
           <Button
             variant="ghost"
             onClick={handleBack}

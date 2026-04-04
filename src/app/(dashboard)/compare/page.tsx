@@ -83,7 +83,7 @@ export default async function ComparePage() {
         <div className="flex items-center gap-3 mb-1">
           <BackButton />
           <h1 className="text-2xl font-medium tracking-tight">
-            Couples Comparison
+            Partner Insights
           </h1>
         </div>
         <p className="text-sm text-muted-foreground">

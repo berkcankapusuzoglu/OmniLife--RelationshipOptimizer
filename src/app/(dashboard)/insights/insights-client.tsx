@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, Lightbulb, TrendingUp, Target, Zap, MapPin } from "lucide-react";
+import { AlertTriangle, Lightbulb, TrendingUp, Target, Zap, MapPin, HelpCircle, X } from "lucide-react";
 import { ParetoChart } from "@/components/charts/ParetoChart";
 import { PremiumGate } from "@/components/premium-gate";
 import type { Recommendation, OptimizerResult, ParetoAnalysis } from "@/lib/engine/types";
@@ -18,6 +19,9 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ScatterChart,
+  Scatter,
+  ReferenceLine,
 } from "recharts";
 
 interface InsightsClientProps {
@@ -45,19 +49,40 @@ interface InsightsClientProps {
 }
 
 const PILLAR_COLORS: Record<string, string> = {
-  vitality: "#60a5fa",
-  growth: "#818cf8",
-  security: "#a78bfa",
-  connection: "#c084fc",
+  vitality: "#3b82f6",
+  growth: "#f97316",
+  security: "#84cc16",
+  connection: "#ec4899",
 };
 
 const REL_COLORS: Record<string, string> = {
-  emotional: "#fb7185",
-  trust: "#f472b6",
-  fairness: "#e879f9",
-  stress: "#c084fc",
-  autonomy: "#a78bfa",
+  emotional: "#8b5cf6",
+  trust: "#06b6d4",
+  fairness: "#f59e0b",
+  stress: "#ef4444",
+  autonomy: "#22c55e",
 };
+
+function InfoTooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex items-center">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-muted-foreground hover:text-foreground transition-colors ml-1"
+        aria-label="More info"
+      >
+        {open ? <X className="h-3.5 w-3.5" /> : <HelpCircle className="h-3.5 w-3.5" />}
+      </button>
+      {open && (
+        <span className="absolute left-6 top-0 z-10 w-64 rounded-md border bg-popover px-3 py-2 text-xs text-muted-foreground shadow-md">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
 
 function getPriorityIcon(priority: number) {
   if (priority >= 8)
@@ -202,13 +227,82 @@ export function InsightsClient({
       </TabsContent>
 
       <TabsContent value="optimizer" className="space-y-4">
+        {/* Pareto frontier scatter plot */}
+        {historicalPoints.length > 1 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Life vs. Relationship Score History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={260}>
+                <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                  <XAxis
+                    type="number"
+                    dataKey="lifeScore"
+                    name="Life"
+                    domain={[0, 100]}
+                    tick={{ fill: "#999", fontSize: 11 }}
+                    label={{ value: "Life Score", position: "insideBottom", offset: -2, fill: "#999", fontSize: 11 }}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey="relScore"
+                    name="Rel"
+                    domain={[0, 100]}
+                    tick={{ fill: "#999", fontSize: 11 }}
+                    label={{ value: "Rel Score", angle: -90, position: "insideLeft", fill: "#999", fontSize: 11 }}
+                  />
+                  <Tooltip
+                    cursor={{ strokeDasharray: "3 3" }}
+                    contentStyle={{ backgroundColor: "#1c1c1c", border: "1px solid #333", borderRadius: 8 }}
+                    formatter={(v: unknown) => typeof v === "number" ? v.toFixed(1) : String(v)}
+                  />
+                  {/* Historical points */}
+                  <Scatter
+                    name="History"
+                    data={historicalPoints}
+                    fill="#6b7280"
+                    opacity={0.5}
+                    r={4}
+                  />
+                  {/* Frontier points */}
+                  <Scatter
+                    name="Frontier"
+                    data={frontierPoints}
+                    fill="#fbbf24"
+                    r={6}
+                  />
+                  {/* Current point */}
+                  {currentPoint && (
+                    <Scatter
+                      name="Today"
+                      data={[currentPoint]}
+                      fill="#ef4444"
+                      r={8}
+                    />
+                  )}
+                </ScatterChart>
+              </ResponsiveContainer>
+              <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-500 opacity-60" />Historical</span>
+                <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />Frontier best</span>
+                <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />Today</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Pareto frontier status */}
         {paretoAnalysis ? (
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <MapPin className={`h-4 w-4 ${paretoAnalysis.isOnFrontier ? "text-emerald-400" : "text-amber-400"}`} />
-                <CardTitle className="text-base">Pareto Frontier Status</CardTitle>
+                <CardTitle className="text-base">
+                  Pareto Frontier Status
+                  <InfoTooltip text="The Pareto frontier shows the best combinations of Life Score and Relationship Score you've ever achieved. If you're 'below the frontier', it means you've been in a better overall state before — the suggestions below show which areas to focus on to get back there." />
+                </CardTitle>
                 <Badge variant={paretoAnalysis.isOnFrontier ? "secondary" : "default"} className="ml-auto">
                   {paretoAnalysis.isOnFrontier ? "On Frontier" : "Below Frontier"}
                 </Badge>
@@ -271,7 +365,10 @@ export function InsightsClient({
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-yellow-400" />
-                <CardTitle className="text-base">Nelder-Mead Optimizer</CardTitle>
+                <CardTitle className="text-base">
+                  Nelder-Mead Optimizer
+                  <InfoTooltip text="The optimizer analyzes your current dimension values and weights to find the combination of focus areas that would most improve your Total Quality score. The recommended allocations show how much relative effort to put into each area." />
+                </CardTitle>
                 <Badge
                   variant={optimizerResult.gainFromOptimization > 1 ? "default" : "secondary"}
                   className="ml-auto"

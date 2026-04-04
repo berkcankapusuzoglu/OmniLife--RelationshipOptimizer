@@ -11,6 +11,7 @@ import {
   Menu,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +30,7 @@ interface BottomTab {
 }
 
 const bottomTabs: BottomTab[] = [
-  { label: "Dashboard", href: "/overview", icon: LayoutDashboard },
+  { label: "Home", href: "/overview", icon: LayoutDashboard },
   { label: "Daily", href: "/daily", icon: Calendar },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Insights", href: "/insights", icon: TrendingUp },
@@ -38,10 +39,11 @@ const bottomTabs: BottomTab[] = [
 
 export function MobileNav() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Sheet>
+      <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           render={
             <Button variant="ghost" size="icon" className="md:hidden" />
@@ -57,7 +59,7 @@ export function MobileNav() {
             </SheetTitle>
           </SheetHeader>
           <div className="px-3 py-4">
-            <SidebarNav />
+            <SidebarNav onNavigate={() => setOpen(false)} />
           </div>
         </SheetContent>
       </Sheet>
