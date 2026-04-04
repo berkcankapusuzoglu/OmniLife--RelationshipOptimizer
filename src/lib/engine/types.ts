@@ -86,6 +86,8 @@ export interface Recommendation {
   theoryBasis: string;
   targetDimension: string;
   priority: number; // 1-10, higher = more urgent
+  actionSteps?: string[];
+  resourceLinks?: { label: string; url: string }[];
 }
 
 export interface Exercise {

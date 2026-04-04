@@ -4,7 +4,9 @@ import { Flame } from "lucide-react";
 
 interface StreakBadgeProps {
   currentStreak: number;
+  longestStreak?: number;
   hasLoggedToday?: boolean;
+  onClick?: () => void;
 }
 
 function getStreakColor(streak: number): string {
@@ -22,7 +24,7 @@ function getFlameScale(streak: number): string {
   return "scale-100";
 }
 
-export function StreakBadge({ currentStreak, hasLoggedToday = true }: StreakBadgeProps) {
+export function StreakBadge({ currentStreak, hasLoggedToday = true, onClick }: StreakBadgeProps) {
   if (currentStreak <= 0) return null;
 
   const atRisk = currentStreak > 0 && !hasLoggedToday;
@@ -30,8 +32,10 @@ export function StreakBadge({ currentStreak, hasLoggedToday = true }: StreakBadg
   const scale = getFlameScale(currentStreak);
 
   return (
-    <div
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity ${
         atRisk
           ? "animate-pulse border border-amber-500/30 bg-amber-500/10"
           : "bg-card/80"
@@ -58,6 +62,6 @@ export function StreakBadge({ currentStreak, hasLoggedToday = true }: StreakBadg
           50% { transform: scale(1.2); }
         }
       `}</style>
-    </div>
+    </button>
   );
 }

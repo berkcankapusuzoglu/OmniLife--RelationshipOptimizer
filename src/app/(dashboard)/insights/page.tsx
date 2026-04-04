@@ -249,6 +249,17 @@ export default async function InsightsPage() {
         partnerPoints={partnerPoints.length > 0 ? partnerPoints : undefined}
         paretoAnalysis={paretoAnalysis}
         optimizerResult={optimizerResult}
+        currentDimScores={currentScores ? {
+          vitality: currentScores.pillars.vitality,
+          growth: currentScores.pillars.growth,
+          security: currentScores.pillars.security,
+          connection: currentScores.pillars.connection,
+          emotional: currentScores.relDims.emotional,
+          trust: currentScores.relDims.trust,
+          fairness: currentScores.relDims.fairness,
+          stress: currentScores.relDims.stress,
+          autonomy: currentScores.relDims.autonomy,
+        } : undefined}
       />
     </div>
   );

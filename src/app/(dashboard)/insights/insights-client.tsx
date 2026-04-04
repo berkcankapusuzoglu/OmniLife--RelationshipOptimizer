@@ -46,6 +46,7 @@ interface InsightsClientProps {
   partnerPoints?: { lifeScore: number; relScore: number; date: string }[];
   paretoAnalysis?: ParetoAnalysis | null;
   optimizerResult?: OptimizerResult | null;
+  currentDimScores?: Record<string, number>;
 }
 
 const PILLAR_COLORS: Record<string, string> = {
@@ -97,6 +98,18 @@ function getPriorityVariant(priority: number) {
   return "secondary" as const;
 }
 
+const DIM_TIPS: Record<string, string> = {
+  vitality: "Take a 20-minute walk or sleep 30 minutes earlier tonight.",
+  growth: "Read something educational for 15 minutes today.",
+  security: "Review one area of your budget or finances.",
+  connection: "Reach out to a friend or plan a social activity.",
+  emotional: "Spend 10 minutes talking about feelings without problem-solving.",
+  trust: "Follow through on one small promise you made this week.",
+  fairness: "Ask your partner if they feel the load is balanced.",
+  stress: "Try 5 minutes of box breathing (4s in, 4s hold, 4s out, 4s hold).",
+  autonomy: "Schedule one solo activity you enjoy this week.",
+};
+
 export function InsightsClient({
   historicalPoints,
   frontierPoints,
@@ -108,38 +121,67 @@ export function InsightsClient({
   partnerPoints,
   paretoAnalysis,
   optimizerResult,
+  currentDimScores,
 }: InsightsClientProps) {
   return (
     <Tabs defaultValue="recommendations" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-        <TabsTrigger value="action-plan">Action Plan</TabsTrigger>
-        <TabsTrigger value="pareto">Balance Chart</TabsTrigger>
-        <TabsTrigger value="optimizer">Optimizer</TabsTrigger>
-        <TabsTrigger value="trends">Trends</TabsTrigger>
-      </TabsList>
+      <div className="overflow-x-auto">
+        <TabsList className="w-max min-w-full">
+          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+          <TabsTrigger value="action-plan">Action Plan</TabsTrigger>
+          <TabsTrigger value="pareto">Balance Chart</TabsTrigger>
+          <TabsTrigger value="optimizer">Optimizer</TabsTrigger>
+          <TabsTrigger value="trends">Trends</TabsTrigger>
+        </TabsList>
+      </div>
 
       <TabsContent value="recommendations" className="space-y-4">
         {recommendations.length > 0 ? (
           recommendations.map((rec) => (
-            <Card key={rec.id}>
+            <Card key={rec.id} className="overflow-hidden">
               <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   {getPriorityIcon(rec.priority)}
-                  <CardTitle className="text-base">{rec.title}</CardTitle>
-                  <Badge variant={getPriorityVariant(rec.priority)} className="ml-auto">
+                  <CardTitle className="text-base flex-1 min-w-0 truncate">{rec.title}</CardTitle>
+                  <Badge variant={getPriorityVariant(rec.priority)} className="ml-auto shrink-0">
                     {rec.type}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm">{rec.description}</p>
+                {rec.actionSteps && rec.actionSteps.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Action steps:</p>
+                      {rec.actionSteps.map((step, i) => (
+                        <p key={i} className="text-xs text-foreground">• {step}</p>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {rec.resourceLinks && rec.resourceLinks.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {rec.resourceLinks.map((link) => (
+                      <a
+                        key={link.url}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 underline-offset-2 hover:underline"
+                      >
+                        {link.label} ↗
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <Separator />
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline" className="text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="outline" className="text-xs shrink-0">
                     {rec.targetDimension}
                   </Badge>
-                  <span>{rec.theoryBasis}</span>
+                  <span className="break-words">{rec.theoryBasis}</span>
                 </div>
               </CardContent>
             </Card>
@@ -156,12 +198,12 @@ export function InsightsClient({
       <TabsContent value="action-plan" className="space-y-4">
         {actionPlan.length > 0 ? (
           actionPlan.map((item) => (
-            <Card key={item.dimension}>
+            <Card key={item.dimension} className="overflow-hidden">
               <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Target className="h-4 w-4 text-blue-400" />
-                  <CardTitle className="text-base capitalize">{item.dimension}</CardTitle>
-                  <Badge variant="outline" className="ml-auto text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Target className="h-4 w-4 text-blue-400 shrink-0" />
+                  <CardTitle className="text-base capitalize flex-1 min-w-0 truncate">{item.dimension}</CardTitle>
+                  <Badge variant="outline" className="ml-auto text-xs shrink-0">
                     Gap: {item.gap}
                   </Badge>
                 </div>
@@ -297,13 +339,13 @@ export function InsightsClient({
         {paretoAnalysis ? (
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <MapPin className={`h-4 w-4 ${paretoAnalysis.isOnFrontier ? "text-emerald-400" : "text-amber-400"}`} />
-                <CardTitle className="text-base">
+              <div className="flex items-center gap-2 min-w-0">
+                <MapPin className={`h-4 w-4 shrink-0 ${paretoAnalysis.isOnFrontier ? "text-emerald-400" : "text-amber-400"}`} />
+                <CardTitle className="text-base flex-1 min-w-0">
                   Pareto Frontier Status
                   <InfoTooltip text="The Pareto frontier shows the best combinations of Life Score and Relationship Score you've ever achieved. If you're 'below the frontier', it means you've been in a better overall state before — the suggestions below show which areas to focus on to get back there." />
                 </CardTitle>
-                <Badge variant={paretoAnalysis.isOnFrontier ? "secondary" : "default"} className="ml-auto">
+                <Badge variant={paretoAnalysis.isOnFrontier ? "secondary" : "default"} className="ml-auto shrink-0">
                   {paretoAnalysis.isOnFrontier ? "On Frontier" : "Below Frontier"}
                 </Badge>
               </div>
@@ -360,73 +402,96 @@ export function InsightsClient({
         )}
 
         {/* Optimizer result */}
-        {optimizerResult ? (
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-yellow-400" />
-                <CardTitle className="text-base">
-                  Nelder-Mead Optimizer
-                  <InfoTooltip text="The optimizer analyzes your current dimension values and weights to find the combination of focus areas that would most improve your Total Quality score. The recommended allocations show how much relative effort to put into each area." />
-                </CardTitle>
-                <Badge
-                  variant={optimizerResult.gainFromOptimization > 1 ? "default" : "secondary"}
-                  className="ml-auto"
-                >
-                  {optimizerResult.gainFromOptimization > 0
-                    ? `+${optimizerResult.gainFromOptimization.toFixed(1)} pts`
-                    : "Optimal"}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-4 text-sm">
-                <span className="text-muted-foreground">
-                  Current quality:{" "}
-                  <span className="font-mono font-medium text-foreground">
-                    {optimizerResult.currentTotalQuality.toFixed(1)}
-                  </span>
-                </span>
-                <span className="text-muted-foreground">→</span>
-                <span className="text-muted-foreground">
-                  Predicted:{" "}
-                  <span className="font-mono font-medium text-emerald-400">
-                    {optimizerResult.predictedScores.totalQuality.toFixed(1)}
-                  </span>
-                </span>
-              </div>
+        {optimizerResult ? (() => {
+          const focusAreas = Object.entries(optimizerResult.recommendedAllocations)
+            .map(([dim, target]) => ({
+              dim,
+              target,
+              current: currentDimScores?.[dim] ?? 5,
+              gap: target - (currentDimScores?.[dim] ?? 5),
+            }))
+            .filter((a) => a.gap > 0.3)
+            .sort((a, b) => b.gap - a.gap)
+            .slice(0, 3);
 
-              {optimizerResult.gainFromOptimization > 0.5 && (
-                <>
-                  <Separator />
-                  <p className="text-xs font-medium text-muted-foreground">Suggested focus allocations (0–10 scale):</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(optimizerResult.recommendedAllocations).map(([dim, val]) => (
-                      <div key={dim} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
-                        <span className="capitalize text-muted-foreground">{dim}</span>
-                        <span className="font-mono font-medium">{val.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
+          return (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Zap className="h-4 w-4 text-yellow-400 shrink-0" />
+                  <CardTitle className="text-base flex-1 min-w-0">
+                    Your Top Focus Areas
+                    <InfoTooltip text="This uses an algorithm to find the combination of focus areas that would most improve your life quality score. Think of it like a GPS for your wellbeing — it shows you the most efficient route to your personal best." />
+                  </CardTitle>
+                  <Badge
+                    variant={optimizerResult.gainFromOptimization > 1 ? "default" : "secondary"}
+                    className="ml-auto shrink-0"
+                  >
+                    {optimizerResult.gainFromOptimization > 0
+                      ? `Potential gain: +${optimizerResult.gainFromOptimization.toFixed(1)} pts`
+                      : "Optimal"}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  The optimizer analyzed your recent scores and found the adjustments that would give you the biggest quality improvement. Here&apos;s where to focus:
+                </p>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-muted-foreground">
+                    Current quality:{" "}
+                    <span className="font-mono font-medium text-foreground">
+                      {optimizerResult.currentTotalQuality.toFixed(1)}
+                    </span>
+                  </span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="text-muted-foreground">
+                    Predicted:{" "}
+                    <span className="font-mono font-medium text-emerald-400">
+                      {optimizerResult.predictedScores.totalQuality.toFixed(1)}
+                    </span>
+                  </span>
+                </div>
 
-              {optimizerResult.tradeoffs.length > 0 && (
-                <>
-                  <Separator />
-                  <p className="text-xs font-medium text-muted-foreground">Tradeoffs:</p>
-                  <ul className="space-y-1">
-                    {optimizerResult.tradeoffs.map((t, i) => (
-                      <li key={i} className="text-xs text-muted-foreground">
-                        • {t}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
+                {focusAreas.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      {focusAreas.map(({ dim, target, current }, i) => (
+                        <div key={dim} className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-muted-foreground">{i + 1}.</span>
+                            <span className="text-sm font-medium capitalize">{dim}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground pl-4">
+                            Focus here: your {dim} is at {current.toFixed(1)}/10. Raising it to {target.toFixed(1)}/10 is your highest-leverage move.
+                          </p>
+                          {DIM_TIPS[dim] && (
+                            <p className="text-xs text-foreground/70 pl-4 italic">{DIM_TIPS[dim]}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {optimizerResult.tradeoffs.length > 0 && (
+                  <>
+                    <Separator />
+                    <p className="text-xs font-medium text-muted-foreground">Tradeoffs to keep in mind:</p>
+                    <ul className="space-y-1">
+                      {optimizerResult.tradeoffs.map((t, i) => (
+                        <li key={i} className="text-xs text-muted-foreground">
+                          • {t}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })() : (
           <Card>
             <CardContent className="py-6 text-center text-muted-foreground text-sm">
               Log your daily scores to run the optimizer.

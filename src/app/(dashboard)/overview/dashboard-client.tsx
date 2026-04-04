@@ -16,8 +16,16 @@ import {
   AlertTriangle,
   ShieldAlert,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { StreakBadge } from "@/components/streak-badge";
 import Link from "next/link";
 import { InteractiveRadar } from "@/components/charts/InteractiveRadar";
 import { TrendSparkline } from "@/components/charts/TrendSparkline";
@@ -46,9 +54,11 @@ interface DashboardClientProps {
   userName: string;
   currentStreak: number;
   longestStreak: number;
+  hasLoggedToday?: boolean;
   trendAlerts?: { dimension: string; message: string }[];
   crisisAlerts?: CrisisAlert[];
   latestNotes?: string | null;
+  gratitudeItems?: string[];
 }
 
 function ScoreCard({
@@ -109,6 +119,14 @@ function ScoreCard({
   );
 }
 
+function getMotivationalMessage(streak: number): string {
+  if (streak === 0) return "Start your streak today!";
+  if (streak < 7) return "Great start! Keep going!";
+  if (streak < 14) return "One week strong! 🔥";
+  if (streak < 30) return "Two weeks! You're on fire! 🔥🔥";
+  return "Legendary streak! 🏆";
+}
+
 export function DashboardClient({
   currentScores,
   latestScore,
@@ -116,11 +134,15 @@ export function DashboardClient({
   userName,
   currentStreak,
   longestStreak,
+  hasLoggedToday = true,
   trendAlerts = [],
   crisisAlerts = [],
   latestNotes,
+  gratitudeItems = [],
 }: DashboardClientProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const [streakModalOpen, setStreakModalOpen] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("upgraded") === "true") {
@@ -216,7 +238,7 @@ export function DashboardClient({
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10">
               <Flame className="h-5 w-5 text-orange-400" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium">
                 {currentStreak} day streak!
               </p>
@@ -224,9 +246,57 @@ export function DashboardClient({
                 Longest: {longestStreak} days
               </p>
             </div>
+            <StreakBadge
+              currentStreak={currentStreak}
+              longestStreak={longestStreak}
+              hasLoggedToday={hasLoggedToday}
+              onClick={() => setStreakModalOpen(true)}
+            />
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={streakModalOpen} onOpenChange={setStreakModalOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-400" />
+              Your Streak
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex justify-between rounded-lg bg-muted/50 px-4 py-3">
+              <span className="text-sm text-muted-foreground">Current streak</span>
+              <span className="font-semibold text-orange-400">{currentStreak} day{currentStreak !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex justify-between rounded-lg bg-muted/50 px-4 py-3">
+              <span className="text-sm text-muted-foreground">Longest streak</span>
+              <span className="font-semibold">{longestStreak} day{longestStreak !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="flex justify-between rounded-lg bg-muted/50 px-4 py-3">
+              <span className="text-sm text-muted-foreground">Today</span>
+              <span className={`text-sm font-medium ${hasLoggedToday ? "text-emerald-400" : "text-amber-400"}`}>
+                {hasLoggedToday ? "Logged today!" : "Not logged yet"}
+              </span>
+            </div>
+            <p className="text-center text-sm text-muted-foreground">
+              {getMotivationalMessage(currentStreak)}
+            </p>
+            {!hasLoggedToday && (
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setStreakModalOpen(false);
+                  router.push("/daily");
+                }}
+              >
+                <Calendar className="mr-2 h-4 w-4" />
+                Log Today
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {crisisAlerts.length > 0 && (
         <div className="space-y-2">
@@ -357,6 +427,27 @@ export function DashboardClient({
           </CardHeader>
           <CardContent>
             <p className="text-sm leading-relaxed">{latestNotes}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {gratitudeItems.length > 0 && (
+        <Card className="border-rose-500/20 bg-rose-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <Heart className="h-4 w-4 text-rose-400" />
+              Today&apos;s Gratitude
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {gratitudeItems.map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <span className="shrink-0">🙏</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       )}

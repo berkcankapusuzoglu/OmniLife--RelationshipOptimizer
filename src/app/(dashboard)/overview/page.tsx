@@ -5,6 +5,7 @@ import { eq, desc, and, gte } from "drizzle-orm";
 import { DashboardClient } from "./dashboard-client";
 import { detectTrendViolations } from "@/lib/engine/trends";
 import { detectCrisisAlerts } from "@/lib/engine/alerts";
+import { generateGratitude } from "@/lib/gratitude";
 
 export default async function DashboardPage() {
   const user = await requireAuth();
@@ -39,6 +40,7 @@ export default async function DashboardPage() {
   ]);
 
   const latestLog = recentLogs[0] ?? null;
+  const previousLog = recentLogs[1] ?? null;
   const latestScore = recentScores[0] ?? null;
 
   const currentScores = latestLog
@@ -66,6 +68,36 @@ export default async function DashboardPage() {
     totalQuality: Number(s.totalQuality),
   }));
 
+  // Compute gratitude statements
+  const gratitudeItems = latestLog
+    ? generateGratitude(
+        {
+          vitality: latestLog.vitalityScore,
+          growth: latestLog.growthScore,
+          security: latestLog.securityScore,
+          connection: latestLog.connectionScore,
+          emotional: latestLog.emotionalScore,
+          trust: latestLog.trustScore,
+          fairness: latestLog.fairnessScore,
+          stress: latestLog.stressScore,
+          autonomy: latestLog.autonomyScore,
+        },
+        previousLog
+          ? {
+              vitality: previousLog.vitalityScore,
+              growth: previousLog.growthScore,
+              security: previousLog.securityScore,
+              connection: previousLog.connectionScore,
+              emotional: previousLog.emotionalScore,
+              trust: previousLog.trustScore,
+              fairness: previousLog.fairnessScore,
+              stress: previousLog.stressScore,
+              autonomy: previousLog.autonomyScore,
+            }
+          : null
+      )
+    : [];
+
   // Compute trend alerts and crisis warnings
   const chronologicalLogs = [...recentLogs].reverse();
   const trendViolations = detectTrendViolations(chronologicalLogs);
@@ -78,6 +110,9 @@ export default async function DashboardPage() {
     dimension: v.dimension,
     message: `${v.dimension} has been declining (${v.threshold} → ${v.actual})`,
   }));
+
+  const today = new Date().toISOString().split("T")[0];
+  const hasLoggedToday = latestLog?.date === today;
 
   return (
     <DashboardClient
@@ -96,9 +131,11 @@ export default async function DashboardPage() {
       userName={user.name ?? "User"}
       currentStreak={user.currentStreak ?? 0}
       longestStreak={user.longestStreak ?? 0}
+      hasLoggedToday={hasLoggedToday}
       trendAlerts={trendAlerts}
       crisisAlerts={crisisAlerts}
       latestNotes={latestLog?.notes ?? null}
+      gratitudeItems={gratitudeItems}
     />
   );
 }
