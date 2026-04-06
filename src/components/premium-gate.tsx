@@ -54,7 +54,7 @@ export function PremiumGate({ userTier, feature, children }: PremiumGateProps) {
             {PRO_FEATURES.includes(feature) ? "Upgrade to Pro" : "Upgrade to Premium"}
           </Button>
           <p className="text-xs text-muted-foreground">
-            {PRO_FEATURES.includes(feature) ? "Starting at $4.99/mo" : "Starting at $7.99/mo"}
+            {PRO_FEATURES.includes(feature) ? "Starting at $3.99/mo" : "Starting at $4.99/mo"}
           </p>
         </div>
       </div>

@@ -42,8 +42,8 @@ export const TIERS = {
   },
   pro: {
     name: "Pro",
-    monthlyPrice: 4.99,
-    yearlyPrice: 39.99,
+    monthlyPrice: 3.99,
+    yearlyPrice: 29.99,
     featureList: [
       "Everything in Free",
       "Unlimited history",
@@ -71,8 +71,8 @@ export const TIERS = {
   },
   premium: {
     name: "Premium",
-    monthlyPrice: 7.99,
-    yearlyPrice: 59.99,
+    monthlyPrice: 4.99,
+    yearlyPrice: 39.99,
     featureList: [
       "Everything in Pro",
       "AI relationship coaching",
