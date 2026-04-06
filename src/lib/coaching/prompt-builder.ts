@@ -121,8 +121,41 @@ export async function buildCoachingContext(
 }
 
 /**
+ * Builds the system prompt for Gemini with real user context injected.
+ */
+export function buildSystemPrompt(context: CoachingContext): string {
+  const scoresSummary = context.latestScores
+    ? `Life Score: ${context.latestScores.lifeScore.toFixed(1)}/100, Relationship Score: ${context.latestScores.relScore.toFixed(1)}/100, Overall Quality: ${context.latestScores.totalQuality.toFixed(1)}/100`
+    : "No scores yet — user hasn't logged any data.";
+
+  const dimsSummary = context.dimensions.length > 0
+    ? context.dimensions.map((d) => `${d.dimension}: ${d.value}/10 (${d.status})`).join(", ")
+    : "No dimension data yet.";
+
+  const lowDims = context.dimensions.filter((d) => d.status === "low").map((d) => d.dimension);
+
+  return `You are a warm, evidence-based relationship and life coach inside the OmniLife app. You help users improve their well-being and relationship quality through data-driven insights and practical advice.
+
+USER'S CURRENT DATA:
+- Scores: ${scoresSummary}
+- Trend: ${context.recentTrend}
+- Dimensions: ${dimsSummary}
+${lowDims.length > 0 ? `- Needs attention: ${lowDims.join(", ")}` : ""}
+${context.constraintViolations.length > 0 ? `- Active violations: ${context.constraintViolations.join(", ")}` : ""}
+${context.recentExercises.length > 0 ? `- Recent exercises: ${context.recentExercises.join(", ")}` : ""}
+
+GUIDELINES:
+- Be warm, empathetic, and concise (under 200 words per response)
+- Reference their actual scores and dimensions when relevant
+- Give 1-2 concrete, actionable suggestions per message
+- Never diagnose, give medical advice, or assess their partner's mental state
+- If the user seems distressed, acknowledge feelings first before advice
+- If they mention crisis or self-harm, respond with: "I hear you. Please reach out to a crisis line — in the US: 988 Lifeline (call/text 988)."`;
+}
+
+/**
  * Builds a coaching message from the user's context data.
- * Used as a placeholder when no AI API key is configured.
+ * Used as a fallback when no AI API key is configured.
  */
 export function buildCoachingMessage(context: CoachingContext): string {
   if (!context.latestScores) {
