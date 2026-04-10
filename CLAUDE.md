@@ -205,20 +205,21 @@ Capacitor config at `capacitor.config.ts` — loads live Vercel URL in native We
 
 ## Next Steps & Planned Improvements
 
+### Immediate (In Progress)
+- **Google Play subscriptions** — merchant account set up (Apr 2026). Need to create 4 products in Play Console once subscriptions page unlocks (may need merchant account propagation, ~few hours). Product IDs: `pro_monthly` ($3.99), `pro_yearly` ($29.99), `premium_monthly` ($4.99), `premium_yearly` ($39.99)
+- **RevenueCat Android app config** — entitlements ✅, webhook ✅, env vars ✅, but need to: add Android app in RC → Apps & providers (package: `com.omnilife.app`), create 4 products, create offering, link to entitlements. Then update `NEXT_PUBLIC_REVENUECAT_ANDROID_KEY` in Vercel with real Android key.
+- **Android versionCode 5 / 1.0.2** — built with BILLING permission, rolled out to internal testing Apr 2026. Stay on internal testing until subscriptions + RC are fully configured.
+
 ### High Priority
-- **iOS build & App Store submission** — run `npx cap add ios && npx cap sync`, open in Xcode, configure signing with Apple Developer account, submit to App Store Connect
+- **iOS build & App Store submission** — skipping for now (no Apple Developer account yet, $99/yr). When ready: `npx cap add ios && npx cap sync`, open in Xcode, submit to App Store Connect
 - **Firebase push notifications** — add Firebase project for Android (download `google-services.json` → `android/app/`), configure APNs for iOS. Currently suppressed to avoid crash; push plugin is installed
 - **Partner features polish** — the partner invite/compare flow exists but needs UX refinement; divergence detection (`src/lib/engine/divergence.ts`) is computed but not prominently surfaced
 - **Password reset email delivery** — Resend integration exists (`src/lib/email/`) but needs a verified sending domain in Resend dashboard
 
 ### Growth & Monetization
-- **RevenueCat dashboard setup required** (code is done, needs manual config):
-  1. Add env vars to Vercel: `NEXT_PUBLIC_REVENUECAT_ANDROID_KEY`, `NEXT_PUBLIC_REVENUECAT_IOS_KEY`, `REVENUECAT_SECRET_KEY`, `REVENUECAT_WEBHOOK_SECRET`
-  2. In RevenueCat dashboard (app.revenuecat.com): create entitlements `pro` and `premium`
-  3. Create products in Google Play Console: `pro_monthly` ($4.99/mo), `pro_yearly` ($39.99/yr), `premium_monthly` ($7.99/mo), `premium_yearly` ($59.99/yr)
-  4. Create an offering in RC dashboard, attach 4 products as packages, link to entitlements
-  5. Set webhook URL: `https://omnilife-relationship-optimizer.vercel.app/api/revenuecat/webhook` with Authorization header = `REVENUECAT_WEBHOOK_SECRET` value
-  6. Google Play/Apple IAP required for in-app purchases — Stripe remains for web-only
+- **AI Coaching** ✅ LIVE — real Gemini 2.0 Flash calls via `GEMINI_API_KEY`. Free tier: 1,500 req/day. See `docs/AI_COACHING.md`. Premium-only, conversation history maintained per session.
+- **Pricing** ✅ UPDATED — Pro: $3.99/mo, $29.99/yr. Premium: $4.99/mo, $39.99/yr. Stripe price IDs updated in Vercel env vars.
+- **Stripe price IDs** (updated Apr 2026): Pro monthly `price_1TJCKLQxDITIiPCKUiUHyxXK`, Pro yearly `price_1TJCLzQxDITIiPCK0yFxC7f1`, Premium monthly `price_1TJCMnQxDITIiPCKMZO5MXFo`, Premium yearly `price_1TJCN6QxDITIiPCKj9sFzqSw`
 - **Onboarding conversion funnel** — add analytics events for each onboarding step to identify drop-off; A/B test paywall placement
 - **Referral rewards automation** — referral system exists at `/refer` but reward fulfillment (premium unlock) needs to be automated on referral conversion
 - **Blog content** — MDX blog at `/blog` exists for SEO; needs actual articles about relationship health, communication, etc.
