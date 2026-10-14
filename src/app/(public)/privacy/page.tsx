@@ -50,8 +50,15 @@ export default function PrivacyPolicyPage() {
         When you link accounts, your linked partner can see your name, email address,
         and latest overall quality score. The partner dashboard also shows your
         latest life and relationship scores, emotional closeness, trust, fairness,
-        stress and autonomy values, and differences between your scores. Couple
-        features include shared tasks. You can unlink on the partner page. Avoid
+        stress and autonomy values, and differences between your scores. Comparison
+        views also share dated life, relationship, and overall quality scores and
+        all nine dimension values: vitality, growth, security, connection, emotional
+        closeness, trust, fairness, stress, and autonomy. Comparison history covers
+        a 7-day window, or 30 days when the viewing account has a premium entitlement.
+        Insights can also show up to 90 dated life and relationship score records.
+        These score-comparison views do not include your journal notes, weekly
+        reflections, coaching messages, or separate mood and energy-level fields.
+        Couple features include shared tasks. You can unlink on the partner page. Avoid
         entering another person&apos;s sensitive information without their permission.
       </p>
 
