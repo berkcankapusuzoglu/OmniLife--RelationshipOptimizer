@@ -22,7 +22,6 @@ import { generateInviteCode, linkPartner, unlinkPartner } from "./actions";
 import type { CoupleBonus } from "@/lib/subscription/couple-bonus";
 
 export function PartnerClient({
-  userId,
   userName,
   inviteCode,
   partner,
@@ -30,7 +29,6 @@ export function PartnerClient({
   userScore,
   coupleBonus,
 }: {
-  userId: string;
   userName: string | null;
   inviteCode: string | null;
   partner: { id: string; name: string | null; email: string } | null;
@@ -103,7 +101,7 @@ export function PartnerClient({
   }
 
   async function handleLink() {
-    await linkPartner(userId, code);
+    await linkPartner(code);
     setJustLinked(true);
   }
 
@@ -184,7 +182,7 @@ export function PartnerClient({
               variant="outline"
               className="text-destructive"
               onClick={async () => {
-                await unlinkPartner(userId);
+                await unlinkPartner();
               }}
             >
               <Unlink className="mr-2 h-4 w-4" />
@@ -303,7 +301,7 @@ export function PartnerClient({
                 </p>
                 <Button
                   onClick={async () => {
-                    await generateInviteCode(userId);
+                    await generateInviteCode();
                   }}
                 >
                   Generate Code

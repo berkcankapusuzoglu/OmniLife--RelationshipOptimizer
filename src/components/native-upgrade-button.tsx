@@ -64,7 +64,7 @@ export function NativeUpgradeButton({
 
       // Sync the new entitlement to our DB
       if (userId) {
-        await syncRevenueCatEntitlement(userId);
+        await syncRevenueCatEntitlement();
       }
 
       // Refresh the page to reflect the new tier

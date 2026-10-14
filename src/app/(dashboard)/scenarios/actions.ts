@@ -1,19 +1,35 @@
 "use server";
 
 import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { users, scenarioProfiles } from "@/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { SCENARIO_PRESETS } from "@/lib/scenarios/presets";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth/guard";
+import { resourceId, scenarioMode } from "@/lib/auth/action-inputs";
+import { v4 as uuid } from "uuid";
 
 export async function activateScenario(
-  userId: string,
   scenarioId: string,
   mode: string
 ) {
+  const user = await requireAuth();
+  mode = scenarioMode.parse(mode);
   const db = getDb();
   const preset = SCENARIO_PRESETS.find((p) => p.mode === mode);
   if (!preset) return;
+  if (scenarioId === preset.id) {
+    // UI presets have symbolic IDs; activeScenarioId stores an owned UUID row.
+    scenarioId = uuid();
+    await db.insert(scenarioProfiles).values({ id: scenarioId, userId: user.id, name: preset.name, mode: preset.mode, description: preset.description, weightOverrides: preset.weightOverrides, constraintOverrides: preset.constraintOverrides, isPreset: true });
+  } else {
+    const parsedId = resourceId.safeParse(scenarioId);
+    if (!parsedId.success) return;
+    const [owned] = await db.select({ id: scenarioProfiles.id }).from(scenarioProfiles)
+      .where(and(eq(scenarioProfiles.id, parsedId.data), eq(scenarioProfiles.userId, user.id), eq(scenarioProfiles.mode, mode as typeof scenarioProfiles.$inferSelect.mode))).limit(1);
+    if (!owned) return;
+    scenarioId = owned.id;
+  }
 
   const overrides = preset.weightOverrides;
 
@@ -42,7 +58,7 @@ export async function activateScenario(
   if (overrides.rel?.autonomy != null)
     updateData.relAutonomyWeight = overrides.rel.autonomy.toString();
 
-  await db.update(users).set(updateData).where(eq(users.id, userId));
+  await db.update(users).set(updateData).where(eq(users.id, user.id));
 
   revalidatePath("/", "layout");
 }

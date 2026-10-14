@@ -29,7 +29,7 @@ export default async function OnboardingPage() {
           Let's set up your relationship optimizer in just a few steps
         </p>
       </div>
-      <OnboardingClient userId={user.id} scenarioPresets={scenarioPresets} />
+      <OnboardingClient scenarioPresets={scenarioPresets} />
     </div>
   );
 }

@@ -22,6 +22,8 @@ import type {
 import { v4 as uuid } from "uuid";
 import { updateStreak } from "@/lib/streaks";
 import { SCENARIO_PRESETS } from "@/lib/scenarios/presets";
+import { requireAuth } from "@/lib/auth/guard";
+import { onboardingInput } from "@/lib/auth/action-inputs";
 
 export interface OnboardingData {
   // Step 1: Goals / relationship status
@@ -57,9 +59,11 @@ export interface OnboardingData {
 }
 
 export async function completeOnboarding(
-  userId: string,
   data: OnboardingData
 ) {
+  const user = await requireAuth();
+  data = onboardingInput.parse(data);
+  const userId = user.id;
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];
 

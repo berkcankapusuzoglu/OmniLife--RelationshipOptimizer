@@ -115,7 +115,6 @@ export function SettingsClient({
               }}
               className="space-y-4"
             >
-              <input type="hidden" name="userId" value={user.id} />
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input
@@ -177,7 +176,7 @@ export function SettingsClient({
               disabled={saving}
               onClick={async () => {
                 setSaving(true);
-                await updateWeights(user.id, weights);
+                await updateWeights(weights);
                 setSaving(false);
               }}
             >
@@ -343,7 +342,7 @@ export function SettingsClient({
             <Button
               variant="outline"
               onClick={async () => {
-                const data = await exportData(user.id);
+                const data = await exportData();
                 const blob = new Blob([JSON.stringify(data, null, 2)], {
                   type: "application/json",
                 });

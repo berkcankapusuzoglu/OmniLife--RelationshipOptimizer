@@ -5,18 +5,24 @@ import { users, dailyLogs, scores, weeklyCheckins } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type { Weights } from "@/lib/engine/types";
+import { requireAuth } from "@/lib/auth/guard";
+import { profileName, weightsInput } from "@/lib/auth/action-inputs";
 
 export async function updateProfile(formData: FormData) {
+  const user = await requireAuth();
   const db = getDb();
-  const userId = formData.get("userId") as string;
-  const name = formData.get("name") as string;
+  const userId = user.id;
+  const name = profileName.parse(formData.get("name"));
 
   await db.update(users).set({ name }).where(eq(users.id, userId));
 
   revalidatePath("/settings");
 }
 
-export async function updateWeights(userId: string, weights: Weights) {
+export async function updateWeights(weights: Weights) {
+  const user = await requireAuth();
+  weights = weightsInput.parse(weights);
+  const userId = user.id;
   const db = getDb();
 
   await db
@@ -39,7 +45,9 @@ export async function updateWeights(userId: string, weights: Weights) {
   revalidatePath("/", "layout");
 }
 
-export async function exportData(userId: string) {
+export async function exportData() {
+  const user = await requireAuth();
+  const userId = user.id;
   const db = getDb();
 
   const [userLogs, userScores, userCheckins] = await Promise.all([

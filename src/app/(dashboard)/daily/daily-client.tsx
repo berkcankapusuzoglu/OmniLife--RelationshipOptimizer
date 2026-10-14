@@ -254,7 +254,6 @@ function markCalibrationDone() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface DailyLogWizardProps {
-  userId: string;
   recentMoodAvg: number | null;
   totalLogs: number;
   calibrationDefaults: {
@@ -279,7 +278,6 @@ interface DailyLogWizardProps {
 }
 
 export function DailyLogWizard({
-  userId,
   recentMoodAvg,
   totalLogs,
   calibrationDefaults,
@@ -414,7 +412,6 @@ export function DailyLogWizard({
         mode === "quick" ? deriveQuickScores(finalValues) : finalValues;
 
       const result = await submitDailyLog({
-        userId,
         vitality: scores.vitality as number,
         growth: scores.growth as number,
         security: scores.security as number,

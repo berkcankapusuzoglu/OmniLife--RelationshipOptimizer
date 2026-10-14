@@ -1,7 +1,7 @@
 "use server";
 
 import { getDb } from "@/lib/db";
-import { dailyLogs, scores, users, interventions, weeklyCheckins, constraints, partnerSyncEvents } from "@/lib/db/schema";
+import { dailyLogs, scores, interventions, weeklyCheckins, constraints, partnerSyncEvents } from "@/lib/db/schema";
 import { eq, and, sql, desc, isNull } from "drizzle-orm";
 import { detectDivergence } from "@/lib/engine/divergence";
 import { coupleId } from "@/lib/utils";
@@ -17,9 +17,11 @@ import type { Milestone } from "@/lib/milestones";
 import { trackEvent } from "@/lib/analytics/track";
 import { optimizeAllocations } from "@/lib/engine/optimizer";
 import type { OptimizerResult } from "@/lib/engine/types";
+import { requireAuth } from "@/lib/auth/guard";
+import { dailyInput } from "@/lib/auth/action-inputs";
+import { linkedPartnerId } from "@/lib/auth/authorization";
 
 export async function submitDailyLog(data: {
-  userId: string;
   vitality: number;
   growth: number;
   security: number;
@@ -33,13 +35,16 @@ export async function submitDailyLog(data: {
   energyLevel: number;
   notes: string;
 }): Promise<{ milestones: Milestone[]; optimizerResult?: OptimizerResult }> {
+  const user = await requireAuth();
+  data = dailyInput.parse(data);
+  const userId = user.id;
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];
 
   const logId = uuid();
   await db.insert(dailyLogs).values({
     id: logId,
-    userId: data.userId,
+    userId,
     date: today,
     vitalityScore: data.vitality,
     growthScore: data.growth,
@@ -54,14 +59,6 @@ export async function submitDailyLog(data: {
     energyLevel: data.energyLevel,
     notes: data.notes,
   });
-
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, data.userId))
-    .limit(1);
-
-  if (!user) return { milestones: [] };
 
   const pillars: PillarScores = {
     vitality: data.vitality,
@@ -100,7 +97,7 @@ export async function submitDailyLog(data: {
   const userConstraints = await db
     .select()
     .from(constraints)
-    .where(eq(constraints.userId, data.userId));
+    .where(eq(constraints.userId, userId));
 
   const typedConstraints: Constraint[] = userConstraints.map((c) => ({
     id: c.id,
@@ -120,7 +117,7 @@ export async function submitDailyLog(data: {
   const recentLogs = await db
     .select()
     .from(dailyLogs)
-    .where(eq(dailyLogs.userId, data.userId))
+    .where(eq(dailyLogs.userId, userId))
     .orderBy(desc(dailyLogs.date))
     .limit(5);
 
@@ -133,7 +130,7 @@ export async function submitDailyLog(data: {
   await db.insert(scores).values({
     id: uuid(),
     dailyLogId: logId,
-    userId: data.userId,
+    userId,
     date: today,
     lifeScore: computed.lifeScore.toString(),
     relScore: computed.relScore.toString(),
@@ -144,11 +141,12 @@ export async function submitDailyLog(data: {
   });
 
   // Check divergence with partner (if linked)
-  if (user.partnerId) {
+  const partnerId = await linkedPartnerId(user);
+  if (partnerId) {
     const partnerLatestLog = await db
       .select()
       .from(dailyLogs)
-      .where(eq(dailyLogs.userId, user.partnerId))
+      .where(eq(dailyLogs.userId, partnerId))
       .orderBy(desc(dailyLogs.date))
       .limit(1);
 
@@ -166,10 +164,10 @@ export async function submitDailyLog(data: {
       if (divergences.length > 0) {
         await db.insert(partnerSyncEvents).values({
           id: uuid(),
-          coupleId: coupleId(data.userId, user.partnerId),
+          coupleId: coupleId(userId, partnerId),
           type: "divergence",
           data: {
-            triggeredBy: data.userId,
+            triggeredBy: userId,
             date: today,
             divergences,
           },
@@ -196,7 +194,7 @@ export async function submitDailyLog(data: {
     .from(interventions)
     .where(
       and(
-        eq(interventions.userId, data.userId),
+        eq(interventions.userId, userId),
         eq(interventions.wasCompleted, true),
         isNull(interventions.scoreAfter),
       )
@@ -208,31 +206,31 @@ export async function submitDailyLog(data: {
       await db
         .update(interventions)
         .set({ scoreAfter: targetDimScores[dim].toString() })
-        .where(eq(interventions.id, intervention.id));
+        .where(and(eq(interventions.id, intervention.id), eq(interventions.userId, userId)));
     }
   }
 
   // Update streak
-  const streakResult = await updateStreak(data.userId, today);
+  const streakResult = await updateStreak(userId, today);
 
   // Track analytics event
   trackEvent("daily_log_submitted", {
     totalQuality: computed.totalQuality,
     currentStreak: streakResult.currentStreak,
-  }, data.userId);
+  }, userId);
 
   // Gather milestone context
   const [logCountResult] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(dailyLogs)
-    .where(eq(dailyLogs.userId, data.userId));
+    .where(eq(dailyLogs.userId, userId));
 
   const [exerciseCountResult] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(interventions)
     .where(
       and(
-        eq(interventions.userId, data.userId),
+        eq(interventions.userId, userId),
         eq(interventions.wasCompleted, true)
       )
     );
@@ -240,7 +238,7 @@ export async function submitDailyLog(data: {
   const [weeklyCountResult] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(weeklyCheckins)
-    .where(eq(weeklyCheckins.userId, data.userId));
+    .where(eq(weeklyCheckins.userId, userId));
 
   const newMilestones = checkMilestones({
     currentStreak: streakResult.currentStreak,
@@ -254,7 +252,7 @@ export async function submitDailyLog(data: {
   });
 
   for (const m of newMilestones) {
-    trackEvent("milestone_achieved", { milestoneId: m.id, milestoneName: m.name }, data.userId);
+    trackEvent("milestone_achieved", { milestoneId: m.id, milestoneName: m.name }, userId);
   }
 
   // Run Nelder-Mead optimizer to suggest optimal allocations

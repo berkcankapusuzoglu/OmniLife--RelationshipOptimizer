@@ -72,7 +72,6 @@ export default async function ExercisesPage() {
       <ExercisesClient
         currentScores={currentScores}
         recentExerciseIds={recentExerciseIds}
-        userId={user.id}
         userTier={userTier}
         impactSummary={impactSummary}
       />

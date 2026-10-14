@@ -35,7 +35,6 @@ export default async function ConstraintsPage() {
           budgetHours: c.budgetHours ? Number(c.budgetHours) : undefined,
           isActive: c.isActive,
         }))}
-        userId={user.id}
       />
     </div>
   );

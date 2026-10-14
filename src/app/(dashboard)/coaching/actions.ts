@@ -9,10 +9,12 @@ import {
   buildCoachingMessage,
   buildSystemPrompt,
 } from "@/lib/coaching/prompt-builder";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { revalidatePath } from "next/cache";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { resourceId } from "@/lib/auth/action-inputs";
+import { z } from "zod";
 
 export interface CoachingMessage {
   role: "user" | "coach";
@@ -29,6 +31,8 @@ export async function sendCoachingMessage(
   reply?: CoachingMessage;
 }> {
   const user = await requireAuth();
+  if (sessionId !== null) sessionId = resourceId.parse(sessionId);
+  userMessage = z.string().trim().min(1).max(10000).parse(userMessage);
 
   const access = await hasFeatureAccess(user.id, "aiCoaching");
   if (!access.allowed) {
@@ -52,11 +56,10 @@ export async function sendCoachingMessage(
     const [session] = await db
       .select()
       .from(coachingSessions)
-      .where(eq(coachingSessions.id, sessionId))
+      .where(and(eq(coachingSessions.id, sessionId), eq(coachingSessions.userId, user.id)))
       .limit(1);
-    if (session) {
-      existingMessages = (session.messages as CoachingMessage[]) ?? [];
-    }
+    if (!session) return { error: "Conversation unavailable" };
+    existingMessages = (session.messages as CoachingMessage[]) ?? [];
   }
 
   // Build coaching response
@@ -106,13 +109,13 @@ export async function sendCoachingMessage(
     await db
       .update(coachingSessions)
       .set({ messages: existingMessages })
-      .where(eq(coachingSessions.id, sessionId));
+      .where(and(eq(coachingSessions.id, sessionId), eq(coachingSessions.userId, user.id)));
   } else if (sessionId) {
     // Session exists but was empty
     await db
       .update(coachingSessions)
       .set({ messages: [newUserMsg, replyMsg] })
-      .where(eq(coachingSessions.id, sessionId));
+      .where(and(eq(coachingSessions.id, sessionId), eq(coachingSessions.userId, user.id)));
   } else {
     // Create new session
     sessionId = uuid();

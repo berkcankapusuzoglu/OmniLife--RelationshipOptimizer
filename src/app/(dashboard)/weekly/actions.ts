@@ -2,7 +2,8 @@
 
 import { getDb } from "@/lib/db";
 import { weeklyCheckins } from "@/lib/db/schema";
-import { getSession } from "@/lib/auth/session";
+import { requireAuth } from "@/lib/auth/guard";
+import { weeklyInput } from "@/lib/auth/action-inputs";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { v4 as uuid } from "uuid";
@@ -15,8 +16,8 @@ export async function submitWeeklyCheckin(data: {
   overallSatisfaction: number;
   weeklyGoals: string[];
 }) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const user = await requireAuth();
+  data = weeklyInput.parse(data);
 
   const db = getDb();
   const now = new Date();
@@ -26,7 +27,7 @@ export async function submitWeeklyCheckin(data: {
 
   await db.insert(weeklyCheckins).values({
     id: uuid(),
-    userId: session.userId,
+    userId: user.id,
     weekStart: weekStart.toISOString().split("T")[0],
     highlight: data.highlight,
     challenge: data.challenge,

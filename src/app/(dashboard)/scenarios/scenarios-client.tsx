@@ -30,12 +30,10 @@ const SCENARIO_ICONS: Record<string, React.ReactNode> = {
 
 export function ScenariosClient({
   activeScenarioId,
-  userId,
   userTier,
   currentWeights,
 }: {
   activeScenarioId: string | null;
-  userId: string;
   userTier: string;
   currentWeights: Weights;
 }) {
@@ -105,7 +103,7 @@ export function ScenariosClient({
                   <Button
                     size="sm"
                     onClick={async () => {
-                      await activateScenario(userId, scenario.id, scenario.mode);
+                      await activateScenario(scenario.id, scenario.mode);
                     }}
                     disabled={activeScenarioId === scenario.id}
                   >

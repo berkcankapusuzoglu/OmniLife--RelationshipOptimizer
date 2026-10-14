@@ -140,7 +140,6 @@ export default async function DailyPage() {
 
   return (
     <DailyLogWizard
-      userId={user.id}
       recentMoodAvg={recentMoodAvg}
       totalLogs={totalQuickLogs}
       calibrationDefaults={calibrationDefaults}

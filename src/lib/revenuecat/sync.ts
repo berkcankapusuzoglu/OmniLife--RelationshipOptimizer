@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import type { SubscriptionTier } from "@/lib/subscription/tiers";
+import { requireAuth } from "@/lib/auth/guard";
 
 // Map RevenueCat entitlement IDs → app tier names.
 // Configure matching entitlement IDs in the RevenueCat dashboard.
@@ -38,7 +39,9 @@ interface RCSubscriberResponse {
  * Called after a successful native purchase to ensure the DB reflects
  * the latest entitlement state.
  */
-export async function syncRevenueCatEntitlement(userId: string): Promise<void> {
+export async function syncRevenueCatEntitlement(): Promise<void> {
+  const user = await requireAuth();
+  const userId = user.id;
   const secretKey = process.env.REVENUECAT_SECRET_KEY;
   if (!secretKey) {
     console.warn("[RevenueCat] REVENUECAT_SECRET_KEY not set — skipping sync");

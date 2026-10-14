@@ -54,7 +54,7 @@ export default async function ComparePage() {
       .from(dailyLogs)
       .where(and(eq(dailyLogs.userId, user.id), gte(dailyLogs.date, cutoff)))
       .orderBy(desc(dailyLogs.date)),
-    getPartnerData(user.partnerId, dayLimit),
+    getPartnerData(dayLimit),
   ]);
 
   const myScoresPlain = myScores.map((s) => ({

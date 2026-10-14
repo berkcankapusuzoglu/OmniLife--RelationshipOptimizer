@@ -55,11 +55,9 @@ function getStatusColor(constraint: ConstraintItem) {
 
 export function ConstraintsClient({
   constraints: initialConstraints,
-  userId,
   userTier,
 }: {
   constraints: ConstraintItem[];
-  userId: string;
   userTier: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -84,7 +82,6 @@ export function ConstraintsClient({
               }}
               className="space-y-4"
             >
-              <input type="hidden" name="userId" value={userId} />
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input

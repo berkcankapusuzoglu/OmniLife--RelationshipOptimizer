@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { getDb } from "@/lib/db";
 import { users, scores } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { getCoupleBonus } from "@/lib/subscription/couple-bonus";
 import { PartnerClient } from "./partner-client";
 import { BackButton } from "@/components/back-button";
@@ -17,7 +17,7 @@ export default async function PartnerPage() {
     const [p] = await db
       .select({ id: users.id, name: users.name, email: users.email })
       .from(users)
-      .where(eq(users.id, user.partnerId))
+      .where(and(eq(users.id, user.partnerId), eq(users.partnerId, user.id)))
       .limit(1);
     partner = p ?? null;
 
@@ -55,7 +55,6 @@ export default async function PartnerPage() {
         </p>
       </div>
       <PartnerClient
-        userId={user.id}
         userName={user.name?.split(" ")[0] ?? null}
         inviteCode={user.partnerInviteCode}
         partner={partner}

@@ -19,7 +19,6 @@ interface ExercisesClientProps {
     relDims: RelDimScores;
   } | null;
   recentExerciseIds: string[];
-  userId: string;
   userTier: string;
   impactSummary?: ImpactSummary;
 }
@@ -27,7 +26,6 @@ interface ExercisesClientProps {
 export function ExercisesClient({
   currentScores,
   recentExerciseIds,
-  userId,
   userTier,
   impactSummary,
 }: ExercisesClientProps) {
@@ -66,7 +64,6 @@ export function ExercisesClient({
 
   async function handleComplete(exercise: Exercise, rating: number) {
     await completeExercise({
-      userId,
       exerciseId: exercise.id,
       title: exercise.title,
       theoryBasis: exercise.theoryBasis,

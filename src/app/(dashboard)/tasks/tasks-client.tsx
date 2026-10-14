@@ -16,10 +16,8 @@ interface Task {
 
 export function TasksClient({
   tasks,
-  userId,
 }: {
   tasks: Task[];
-  userId: string;
 }) {
   return (
     <TaskBoard
@@ -28,10 +26,7 @@ export function TasksClient({
         await updateTaskStatus(taskId, status);
       }}
       onCreateTask={async (task) => {
-        await createTask({
-          ...task,
-          createdById: userId,
-        });
+        await createTask(task);
       }}
     />
   );

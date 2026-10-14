@@ -36,7 +36,6 @@ export default async function TasksPage() {
           dueDate: t.dueDate ?? undefined,
           recurrence: t.recurrence ?? undefined,
         }))}
-        userId={user.id}
       />
     </div>
   );

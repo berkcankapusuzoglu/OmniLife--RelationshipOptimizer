@@ -3,8 +3,15 @@
 import { getDb } from "@/lib/db";
 import { scores, dailyLogs, users } from "@/lib/db/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
+import { requireAuth } from "@/lib/auth/guard";
+import { linkedPartnerId } from "@/lib/auth/authorization";
+import { dayLimitInput } from "@/lib/auth/action-inputs";
 
-export async function getPartnerData(partnerId: string, dayLimit: number) {
+export async function getPartnerData(dayLimit: number) {
+  const user = await requireAuth();
+  const partnerId = await linkedPartnerId(user);
+  if (!partnerId) return { partner: null, scores: [], logs: [] };
+  dayLimit = dayLimitInput.parse(dayLimit);
   const db = getDb();
 
   const cutoffDate = new Date();
@@ -15,7 +22,7 @@ export async function getPartnerData(partnerId: string, dayLimit: number) {
     db
       .select({ id: users.id, name: users.name })
       .from(users)
-      .where(eq(users.id, partnerId))
+      .where(and(eq(users.id, partnerId), eq(users.partnerId, user.id)))
       .limit(1)
       .then((r) => r[0] ?? null),
     db

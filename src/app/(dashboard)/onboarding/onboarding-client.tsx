@@ -31,7 +31,6 @@ interface ScenarioPresetData {
 }
 
 interface OnboardingClientProps {
-  userId: string;
   scenarioPresets: ScenarioPresetData[];
 }
 
@@ -128,7 +127,7 @@ const STEPS = [
   { title: "Partner", icon: UserPlus },
 ];
 
-export function OnboardingClient({ userId, scenarioPresets }: OnboardingClientProps) {
+export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
@@ -224,7 +223,7 @@ export function OnboardingClient({ userId, scenarioPresets }: OnboardingClientPr
     };
 
     try {
-      await completeOnboarding(userId, onboardingData);
+      await completeOnboarding(onboardingData);
     } catch {
       // redirect throws an error in Next.js, which is expected
     }
