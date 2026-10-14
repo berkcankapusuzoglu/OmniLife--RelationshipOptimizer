@@ -7,6 +7,7 @@ import PartnerDashboardPage from "@/app/(dashboard)/partner/dashboard/page";
 import { PartnerDashboardClient } from "@/app/(dashboard)/partner/dashboard/partner-dashboard-client";
 import InsightsPage from "@/app/(dashboard)/insights/page";
 import { InsightsClient } from "@/app/(dashboard)/insights/insights-client";
+import { getPartnerData } from "@/app/(dashboard)/compare/actions";
 
 type Row = Record<string, unknown>;
 type Read = { table: string; fields: string[]; count: number; limit: number; params: unknown[] };
@@ -41,10 +42,12 @@ function readDb() {
     const execute = () => {
       const query = predicate ? dialect.sqlToQuery(predicate) : null;
       if (query && /\bor\b/i.test(query.sql)) throw new Error("Unexpected OR in reader fixture");
-      const equalities = query ? [...query.sql.matchAll(/"[^"]+"\."([^"]+)" = \$(\d+)/g)] : [];
-      const rows = (state.rows[getTableName(table)] ?? []).filter((row) => equalities.every(([, column, parameter]) => {
+      const comparisons = query ? [...query.sql.matchAll(/"[^"]+"\."([^"]+)" (>=|=) \$(\d+)/g)] : [];
+      const rows = (state.rows[getTableName(table)] ?? []).filter((row) => comparisons.every(([, column, operator, parameter]) => {
         const field = Object.keys(columns).find((key) => columns[key].name === column)!;
-        return row[field] === query!.params[Number(parameter) - 1];
+        const value = row[field];
+        const bound = query!.params[Number(parameter) - 1];
+        return operator === "=" ? value === bound : typeof value === "string" && typeof bound === "string" && value >= bound;
       }));
       if (descending) rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
       const selected = rows.slice(0, limit);
@@ -77,6 +80,8 @@ function clientProps<T>(node: React.ReactNode, component: React.ElementType): T 
 }
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-14T12:00:00Z"));
   vi.stubGlobal("React", React);
   state.actor = { id: "A", name: "Alice", partnerId: "B" };
   state.reads = [];
@@ -96,7 +101,7 @@ beforeEach(() => {
   };
   state.db = readDb();
 });
-afterEach(() => { vi.unstubAllGlobals(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("partner dashboard authorization and selected data", () => {
   it("renders the intended latest scores, dimensions and divergences for a reciprocal partner", async () => {
@@ -165,5 +170,31 @@ describe("insights partner history authorization", () => {
     const props = clientProps<{ partnerPoints?: unknown }>(await InsightsPage(), InsightsClient);
     expect(props.partnerPoints).toBeUndefined();
     expect(state.reads.filter((read) => read.table === "scores" && read.params.includes("B"))).toEqual([]);
+  });
+});
+
+describe("Compare partner projections and reciprocal access", () => {
+  beforeEach(() => {
+    Object.assign(state.rows.daily_logs[1], { vitalityScore: 7, growthScore: 6, securityScore: 8, connectionScore: 9 });
+  });
+
+  it("returns the displayed reciprocal partner scores/dimensions and selects only their fields", async () => {
+    const result = await getPartnerData(30);
+    expect(result.partner).toEqual({ id: "B", name: "Bob" });
+    expect(result.scores[0]).toEqual({ date: "2026-10-14", lifeScore: 80, relScore: 72, totalQuality: 76 });
+    expect(result.logs[0]).toEqual({ date: "2026-10-14", vitalityScore: 7, growthScore: 6, securityScore: 8, connectionScore: 9, emotionalScore: 9, trustScore: 8, fairnessScore: 5, stressScore: 5, autonomyScore: 4 });
+    const scoreRead = state.reads.find((read) => read.table === "scores")!;
+    const logRead = state.reads.find((read) => read.table === "daily_logs")!;
+    expect(scoreRead.fields.sort()).toEqual(["date", "lifeScore", "relScore", "totalQuality"]);
+    expect(logRead.fields.sort()).toEqual(["autonomyScore", "connectionScore", "date", "emotionalScore", "fairnessScore", "growthScore", "securityScore", "stressScore", "trustScore", "vitalityScore"]);
+    expect(JSON.stringify(result)).not.toContain("private");
+  });
+
+  it.each(["missing", "unilateral", "stale", "deleted"])("returns no partner data or score/log reads for a %s link", async (link) => {
+    if (link === "missing") state.actor.partnerId = null;
+    else if (link === "deleted") state.rows.users = [];
+    else state.rows.users[0].partnerId = link === "unilateral" ? null : "C";
+    expect(await getPartnerData(30)).toEqual({ partner: null, scores: [], logs: [] });
+    expect(state.reads.filter((read) => read.table === "scores" || read.table === "daily_logs")).toEqual([]);
   });
 });

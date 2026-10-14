@@ -26,12 +26,28 @@ export async function getPartnerData(dayLimit: number) {
       .limit(1)
       .then((r) => r[0] ?? null),
     db
-      .select()
+      .select({
+        date: scores.date,
+        lifeScore: scores.lifeScore,
+        relScore: scores.relScore,
+        totalQuality: scores.totalQuality,
+      })
       .from(scores)
       .where(and(eq(scores.userId, partnerId), gte(scores.date, cutoff)))
       .orderBy(desc(scores.date)),
     db
-      .select()
+      .select({
+        date: dailyLogs.date,
+        vitalityScore: dailyLogs.vitalityScore,
+        growthScore: dailyLogs.growthScore,
+        securityScore: dailyLogs.securityScore,
+        connectionScore: dailyLogs.connectionScore,
+        emotionalScore: dailyLogs.emotionalScore,
+        trustScore: dailyLogs.trustScore,
+        fairnessScore: dailyLogs.fairnessScore,
+        stressScore: dailyLogs.stressScore,
+        autonomyScore: dailyLogs.autonomyScore,
+      })
       .from(dailyLogs)
       .where(and(eq(dailyLogs.userId, partnerId), gte(dailyLogs.date, cutoff)))
       .orderBy(desc(dailyLogs.date)),
