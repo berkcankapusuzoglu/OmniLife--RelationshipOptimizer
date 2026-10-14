@@ -7,9 +7,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const BASE_URL = 'https://omnilife-relationship-optimizer.vercel.app';
-const EMAIL = 'admin@omnilife.app';
-const PASSWORD = 'AdminTest123!';
+const EMAIL = process.env.E2E_EMAIL;
+const PASSWORD = process.env.E2E_PASSWORD;
+const HAS_E2E_CREDENTIALS = Boolean(EMAIL && PASSWORD);
 const SCREENSHOT_DIR = path.join(__dirname, 'screenshots');
+
+test.skip(!HAS_E2E_CREDENTIALS, 'Set E2E_EMAIL and E2E_PASSWORD to run authenticated feature checks.');
 
 let sharedContext: BrowserContext;
 let sharedPage: Page;
@@ -25,8 +28,8 @@ test.beforeAll(async ({ browser }) => {
   // Login
   await sharedPage.goto(`${BASE_URL}/login`);
   await sharedPage.waitForLoadState('networkidle');
-  await sharedPage.fill('input[type="email"]', EMAIL);
-  await sharedPage.fill('input[type="password"]', PASSWORD);
+  await sharedPage.fill('input[type="email"]', EMAIL!);
+  await sharedPage.fill('input[type="password"]', PASSWORD!);
   await sharedPage.click('button[type="submit"]');
 
   // Wait for redirect to settle (may go to /onboarding or /overview)
@@ -187,8 +190,8 @@ test('5. Insights recommendations — no horizontal overflow at 390px', async ({
     // Login on mobile context
     await mobilePage.goto(`${BASE_URL}/login`);
     await mobilePage.waitForLoadState('networkidle');
-    await mobilePage.fill('input[type="email"]', EMAIL);
-    await mobilePage.fill('input[type="password"]', PASSWORD);
+    await mobilePage.fill('input[type="email"]', EMAIL!);
+    await mobilePage.fill('input[type="password"]', PASSWORD!);
     await mobilePage.click('button[type="submit"]');
     await mobilePage.waitForLoadState('networkidle');
     await mobilePage.waitForTimeout(1000);

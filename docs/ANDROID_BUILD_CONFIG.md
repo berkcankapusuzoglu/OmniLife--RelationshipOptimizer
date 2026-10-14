@@ -32,20 +32,20 @@ Before building a release, set these in your shell:
 
 ### Linux/macOS/Git Bash
 ```bash
-export KEYSTORE_PASSWORD="tempSifre81!"
-export KEY_PASSWORD="tempSifre81!"
+export KEYSTORE_PASSWORD="<keystore password>"
+export KEY_PASSWORD="<key password>"
 ```
 
 ### Windows Command Prompt
 ```cmd
-set KEYSTORE_PASSWORD=tempSifre81!
-set KEY_PASSWORD=tempSifre81!
+set KEYSTORE_PASSWORD=<keystore-password>
+set KEY_PASSWORD=<key-password>
 ```
 
 ### Windows PowerShell
 ```powershell
-$env:KEYSTORE_PASSWORD = "tempSifre81!"
-$env:KEY_PASSWORD = "tempSifre81!"
+$env:KEYSTORE_PASSWORD = "<keystore password>"
+$env:KEY_PASSWORD = "<key password>"
 ```
 
 ## Build Commands

@@ -19,10 +19,14 @@ test.describe('Mobile layout - no status bar overlap', () => {
 
 test.describe('Onboarding page renders', () => {
   test('onboarding page has visible content (not black screen)', async ({ page }) => {
+    const email = process.env.E2E_EMAIL;
+    const password = process.env.E2E_PASSWORD;
+    test.skip(!email || !password, 'Set E2E_EMAIL and E2E_PASSWORD to run the authenticated onboarding check.');
+
     // Set up a test session by going to login
     await page.goto('/login');
-    await page.fill('input[type="email"]', 'admin@omnilife.app');
-    await page.fill('input[type="password"]', 'AdminTest123!');
+    await page.fill('input[type="email"]', email!);
+    await page.fill('input[type="password"]', password!);
     await page.click('button[type="submit"]');
     // After login, we should land on /overview or /onboarding
     await page.waitForURL(/\/(overview|onboarding)/, { timeout: 10000 });

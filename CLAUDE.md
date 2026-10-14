@@ -25,7 +25,7 @@ No test runner is configured yet.
 - **Live URL**: https://omnilife-relationship-optimizer.vercel.app
 - **Deploy**: `npx vercel --prod --yes` (Vercel CLI, already authenticated)
 - **DB**: Supabase PostgreSQL (project `rlanchnpacwxloheszse`, us-east-1)
-- **Test account**: admin@omnilife.app / AdminTest123!
+- **Test account**: set `E2E_EMAIL` and `E2E_PASSWORD` in your local environment; do not commit test credentials.
 
 ## Architecture
 
@@ -193,7 +193,7 @@ Capacitor config at `capacitor.config.ts` — loads live Vercel URL in native We
   - **Files**: `src/lib/revenuecat/index.ts` (client), `src/lib/revenuecat/sync.ts` (server sync), `src/app/api/revenuecat/webhook/route.ts` (webhook), `src/components/native-upgrade-button.tsx` (UI)
   - **Product ID mapping** (RC entitlement → app tier): `pro` → `"pro"`, `premium` → `"premium"`
 
-- **Android release build**: Keystore at `android/app/omnilife-release.keystore`, alias `omnilife`. Password stored in env vars `KEYSTORE_PASSWORD` / `KEY_PASSWORD`. Use `export` (not inline assignment) due to `!` in password causing bash history expansion: `export KEYSTORE_PASSWORD='tempSifre81!' && export KEY_PASSWORD='tempSifre81!' && cd android && ./gradlew bundleRelease`. AAB output: `android/app/build/outputs/bundle/release/app-release.aab`. Current versionCode 3, versionName 1.0.2.
+- **Android release build**: Keystore at `android/app/omnilife-release.keystore`, alias `omnilife`. Supply `KEYSTORE_PASSWORD` and `KEY_PASSWORD` through your local environment or secret manager; never put their values in source or shell history. AAB output: `android/app/build/outputs/bundle/release/app-release.aab`. Current versionCode 3, versionName 1.0.2.
 
 - **Android `onStop()` access modifier**: `BridgeActivity.onStop()` is `public` — override must also be `public`, not `protected`. Java compilation fails otherwise.
 
