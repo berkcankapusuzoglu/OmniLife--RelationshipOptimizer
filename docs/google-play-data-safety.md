@@ -1,0 +1,116 @@
+# Google Play declaration worksheet
+
+Prepared 2026-10-14 against Tasks 2–5 through `dc4df8e`. This is a draft for owner review, not a submitted declaration or legal opinion. **OWNER CONFIRMATION** means the repository cannot establish that answer. Resolve the gates below, record evidence privately, and copy the resulting answers into the current console. Do not put credentials, keys, or real user data in this file.
+
+## Release scope and evidence
+
+The `com.omnilife.app` Android WebView loads `https://omnilife-relationship-optimizer.vercel.app`. Android v1 has no purchases, external upgrade directions, push SDK, or active native RevenueCat SDK. Existing server entitlements are honored, so eligible accounts can still reach Gemini coaching. Web Stripe billing remains active. Dormant RevenueCat server/webhook code is not evidence of a shipped purchase SDK.
+
+| Evidence key | Repository paths and facts |
+| --- | --- |
+| A: accounts | `src/lib/db/schema.ts`, `src/lib/auth/actions.ts`, `src/lib/auth/session.ts`, `src/lib/auth/guard.ts`: email/password account, optional name, account IDs, bcrypt password hash, signed unencrypted seven-day session, live-account lookup |
+| B: wellbeing | `src/lib/db/schema.ts`, `src/app/(dashboard)/daily/actions.ts`, `src/app/(dashboard)/weekly/actions.ts`, `src/app/(dashboard)/settings/actions.ts`: mood, energy, stress, scores, notes, goals, tasks, constraints, preferences; JSON export is logs/scores/weekly check-ins, not every table |
+| C: partners | `src/app/(dashboard)/partner/page.tsx`, `src/app/(dashboard)/partner/dashboard/page.tsx`, `src/app/(dashboard)/partner/dashboard/partner-dashboard-client.tsx`, `src/app/(dashboard)/partner/actions.ts`, `src/app/(dashboard)/tasks/actions.ts`, `src/lib/engine/divergence.ts`: linked name/email/latest overall score; partner dashboard latest life/relationship/overall score cards, five relationship dimension values and divergences; shared tasks and sync state |
+| D: coaching | `src/app/(dashboard)/coaching/actions.ts`, `src/lib/coaching/prompt-builder.ts`: Gemini receives current text, last ten messages, recent derived context; conversation persisted; rules fallback when unavailable |
+| E: email | `src/lib/email/index.ts`, `src/lib/auth/reset-actions.ts`: Resend receives reset recipient and message/reset URL when configured; mailing-list/referral records in schema |
+| F: analytics | `src/lib/analytics/track.ts`, `src/components/conversion-tracker.tsx`: internal event API with timestamps/properties/optional user ID, development console logging, no registered `onEvent` consumer in source; campaign attribution in sessionStorage |
+| G: hosting | `src/lib/db/index.ts`, `capacitor.config.ts`: Supabase/Postgres and live HTTPS Vercel host; provider plan, logs/drains, regions and database TLS settings require deployment evidence |
+| H: billing | `src/lib/capacitor/platform.ts`, `src/lib/revenuecat/index.ts`, `src/lib/revenuecat/sync.ts`, `src/app/api/stripe/checkout/route.ts`, `src/app/api/stripe/webhook/route.ts`, `src/components/__tests__/native-free-release.test.tsx`: web Stripe, existing entitlement status and dormant native billing |
+| I: deletion | `src/lib/account/delete-account.ts`, `src/app/(public)/delete-account/page.tsx`, `src/app/(public)/delete-account/delete-account-client.tsx`, `src/app/(dashboard)/settings/actions.ts`: password-confirmed authenticated deletion, active-record transaction, Stripe cleanup first, contact verification gate |
+| J: public copy | `src/app/(public)/privacy/page.tsx`, `src/app/(public)/terms/page.tsx`, `src/app/(public)/layout.tsx`: policy, terms, and in-app public footer |
+
+Confirm evidence paths against the final release tree, manifest, dependencies and deployed server commit after later release tasks. The live server can change app behavior without replacing the AAB.
+
+## Data Safety: initial fields
+
+Google includes developer-controlled WebView collection and off-device SDK transfers. Its service-provider and user-directed-transfer exceptions require examining the actual use. See [Data Safety definitions](https://support.google.com/googleplay/android-developer/answer/10787469?hl=en).
+
+| Console field | Draft answer and evidence | Owner gate |
+| --- | --- | --- |
+| Collect or share required user data types? | **Yes**: A–I include off-device accounts, wellbeing records and messages. | Confirm final deployment and all active Play tracks. |
+| All collected user data encrypted in transit? | **Unresolved**: app URL/provider APIs are HTTPS, but `getDb()` does not explicitly configure SSL. Session HMAC is not transport encryption. | **OWNER CONFIRMATION**: verify production connection SSL mode and Supabase enforcement, logs/drains and every processor route before answering Yes. |
+| Account creation methods | **Username/email and password**; no OAuth/federated login observed (A). | Verify all supported account paths. |
+| Account deletion supported? | **Yes, implemented** in Settings → Data and public web entry point (I). | Verify production success, recovery delivery and monitored fallback before submission. |
+| Account deletion URL | `https://omnilife-relationship-optimizer.vercel.app/delete-account` | Check public accessibility and actual deployed behavior. |
+| Can users delete data without deleting an account? | Do not equate account deletion or an export with independent data-deletion support. | **OWNER CONFIRMATION**: inspect individual edit/delete features and current optional console question; no general all-data-only request workflow is established here. |
+| Independent security review / certification badges | No evidence of a qualifying independent review in the repository. | Do not claim a badge without eligible evidence. |
+| Privacy policy URL | `https://omnilife-relationship-optimizer.vercel.app/privacy` | Complete contact, retention and legal gates; verify live page. |
+
+## Data Safety: each data type
+
+Every selected type needs collection, sharing, ephemeral processing, required/optional collection, and purposes. The table covers candidate answers from code; owner resolves conditional rows. **Stored records are not ephemeral.** “Optional” means users can choose the feature or input, even if a chosen feature needs that data. **Provider review** means confirm service-provider terms and uses before applying Google's sharing exception. Partner transfers need a separate user-directed-action/consent review; do not assume linking alone satisfies the exception. Pending that review, the conservative draft is **shared: Yes** for partner-visible data.
+
+| Data type / code evidence | Collected | Shared | Ephemeral | Required / optional | Collection purposes; sharing purposes if declared |
+| --- | --- | --- | --- | --- | --- |
+| Personal info: Email address (A, C, E, H) | Yes | Partner: draft Yes; Resend/hosting provider review; Stripe web-only boundary review | No | Required for an account; referrals/mailing list optional | Account management, app functionality, developer communications; partner sharing: app functionality. Marketing only if owner confirms mailing-list use. |
+| Personal info: Name (A, C) | Yes | Partner: draft Yes; hosting provider review | No | Optional | Account management, app functionality; sharing: app functionality |
+| Personal info: User IDs (A, C, D, H) | Yes | Hosting/provider review; partner identifiers and legacy entitlement flow require review | No | Required for accounts | Account management, app functionality; fraud prevention/security where actually used; sharing: app functionality if applicable |
+| Personal info: Other info (A, B) | Candidate: preferences and relationship profile; credentials also processed for authentication | Provider review | No | Preferences optional; password required for account | Account management, app functionality; owner confirms taxonomy rather than treating password hashes as anonymous |
+| Health and fitness: Health info (B, C, D) | Draft Yes: mood, energy, stress/wellbeing scores and potentially sensitive coaching/notes | Partner scores: draft Yes; Gemini/provider review | No | Optional feature use | App functionality, personalization; partner/Gemini sharing: app functionality, personalization if sharing must be declared |
+| Health and fitness: Fitness info (B, D) | **OWNER CONFIRMATION**: vitality/self-reflection and exercise completions exist, but no fitness sensor/workout tracker; inspect actual physical-activity entries/features | Conditional provider review | No if stored | Optional if collected | App functionality, personalization if selected |
+| Messages: Other in-app messages (D) | Yes: coaching chat | Gemini/provider review; no coaching-to-partner read observed | No | Optional, entitled coaching use | App functionality, personalization; same purposes if provider transfer is sharing |
+| App activity: Other user-generated content (B, C, D) | Yes: journal, weekly text/goals, task text, constraint names and scenario descriptions | Shared task text: draft Yes; hosting/Gemini provider review | No | Optional | App functionality, personalization; sharing: app functionality, personalization as applicable |
+| App activity: App interactions / Other actions (B, F, G) | Yes for persisted exercise/streak activity; browser-only events have no observed production destination; hosted requests/logs require review | Hosting provider review; no external analytics SDK observed | No for persisted activity; hosting logs unresolved | Required for submitted actions; optional feature use | App functionality, personalization; analytics only for actual production performance/use monitoring. Owner confirms attribution/marketing beyond local storage. |
+| Financial info: Purchase history (A, H) | Draft Yes: existing tier, source, expiry and subscription IDs accessible to entitled Android accounts; no native purchase | Provider review; dormant RevenueCat records conditional | No | Optional existing entitlement | App functionality, account management; sharing conditional on actual processor use |
+| Financial info: User payment info | No Android card entry/checkout path observed | No native flow observed | N/A | N/A | Web Stripe receives payment details directly; **OWNER CONFIRMATION**: final native navigation never opens payment collection. Reassess if it does. |
+| Contacts (A, C, E) | **OWNER CONFIRMATION**: partner-link and referral social graph exist; referral processing records the new account email, without reading an address book | Partner/provider review if selected | No if stored | Optional | App functionality, account management; sharing: app functionality if selected |
+| App info/performance: Crash logs, Diagnostics, Other app performance data (G) | **OWNER CONFIRMATION**: inspect Vercel request/error/runtime logs, drains and crash collection. No native crash SDK observed. | Provider review | Confirm actual retention; do not assume ephemeral | Usually required operational collection if enabled | Analytics and/or app functionality/security only where actually used |
+| Device or other IDs (G) | **OWNER CONFIRMATION**: inspect logged IP/request/device identifiers; no advertising/FCM installation ID SDK observed | Provider review | Confirm actual logs | Required if collected operationally | App functionality, fraud prevention/security, analytics as actually used |
+
+No specific input, SDK or permission was observed for precise/approximate location, race/ethnicity, political/religious beliefs, sexual orientation, credit score, other financial info, SMS/MMS, photos/videos, audio, file uploads, device calendars, installed-app inventory, in-app search history or general web browsing history. **OWNER CONFIRMATION**: inspect final manifest, network behavior, logs and unrestricted text content before marking any type absent. IP processing is not automatically location collection; determine whether location is derived. Reset email delivery does not read the user's inbox; confirm whether processor-held outgoing email content needs the Emails type. A JSON export download does not prove file upload collection.
+
+Do not mark “no sharing” until provider and partner reviews are signed off. Gemini paid-service mode matters: Google states that unpaid service inputs/outputs may be used for product improvement and human review, and sensitive/personal information must not be submitted to unpaid services. Paid-service prompts are not used for product improvement but can be logged for safety. **OWNER CONFIRMATION**: verify active Cloud Billing, applicable DPA, regions, abuse-retention terms, and any first-use disclosure/consent requirement for the existing coaching flow. See [Gemini API terms](https://ai.google.dev/gemini-api/terms). A premium OmniLife entitlement does not prove the API project is a paid service.
+
+## Health Apps declaration
+
+All relevant console tracks require the declaration. Match categories to actual functionality and listing claims; see [Health Apps fields](https://support.google.com/googleplay/android-developer/answer/14738291?hl=en) and [Health Content and Services policy](https://support.google.com/googleplay/android-developer/answer/16679511?hl=en).
+
+| Field / category | Draft assessment | Gate |
+| --- | --- | --- |
+| Offers health features? | Wellbeing/stress tracking and wellness coaching are present (B, D). Do not automatically choose “no health features.” | **OWNER CONFIRMATION**: approve health category assessment. |
+| Stress Management, Relaxation, Mental Acuity | Candidate Yes: stress dimension, mindfulness/wellness recommendations and coaching. | Match final exercises, prompts and store copy. |
+| Mental and Behavioral Health | Conditional: no licensed counseling or clinical service established, but coaching/mental wellbeing content may qualify. | Owner/legal assess actual claims and content. |
+| Activity/Fitness; Nutrition/Weight; Period; Sleep | No dedicated tracking/service observed. | Confirm final content and any vitality exercises before answering. |
+| Diseases/Conditions; Clinical Decision Support; Disease Prevention; Emergency/First Aid; Healthcare Services; Medical Reference | No such service established in code. | Crisis signposting alone is not a staffed emergency service; owner reviews all safety/medical claims. |
+| Medical Device Apps / regulatory proof | No regulatory approval evidence. | Do not claim medical-device status or clinical accuracy without evidence. |
+| Research / clinical trials / patient communities | No research enrollment observed. | Owner confirms no separate study or data-use program. |
+| Additional requested fields, disclaimer, privacy/disclosure | Terms disclaim therapy, diagnosis and professional advice (J); Gemini prompt instructs against diagnosis (D). | Owner confirms final listing disclaimer, informed disclosure, consent and applicable legal obligations. Prompt instructions do not guarantee generated outputs. |
+
+## Content rating, ads, audience and app access
+
+These are separate declarations. IARC assigns ratings from answers; do not promise Everyone/PEGI 3. See [content rating requirements](https://support.google.com/googleplay/android-developer/answer/9859655?hl=en), [target audience](https://support.google.com/googleplay/android-developer/answer/9867159?hl=en), and [review preparation / ads / access fields](https://support.google.com/googleplay/android-developer/answer/9859455?hl=en).
+
+| Console field | Draft / evidence | OWNER CONFIRMATION |
+| --- | --- | --- |
+| Rating contact email and category | Owner-controlled monitored inbox; utility/lifestyle/wellbeing content, not a game | Supply contact and choose the current IARC app category. |
+| Violence, fear/horror, sexual content/nudity, language, substances, gambling, discrimination | No authored rating answer is established here. Relationship exercises, crisis wording, free text and AI outputs need review. | Inspect all static content and generated output behavior; answer each actual questionnaire field and retain the resulting certificate. |
+| User communication / user-generated content / sharing | Partner task sharing and unconstrained coaching text exist (B–D). No public social feed established. | Confirm user-to-user interaction answers and moderation/safety obligations for the actual features. |
+| Purchases / random items / unrestricted internet / location sharing | No native purchase/random-item/location flow observed; WebView loads app-controlled site, browser plugin exists | Inspect all links and routes on the release device; do not classify a WebView as unrestricted browsing automatically. |
+| Contains ads | Draft **No**: no ad SDK or banner placements observed | Confirm all live content, sponsorships, house ads and hosting integrations. |
+| Target age groups | Draft **18 and over only**: privacy/terms state 18+; no age verification established (J) | Approve adult audience, listing art/copy and age-access handling. Gemini terms also restrict under-18-accessible API clients; terms alone do not prove compliance. |
+| Appeals to children / Families programs | No child-directed intent evidenced | Review actual imagery, marketing and distribution; adult target is a business decision. |
+| Restricted access | **All or some functionality restricted**: login, partner linking and entitlement gates (A, C, H) | Provide working reviewer access to every gated feature without asking reviewer to buy. |
+| Access instruction name, username/password, other instructions | Suggested name: “OmniLife reviewer access”. Email/password login via `/login`, complete onboarding, open dashboard/daily/weekly/tasks/partner/coaching/settings | Create owner-authorized synthetic test accounts, pre-link a partner, grant appropriate test entitlements and seed synthetic examples. Enter credentials privately in Console, never in git. |
+| Access reliability / region / MFA / deletion test | No MFA path observed; deletion asks current password and confirmation (I) | Keep accounts available for review, explain restrictions, provide a separate disposable deletion test account and password; verify password reset delivery and supply any regional instructions. |
+
+## Privacy, retention and deletion checklist
+
+Google requires a public privacy policy identifying the app/operator and a privacy contact, explaining collection, use, security, retention and deletion. Account creation requires in-app and outside-app deletion access. See [User Data policy](https://support.google.com/googleplay/android-developer/answer/10144311?hl=en) and [account deletion requirements](https://support.google.com/googleplay/android-developer/answer/13327111?hl=en).
+
+- [ ] Privacy URL: `https://omnilife-relationship-optimizer.vercel.app/privacy`; terms: same origin `/terms`; deletion URL: same origin `/delete-account`. Verify public HTTP 200, usable HTML, matching app name, and accessibility on device without geofencing, login or deployment protection. Do not use `/legal/privacy`.
+- [ ] **OWNER CONFIRMATION**: legal entity/controller identity, supported jurisdictions, rights-request workflow, marketing/data-sale business practices, lawful basis, provider agreements and cross-border safeguards. Existing arbitration/refund/notice terms remain subject to legal review.
+- [ ] **OWNER CONFIRMATION**: valid `ACCOUNT_DELETION_CONTACT_EMAIL`, monitored inbox, response ownership and recovery procedure. Set `ACCOUNT_DELETION_CONTACT_VERIFIED=true` only after testing receipt. Privacy and deletion pages disclose pending verification when absent/invalid/unverified. Rebuild/redeploy and recheck after configuration changes.
+- [ ] Active app records: after password-confirmed successful deletion, owned data is removed in one database transaction, session cleared, partner link/sync/assignments removed; partner-owned records remain. Verify account IDs cannot authenticate after deletion. Stripe cleanup happens first; failure retains app data and permits retry, while some subscriptions may already have been canceled (I).
+- [ ] **OWNER CONFIRMATION: actual Supabase backup/PITR retention**. Record production plan, actual backup window, PITR window, manual/off-site exports and restore/deletion handling. Replace the public policy's unresolved statement with confirmed duration(s) before launch. [Supabase backups](https://supabase.com/docs/guides/platform/backups) describes plan-dependent defaults (7/14/up to 30 days for daily backups); these are not evidence of this project's configuration.
+- [ ] **OWNER CONFIRMATION: hosting logs**. Record Vercel plan, runtime/request/security log retention and any drains/exports; [runtime-log documentation](https://vercel.com/docs/logs/runtime) is plan-dependent. Account deletion currently does not call a Vercel erasure API.
+- [ ] **OWNER CONFIRMATION: email records**. Resend documents 30-day email/log retention on Free/Pro/Scale and separate post-termination processing in [Resend security](https://resend.com/security); confirm deployed plan and DPA. App deletion removes associated mailing-list records but does not invoke Resend email-history erasure.
+- [ ] **OWNER CONFIRMATION: Gemini records**. Record paid-service mode, applicable retention and deletion/support process using [Gemini terms](https://ai.google.dev/gemini-api/terms). App deletion removes stored coaching sessions; no Gemini history-erasure call is implemented. Do not claim immediate processor erasure or blanket no training without project evidence.
+- [ ] **OWNER CONFIRMATION: Stripe/legacy store records**. App cancels Stripe subscriptions and deletes the customer when IDs exist, but this does not erase all billing/legal records; review [Stripe privacy policy](https://stripe.com/privacy). If historical RevenueCat/store records exist, arrange the provider/operator request and tell the user to cancel store subscriptions separately. Do not activate native billing as part of this step.
+- [ ] Local preferences/dismissals/attribution may remain in browser/app storage after deletion; public copy explains clearing device storage. Previously exported/downloaded copies and partner-owned records are not erased by account deletion.
+- [ ] Record final owner-approved collected/shared/optional/purpose answers, health choices, rating certificate, ads/audience choices and reviewer credentials privately. Reconcile every answer with final public copy, manifest, traffic, all active Play tracks and live server. Obtain explicit authorization before submitting declarations or releasing.
+
+## Owner sign-off record
+
+Status: **not approved for submission**. Exact backup retention, monitored contact, TLS, Gemini mode/consent, processor sharing treatment, audience/health/rating decisions and reviewer access remain unresolved. Engineering can verify routes/build while these owner gates remain open.
+
+Record owner, review date, release commit/deployment/AAB version, answers and evidence location for each gate above. No Play Console mutation was performed by this task.

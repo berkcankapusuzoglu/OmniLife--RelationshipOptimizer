@@ -1,21 +1,23 @@
 # Google Play Store Publishing Guide
 
-Last updated: 2026-03-23
+Last updated: 2026-10-14. Engineering basis: Tasks 2–5 through `dc4df8e`.
+
+This is an operator guide for the free Android v1 release. Complete the [field-by-field declaration pack](google-play-data-safety.md) and every OWNER CONFIRMATION gate before submission. This document does not authorize a Play Console submission or production rollout.
 
 ## Current State
 
 - Capacitor 8 configured: `appId: com.omnilife.app`, `appName: OmniLife`
-- `android/` project generated and synced
-- Capacitor plugins: `@capacitor/haptics`, `@capacitor/push-notifications`, `@capacitor/splash-screen`, `@capacitor/status-bar`, `@capacitor/browser`
+- Android source/bundle generation and device verification are separate release tasks; do not infer an AAB exists from this guide.
+- Capacitor dependencies: app, haptics, splash-screen, status-bar, browser. No active push-notification or purchase SDK in v1.
 - App loads live Vercel URL in native WebView (`https://omnilife-relationship-optimizer.vercel.app`)
 - `androidScheme: 'https'` not explicitly set (Capacitor 8 defaults to https)
 
 ## Prerequisites
 
 - **Android Studio** installed (latest stable)
-- **JDK 17+** installed
-- **Google Play Developer account** ($25 one-time fee at [play.google.com/console](https://play.google.com/console))
-- Identity verification completed (1-3 business days)
+- Use the JDK/Gradle/Android SDK versions verified by the Android packaging task
+- **Google Play Developer account** at [Play Console](https://play.google.com/console), with required identity and account checks completed by the owner
+- Verified production deployment, signed-session secret, database transport settings, monitored privacy/support contact, and actual retention information
 
 ## Phase 1: Build the Android App
 
@@ -27,7 +29,7 @@ npx cap sync android
 npx cap open android
 ```
 
-Note: Since the app loads a live URL, there's no need to run `npm run build` before syncing (the WebView loads from Vercel, not local assets).
+The WebView loads the live deployment. Run `npm run build`, verify the deployed release commit and public routes, and complete native device tests before bundling. A local web build alone does not update Vercel or prove the AAB loads the approved server behavior.
 
 ## Phase 2: App Icons & Splash Screen
 
@@ -67,7 +69,7 @@ set KEYSTORE_PASSWORD=your-password
 set KEY_PASSWORD=your-password
 ```
 
-Signing config is already in `android/app/build.gradle` with ProGuard minification and resource shrinking enabled.
+Verify release signing, minification and resource-shrinking configuration in the generated `android/app/build.gradle`; do not infer those settings from this guide. Keep keystore material and credentials outside version control.
 
 ## Phase 4: Build Release Bundle
 
@@ -80,22 +82,21 @@ Output: `android/app/build/outputs/bundle/release/app-release.aab`
 
 AAB format is required by Google Play (APKs no longer accepted for new apps).
 
-## Phase 5: Firebase Setup (for Push Notifications)
+## Phase 5: Confirm the Free Native Boundary
 
-1. Create a Firebase project at https://console.firebase.google.com
-2. Add an Android app with package name `com.omnilife.app`
-3. Download `google-services.json` and place it in `android/app/`
-4. The Capacitor push plugin handles FCM integration automatically
-5. The `build.gradle` already conditionally applies the google-services plugin when the file exists
+No Firebase/FCM setup is required for v1. Do not add a push or purchase SDK during release preparation. Inspect the generated Android manifest, dependency tree, and bundled plugin list after sync. Record the actual permissions and SDKs in the release evidence.
+
+Test fresh-install and existing-entitlement accounts. Native landing, pricing, locks, prompts, and billing settings must not advertise, link to, or initiate external digital purchases. Existing server entitlements remain honored. Evidence: `src/lib/capacitor/platform.ts`, `src/components/__tests__/native-free-release.test.tsx`, and `src/components/__tests__/billing-platform-actions.test.tsx`.
 
 ## Phase 6: Play Console Listing
 
 ### App Details
 - **App name**: OmniLife (or chosen app name)
-- **Short description** (80 chars): Track your relationship health with daily check-ins and AI-powered insights.
-- **Full description**: Relationship health tracker for analytical couples. Log daily scores across 9 dimensions, get personalized recommendations, track trends over time, and strengthen your relationship with guided exercises.
-- **Category**: Lifestyle
-- **Content rating**: Everyone / PEGI 3
+- **Short description draft**: Daily relationship check-ins, shared tasks, and personal reflection.
+- **Full description draft**: OmniLife helps adults reflect on relationship and wellbeing patterns through daily check-ins, scores, tasks, and guided exercises. Coaching is available to eligible accounts and may use AI. It is not therapy, diagnosis, or medical advice.
+- **Category**: OWNER CONFIRMATION: choose the category matching the final listing and health declaration.
+- **Content rating**: Complete the IARC questionnaire. Do not preselect Everyone / PEGI 3 or equate an 18+ target audience with the resulting content rating.
+- **Identity**: OWNER CONFIRMATION: confirm the legal operator, store contact, regions, and the existing OmniLife naming risk before production rollout.
 
 ### Store Assets Required
 - **App icon**: 512x512 PNG (32-bit, no alpha)
@@ -104,25 +105,30 @@ AAB format is required by Google Play (APKs no longer accepted for new apps).
   - Minimum: 320px, Maximum: 3840px on any dimension
   - Recommended: 1080x1920 (portrait phone)
 
-### Data Safety Form
-- **Data collected**: Email address, name (account creation)
-- **Data shared**: None
-- **Security**: Data encrypted in transit (HTTPS), data encrypted at rest (Supabase)
-- **Data deletion**: Users can request deletion via settings
+### App Content Forms
+
+Use [google-play-data-safety.md](google-play-data-safety.md) for every Data Safety, Health Apps, rating, ads, audience, app-access, privacy, and deletion field. Do not copy a blanket "data shared: none": Gemini terms, hosting settings, and partner flows need individual review.
+
+Production URLs from `capacitor.config.ts`:
+
+- [Privacy](https://omnilife-relationship-optimizer.vercel.app/privacy)
+- [Terms](https://omnilife-relationship-optimizer.vercel.app/terms)
+- [Account deletion](https://omnilife-relationship-optimizer.vercel.app/delete-account)
+- [Sign in](https://omnilife-relationship-optimizer.vercel.app/login) and [password recovery](https://omnilife-relationship-optimizer.vercel.app/forgot-password)
+
+OWNER CONFIRMATION: verify these exact deployed URLs without login, geofencing, or deployment protection. `/legal/privacy` is not the privacy route. In-app access is through the public footer and Settings → Data for deletion.
 
 ## Phase 7: In-App Payments
 
-**Important**: Google requires Google Play Billing for digital goods purchased inside Android apps. Stripe cannot be used for in-app purchases on Android.
+Android v1 offers no digital purchase flow. Stripe remains a web-only processor. See the [Google Play payments policy](https://support.google.com/googleplay/android-developer/answer/9858738?hl=en) before planning a future billing release; any applicable program exceptions require separate owner/legal review.
 
-### Recommended approach for v1:
-Disable in-app payment buttons on Android. Direct users to the web version for subscription upgrades. Detect platform:
-```typescript
-import { Capacitor } from '@capacitor/core';
-const isNative = Capacitor.isNativePlatform();
-```
+### Released v1 behavior
 
-### Future: Add RevenueCat
-For cross-platform billing (like SnuggleSmart uses):
+Native payment controls, price offers, and external upgrade directions are suppressed. Platform-sensitive UI waits for native detection; native purchase/restore SDK helpers are inactive. Do not direct Android users to web upgrades. Verify direct `/pricing` navigation and billing settings on device.
+
+### Dormant post-v1 reference, not a launch step
+
+RevenueCat/Google Play Billing integration needs its own implementation, testing, disclosure, and policy review. The historical product reference below is retained for the existing work in progress and is not a configured v1 offering. Do not execute this install command for v1:
 ```bash
 npm install @revenuecat/purchases-capacitor
 ```
@@ -130,15 +136,25 @@ Configure products in RevenueCat dashboard: `pro_monthly` ($4.99), `pro_yearly` 
 
 ## Phase 8: Testing & Review
 
-1. **Internal testing**: Upload AAB to internal testing track in Play Console
+1. **Internal testing**: Owner uploads the verified AAB to the intended track after explicitly approving submission
 2. **Pre-launch report**: Firebase Test Lab runs automated tests (check for crashes)
 3. **Closed testing**: Share with beta testers via email list
-4. **Production**: Submit for review (3-7 business days)
+4. **Production**: Owner confirms eligibility, declaration answers, naming decision, and final rollout approval. Review timing is determined by Google.
 
 ### Common Review Issues
-- App must provide value beyond just a website wrapper — our native plugins (push notifications, haptics) and PWA features help justify native app
-- Privacy policy must be accessible from within the app (already at `/legal/privacy`)
+- Verify useful functioning app content on device; native plugins do not establish policy approval.
+- Privacy policy must be accessible within the app at `/privacy`; owner must resolve the displayed retention/contact gates before launch.
 - App must not crash on launch — test on multiple API levels
+
+## Privacy and Deletion Release Gates
+
+- [ ] OWNER CONFIRMATION: `ACCOUNT_DELETION_CONTACT_EMAIL` is a valid monitored privacy/support inbox. Test receipt and ownership-verification workflow before setting `ACCOUNT_DELETION_CONTACT_VERIFIED=true`. Rebuild/redeploy public privacy copy after configuration changes and recheck both pages.
+- [ ] OWNER CONFIRMATION: inspect production Supabase daily-backup/PITR settings and any manual exports, record exact retention and restoration/deletion handling, and replace the privacy policy's unresolved retention statement with those facts. Do not assume a plan from repository configuration.
+- [ ] OWNER CONFIRMATION: verify Gemini paid-service project status, sensitive-data handling, retention, regions, terms, and whether prominent disclosure/consent is required before the first coaching submission. Unpaid services are not an acceptable default for these personal/sensitive prompts.
+- [ ] OWNER CONFIRMATION: inspect Vercel logs/drains, Resend, Stripe, and any historical RevenueCat records. Active database deletion does not prove provider erasure. Arrange an operator/provider deletion request for dormant store records if they exist.
+- [ ] OWNER CONFIRMATION: verify database TLS and processor contracts; finalize Data Safety collected/shared/purpose choices using deployment evidence.
+- [ ] Verify authenticated deletion with password and explicit confirmation, immediate active-record removal, session invalidation, surviving-partner isolation, and Stripe failure/retry behavior. Recovery emails must actually deliver in production.
+- [ ] Record build, route, AAB, and device verification results and owner approvals. No Play Console settings are changed by this documentation task.
 
 ## Quick Reference
 

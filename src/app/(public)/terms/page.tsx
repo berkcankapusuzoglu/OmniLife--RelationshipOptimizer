@@ -11,7 +11,7 @@ export default function TermsOfServicePage() {
     <article className="prose prose-invert mx-auto max-w-3xl px-6 py-12">
       <h1>Terms of Service</h1>
       <p className="text-muted-foreground text-sm">
-        Last updated: March 21, 2026
+        Last updated: October 14, 2026
       </p>
 
       <p>
@@ -56,6 +56,12 @@ export default function TermsOfServicePage() {
         you are experiencing a mental health crisis or relationship emergency,
         please contact a qualified professional or emergency service.
       </p>
+      <p>
+        Coaching may use Google Gemini to process your messages and recent app
+        context as described in our <a href="/privacy">Privacy Policy</a>.
+        Generated replies can be inaccurate and should not be relied on for
+        professional advice.
+      </p>
 
       <h2>5. Subscription &amp; Payments</h2>
       <h3>Free Tier</h3>
@@ -65,17 +71,26 @@ export default function TermsOfServicePage() {
       </p>
       <h3>Paid Subscriptions</h3>
       <p>
-        Premium features require a paid subscription. Payments are processed by
-        Stripe. By subscribing, you authorize recurring charges at the
+        Paid subscriptions are offered on the web through Stripe. Android v1
+        is free and has no purchase, upgrade, or external purchase-link flow.
+        Existing server-side account entitlements may still unlock features.
+        By subscribing on the web, you authorize recurring charges at the
         applicable rate until you cancel. Prices are displayed before purchase
         and may change with 30 days&apos; notice.
       </p>
       <h3>Cancellation</h3>
       <p>
-        You may cancel your subscription at any time from your account settings.
+        You may cancel a web subscription through the web billing settings.
         Cancellation takes effect at the end of your current billing period. You
         will retain access to paid features until then. We do not offer prorated
         refunds for partial billing periods.
+      </p>
+      <p>
+        Successful account deletion immediately removes active app records after
+        Stripe subscription and customer cleanup completes. A cleanup failure
+        keeps the app account available for retry. Any legacy app-store subscription
+        must be canceled separately in its store. See the{" "}
+        <a href="/delete-account">account deletion page</a> for details.
       </p>
 
       <h2>6. Acceptable Use</h2>
@@ -174,10 +189,11 @@ export default function TermsOfServicePage() {
 
       <h2>14. Contact</h2>
       <p>
-        Questions about these Terms? Contact us at:
+        Questions about these Terms? See the verified support contact status on
+        the <a href="/delete-account">account deletion page</a>.
       </p>
       <p>
-        <strong>Email:</strong> legal@omnilife.app
+        A monitored contact must be verified by the operator before the Play launch.
       </p>
     </article>
   );
