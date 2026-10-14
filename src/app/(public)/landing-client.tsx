@@ -33,6 +33,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useNativePlatform } from "@/lib/capacitor/platform";
 
 // ─── Animated Counter ────────────────────────────────────────────────
 function AnimatedCounter({
@@ -548,6 +549,7 @@ const researchSources = [
 
 // ─── Main Landing Page ──────────────────────────────────────────────
 export default function LandingClient() {
+  const native = useNativePlatform();
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       {/* Background gradient orbs */}
@@ -805,6 +807,7 @@ export default function LandingClient() {
       </section>
 
       {/* ─── Pricing ──────────────────────────────────────────── */}
+      {native === false && (
       <section className="relative z-10 mx-auto max-w-4xl px-6 py-24">
         <FadeIn>
           <div className="text-center">
@@ -924,6 +927,7 @@ export default function LandingClient() {
         </div>
       </section>
 
+      )}
       {/* ─── Newsletter CTA ──────────────────────────────────── */}
       <section className="relative z-10 mx-auto max-w-2xl px-6 py-16">
         <FadeIn>

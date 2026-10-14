@@ -1,74 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Capacitor } from "@capacitor/core";
+import { isNativePlatform, useNativePlatform } from "@/lib/capacitor/platform";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { purchasePackage, type RCPackageId } from "@/lib/revenuecat";
-import { syncRevenueCatEntitlement } from "@/lib/revenuecat/sync";
 
 interface NativeUpgradeButtonProps {
   tier: "pro" | "premium";
   interval: "monthly" | "yearly";
-  /** User ID — needed to sync entitlement after purchase */
+  /** Retained for callers that pass the authenticated account ID. */
   userId?: string;
   className?: string;
   children?: React.ReactNode;
 }
 
 /**
- * Upgrade button that:
- * - On native (iOS/Android): triggers RevenueCat in-app purchase sheet
- * - On web: redirects to /pricing (Stripe checkout)
+ * Stripe checkout is available only in an ordinary web browser.
  */
 export function NativeUpgradeButton({
   tier,
   interval,
-  userId,
   className,
   children,
 }: NativeUpgradeButtonProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const packageId: RCPackageId = `${tier}_${interval}`;
+  const native = useNativePlatform();
 
   async function handlePress() {
+    if (isNativePlatform()) return;
     setError(null);
     setLoading(true);
 
     try {
-      if (!Capacitor.isNativePlatform()) {
-        // Web: create Stripe checkout session and redirect
-        const res = await fetch("/api/stripe/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priceType: interval, tier }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          setError(data.error ?? "Checkout unavailable. Please try again.");
-          return;
-        }
-        window.location.href = data.url;
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceType: interval, tier }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        setError(data.error ?? "Checkout unavailable. Please try again.");
         return;
       }
-
-      const success = await purchasePackage(packageId);
-      if (!success) {
-        // User cancelled — no error shown
-        return;
-      }
-
-      // Sync the new entitlement to our DB
-      if (userId) {
-        await syncRevenueCatEntitlement();
-      }
-
-      // Refresh the page to reflect the new tier
-      router.refresh();
+      window.location.href = data.url;
     } catch (err) {
       console.error("[NativeUpgradeButton] error:", err);
       setError("Purchase failed. Please try again.");
@@ -76,6 +51,8 @@ export function NativeUpgradeButton({
       setLoading(false);
     }
   }
+
+  if (native !== false) return null;
 
   return (
     <div className="space-y-2">

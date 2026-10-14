@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { useNativePlatform } from "@/lib/capacitor/platform";
 
 interface UpgradePromptProps {
   featureDescription: string;
@@ -14,6 +15,7 @@ export function UpgradePrompt({
   featureDescription,
   className,
 }: UpgradePromptProps) {
+  const native = useNativePlatform();
   return (
     <Card
       className={`border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-violet-500/5 ${className ?? ""}`}
@@ -25,10 +27,10 @@ export function UpgradePrompt({
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium">{featureDescription}</p>
           <p className="text-xs text-muted-foreground">
-            Unlock all features with Premium
+            {native === false ? "Unlock all features with Premium" : "This feature is not available for your account."}
           </p>
         </div>
-        <div className="flex gap-2">
+        {native === false && <div className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -43,7 +45,7 @@ export function UpgradePrompt({
           >
             Upgrade — $7.99/mo
           </Button>
-        </div>
+        </div>}
       </CardContent>
     </Card>
   );

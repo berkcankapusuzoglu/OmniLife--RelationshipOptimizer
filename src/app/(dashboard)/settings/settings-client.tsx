@@ -14,6 +14,7 @@ import { DeleteAccountClient } from "@/app/(public)/delete-account/delete-accoun
 import type { Weights } from "@/lib/engine/types";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { isNativePlatform, useNativePlatform } from "@/lib/capacitor/platform";
 import {
   LogOut,
   Download,
@@ -67,10 +68,12 @@ export function SettingsClient({
   const [profileSaved, setProfileSaved] = useState(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
+  const native = useNativePlatform();
 
   const isPremium = user.subscriptionTier === "premium";
 
   async function handleManageSubscription() {
+    if (isNativePlatform()) return;
     setBillingLoading(true);
     setBillingError(null);
     try {
@@ -93,7 +96,7 @@ export function SettingsClient({
       <TabsList>
         <TabsTrigger value="profile">Profile</TabsTrigger>
         <TabsTrigger value="weights">Weights</TabsTrigger>
-        <TabsTrigger value="billing">Billing</TabsTrigger>
+        <TabsTrigger value="billing">{native === false ? "Billing" : "Account access"}</TabsTrigger>
         <TabsTrigger value="partner">Partner</TabsTrigger>
         <TabsTrigger value="data">Data</TabsTrigger>
       </TabsList>
@@ -282,7 +285,7 @@ export function SettingsClient({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              Billing
+              {native === false ? "Billing" : "Account access"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -297,14 +300,14 @@ export function SettingsClient({
                   Current Plan:{" "}
                   <span className="capitalize">{user.subscriptionTier}</span>
                 </p>
-                {isPremium && user.subscriptionExpiresAt && (
+                {native === false && isPremium && user.subscriptionExpiresAt && (
                   <p className="text-sm text-muted-foreground">
                     Renews{" "}
                     {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
                   </p>
                 )}
               </div>
-              {isPremium ? (
+              {native === false && (isPremium ? (
                 <Button
                   variant="outline"
                   disabled={billingLoading}
@@ -320,12 +323,13 @@ export function SettingsClient({
               ) : (
                 <Button
                   onClick={() => {
+                    if (isNativePlatform()) return;
                     window.location.href = "/pricing";
                   }}
                 >
                   Upgrade
                 </Button>
-              )}
+              ))}
             </div>
           </CardContent>
         </Card>

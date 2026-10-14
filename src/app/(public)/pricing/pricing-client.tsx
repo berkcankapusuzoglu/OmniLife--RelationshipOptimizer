@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { TIERS } from "@/lib/subscription/tiers";
 import { NativeUpgradeButton } from "@/components/native-upgrade-button";
 import { Check, Loader2 } from "lucide-react";
+import { isNativePlatform, useNativePlatform } from "@/lib/capacitor/platform";
 
 export function PricingClient({
   currentTier,
@@ -16,10 +17,12 @@ export function PricingClient({
 }) {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
+  const native = useNativePlatform();
 
   const isPremium = currentTier === "premium";
 
   async function handleManageSubscription() {
+    if (isNativePlatform()) return;
     setLoading(true);
     try {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
@@ -35,8 +38,23 @@ export function PricingClient({
     }
   }
 
+  if (native !== false) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">Your account</h1>
+        <p>Daily logging, scores, and guided exercises are available in the app.</p>
+        <p>Account access: <span className="capitalize">{currentTier}</span></p>
+        <p className="text-sm text-muted-foreground">Your existing account features remain available.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
+      <div className="mb-12 text-center">
+        <h1 className="text-4xl font-bold tracking-tight">Simple, transparent pricing</h1>
+        <p className="mt-3 text-lg text-muted-foreground">Start free. Upgrade when you&apos;re ready.</p>
+      </div>
       {/* Billing toggle */}
       <div className="flex items-center justify-center gap-3">
         <button

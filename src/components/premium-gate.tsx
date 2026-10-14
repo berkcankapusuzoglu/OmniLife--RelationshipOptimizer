@@ -3,6 +3,7 @@
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useNativePlatform } from "@/lib/capacitor/platform";
 import { TIERS, type Features, type SubscriptionTier, FEATURE_LABELS, FEATURE_DESCRIPTIONS } from "@/lib/subscription/tiers";
 
 // Features unlocked at Pro tier (not Premium-only)
@@ -17,6 +18,7 @@ interface PremiumGateProps {
 }
 
 export function PremiumGate({ userTier, feature, children }: PremiumGateProps) {
+  const native = useNativePlatform();
   const tierKey = (userTier in TIERS ? userTier : "free") as SubscriptionTier;
   const config = TIERS[tierKey].features;
   const value = config[feature];
@@ -47,15 +49,21 @@ export function PremiumGate({ userTier, feature, children }: PremiumGateProps) {
               {FEATURE_DESCRIPTIONS[feature]}
             </p>
           </div>
-          <Button
-            render={<Link href="/pricing" />}
-            className="bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-500 hover:to-violet-500"
-          >
-            {PRO_FEATURES.includes(feature) ? "Upgrade to Pro" : "Upgrade to Premium"}
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            {PRO_FEATURES.includes(feature) ? "Starting at $3.99/mo" : "Starting at $4.99/mo"}
-          </p>
+          {native === false ? (
+            <>
+              <Button
+                render={<Link href="/pricing" />}
+                className="bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-500 hover:to-violet-500"
+              >
+                {PRO_FEATURES.includes(feature) ? "Upgrade to Pro" : "Upgrade to Premium"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {PRO_FEATURES.includes(feature) ? "Starting at $3.99/mo" : "Starting at $4.99/mo"}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">This feature is not available for your account.</p>
+          )}
         </div>
       </div>
     </div>
