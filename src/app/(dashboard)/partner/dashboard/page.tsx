@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { getDb } from "@/lib/db";
 import { scores, dailyLogs, users } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { PartnerDashboardClient } from "./partner-dashboard-client";
 
@@ -15,41 +15,55 @@ export default async function PartnerDashboardPage() {
 
   // Fetch partner info
   const [partner] = await db
-    .select({ id: users.id, name: users.name, email: users.email })
+    .select({ id: users.id, name: users.name })
     .from(users)
-    .where(eq(users.id, user.partnerId))
+    .where(and(eq(users.id, user.partnerId), eq(users.partnerId, user.id)))
     .limit(1);
 
   if (!partner) {
     redirect("/partner");
   }
 
-  // Fetch both partners' last 30 days of scores and logs
+  const scoreFields = {
+    lifeScore: scores.lifeScore,
+    relScore: scores.relScore,
+    totalQuality: scores.totalQuality,
+    date: scores.date,
+  };
+  const dimensionFields = {
+    emotionalScore: dailyLogs.emotionalScore,
+    trustScore: dailyLogs.trustScore,
+    fairnessScore: dailyLogs.fairnessScore,
+    stressScore: dailyLogs.stressScore,
+    autonomyScore: dailyLogs.autonomyScore,
+  };
+
+  // The dashboard displays only each partner's latest scores and dimensions.
   const [userScores, partnerScores, userLogs, partnerLogs] = await Promise.all([
     db
-      .select()
+      .select(scoreFields)
       .from(scores)
       .where(eq(scores.userId, user.id))
       .orderBy(desc(scores.date))
-      .limit(30),
+      .limit(1),
     db
-      .select()
+      .select(scoreFields)
       .from(scores)
       .where(eq(scores.userId, partner.id))
       .orderBy(desc(scores.date))
-      .limit(30),
+      .limit(1),
     db
-      .select()
+      .select(dimensionFields)
       .from(dailyLogs)
       .where(eq(dailyLogs.userId, user.id))
       .orderBy(desc(dailyLogs.date))
-      .limit(30),
+      .limit(1),
     db
-      .select()
+      .select(dimensionFields)
       .from(dailyLogs)
       .where(eq(dailyLogs.userId, partner.id))
       .orderBy(desc(dailyLogs.date))
-      .limit(30),
+      .limit(1),
   ]);
 
   // Compute latest dimension scores for both
@@ -120,7 +134,7 @@ export default async function PartnerDashboardPage() {
           Partner Dashboard
         </h1>
         <p className="text-sm text-muted-foreground">
-          Side-by-side view with {partner.name ?? partner.email}
+          Side-by-side view with {partner.name ?? "Partner"}
         </p>
       </div>
       <PartnerDashboardClient

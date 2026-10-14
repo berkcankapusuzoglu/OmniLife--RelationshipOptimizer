@@ -9,6 +9,7 @@ import { detectTrendViolations } from "@/lib/engine/trends";
 import { getUserTier, getFeatureLimits } from "@/lib/subscription/access";
 import { BackButton } from "@/components/back-button";
 import type { Constraint, OptimizerResult, ParetoAnalysis } from "@/lib/engine/types";
+import { linkedPartnerId } from "@/lib/auth/authorization";
 
 export default async function InsightsPage() {
   const user = await requireAuth();
@@ -205,11 +206,12 @@ export default async function InsightsPage() {
 
   // Fetch partner scores for comparison (if partner linked)
   let partnerPoints: { lifeScore: number; relScore: number; date: string }[] = [];
-  if (user.partnerId) {
+  const partnerId = await linkedPartnerId(user);
+  if (partnerId) {
     const partnerScores = await db
-      .select()
+      .select({ lifeScore: scores.lifeScore, relScore: scores.relScore, date: scores.date })
       .from(scores)
-      .where(eq(scores.userId, user.partnerId))
+      .where(eq(scores.userId, partnerId))
       .orderBy(desc(scores.date))
       .limit(90);
 
