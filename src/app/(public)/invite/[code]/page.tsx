@@ -1,10 +1,11 @@
 import { getDb } from "@/lib/db";
 import { users, scores } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/guard";
 import { InviteClient } from "./invite-client";
 import type { Metadata } from "next";
+import { claimPartnerInvite } from "@/lib/auth/authorization";
 
 interface Props {
   params: Promise<{ code: string }>;
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const [inviter] = await db
       .select({ name: users.name })
       .from(users)
-      .where(eq(users.partnerInviteCode, code.toUpperCase()))
+      .where(and(eq(users.partnerInviteCode, code.toUpperCase()), isNull(users.partnerId)))
       .limit(1);
     firstName = inviter?.name?.split(" ")[0] ?? "Someone";
   } catch {
@@ -46,7 +47,7 @@ export default async function InvitePage({ params }: Props) {
     const [result] = await db
       .select({ id: users.id, name: users.name })
       .from(users)
-      .where(eq(users.partnerInviteCode, code.toUpperCase()))
+      .where(and(eq(users.partnerInviteCode, code.toUpperCase()), isNull(users.partnerId)))
       .limit(1);
     inviter = result;
   } catch {
@@ -68,27 +69,16 @@ export default async function InvitePage({ params }: Props) {
   }
 
   // If logged in, auto-link and redirect
+  let partnerLinked: boolean | null = null;
   try {
     const currentUser = await getCurrentUser();
     if (currentUser) {
-      const db = getDb();
-      if (!currentUser.partnerId && currentUser.id !== inviter.id) {
-        await db
-          .update(users)
-          .set({ partnerId: inviter.id })
-          .where(eq(users.id, currentUser.id));
-        await db
-          .update(users)
-          .set({ partnerId: currentUser.id })
-          .where(eq(users.id, inviter.id));
-      }
-      redirect("/overview?linked=true");
+      partnerLinked = await claimPartnerInvite(currentUser.id, code);
     }
-  } catch (e) {
-    // redirect() throws a special error — rethrow it
-    if (e instanceof Error && e.message?.includes("NEXT_REDIRECT")) throw e;
-    // Otherwise DB/auth failure — continue to show invite page
+  } catch {
+    // DB/auth failure — continue to show invite page
   }
+  if (partnerLinked !== null) redirect(partnerLinked ? "/overview?linked=true" : "/overview");
 
   const firstName = inviter.name?.split(" ")[0] ?? "Someone";
 

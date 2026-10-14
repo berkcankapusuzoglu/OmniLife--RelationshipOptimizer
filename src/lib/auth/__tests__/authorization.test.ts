@@ -14,15 +14,21 @@ import { completeOnboarding } from "@/app/(dashboard)/onboarding/actions";
 import { syncRevenueCatEntitlement } from "@/lib/revenuecat/sync";
 import { sendCoachingMessage } from "@/app/(dashboard)/coaching/actions";
 import { generateReport } from "@/app/(dashboard)/settings/export-pdf/actions";
+import { registerAction } from "@/lib/auth/actions";
+import { randomUUID } from "node:crypto";
+import InvitePage from "@/app/(public)/invite/[code]/page";
+import React from "react";
 vi.mock("server-only", () => ({}));
 
-const state = vi.hoisted(() => ({ actor: "", rows: {} as Record<string, Record<string, any>[]>, db: null as any }));
+const state = vi.hoisted(() => ({ actor: "", rows: {} as Record<string, Record<string, any>[]>, db: null as any, sessions: [] as string[], pauseInviteSelect: null as null | (() => Promise<void>) }));
 vi.mock("@/lib/db", () => ({ getDb: () => state.db }));
 vi.mock("@/lib/auth/guard", () => ({ requireAuth: async () => {
   if (!state.actor) throw new Error("Unauthorized");
   return state.rows.users.find((u) => u.id === state.actor);
-} }));
-vi.mock("@/lib/auth/session", () => ({ getSession: async () => state.actor ? { userId: state.actor } : null }));
+}, getCurrentUser: async () => state.actor ? state.rows.users.find((u) => u.id === state.actor) : null }));
+vi.mock("@/app/(public)/invite/[code]/invite-client", () => ({ InviteClient: () => null }));
+vi.mock("@/lib/auth/session", () => ({ getSession: async () => state.actor ? { userId: state.actor } : null, createSession: async (id: string) => { state.sessions.push(id); }, deleteSession: async () => {} }));
+vi.mock("@/lib/referrals", () => ({ processReferral: async () => {} }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 vi.mock("next/navigation", () => ({ redirect: (url: string) => { throw new Error(`Redirect:${url}`); } }));
 vi.mock("@/lib/streaks", () => ({ updateStreak: async () => ({ currentStreak: 1, longestStreak: 1 }) }));
@@ -47,7 +53,7 @@ const onboarding = { ...assessment, relationshipStatus: "Married", goals: ["Buil
 // causes a visible leak or mutation, rather than merely changing a spy argument.
 function memoryDb() {
   const dialect = new PgDialect();
-  function query(table: any, kind: string, projection?: any, values?: any) {
+  function query(table: any, kind: string, projection?: any, values?: any, undo?: Array<() => void>) {
     let predicate: SQL | undefined;
     let limit = Infinity;
     const columns = getTableColumns(table) as Record<string, any>;
@@ -65,21 +71,37 @@ function memoryDb() {
     const run = () => {
       const name = getTableName(table);
       const rows = state.rows[name] ??= [];
-      if (kind === "insert") { const inserted = (Array.isArray(values) ? values : [values]).map((v) => ({ ...v })); rows.push(...inserted); return inserted; }
+      if (kind === "insert") { const inserted = (Array.isArray(values) ? values : [values]).map((v) => name === "users" ? ({ id: randomUUID(), partnerId: null, partnerInviteCode: null, ...v }) : ({ ...v })); rows.push(...inserted); undo?.push(() => { state.rows[name] = state.rows[name].filter((r) => !inserted.includes(r)); }); return inserted; }
       const selected = rows.filter(matches).slice(0, limit);
-      if (kind === "update") selected.forEach((row) => Object.assign(row, values));
-      if (kind === "delete") state.rows[name] = rows.filter((row) => !selected.includes(row));
+      if (kind === "update") selected.forEach((row) => {
+        const before = { ...row };
+        undo?.push(() => { for (const key of Object.keys(values)) { if (key in before) row[key] = before[key]; else delete row[key]; } });
+        Object.assign(row, values);
+      });
+      if (kind === "delete") { state.rows[name] = rows.filter((row) => !selected.includes(row)); undo?.push(() => { state.rows[name].push(...selected); }); }
       if (projection) {
         if (projection.count) return [{ count: selected.length }];
         return selected.map((row) => Object.fromEntries(Object.entries(projection).map(([key, column]) => [key, row[Object.keys(columns).find((field) => columns[field] === column)!]])));
       }
       return selected.map((row) => ({ ...row }));
     };
-    const chain: any = { where: (p: SQL) => { predicate = p; return chain; }, orderBy: () => chain, limit: (n: number) => { limit = n; return chain; }, returning: () => chain, then: (ok: any, fail: any) => Promise.resolve().then(run).then(ok, fail) };
+    const execute = async () => {
+      const result = run();
+      // Pause a candidate read after its snapshot to model another entry point
+      // committing before the delayed conditional claim executes.
+      if (kind === "select" && getTableName(table) === "users" && predicate && dialect.sqlToQuery(predicate).params.includes("BOBCOD") && state.pauseInviteSelect) {
+        const pause = state.pauseInviteSelect;
+        state.pauseInviteSelect = null;
+        await pause();
+      }
+      return result;
+    };
+    const chain: any = { where: (p: SQL) => { predicate = p; return chain; }, orderBy: () => chain, limit: (n: number) => { limit = n; return chain; }, returning: () => chain, then: (ok: any, fail: any) => Promise.resolve().then(execute).then(ok, fail) };
     return chain;
   }
-  const db: any = { select: (p?: any) => ({ from: (t: any) => query(t, "select", p) }), insert: (t: any) => ({ values: (v: any) => query(t, "insert", undefined, v) }), update: (t: any) => ({ set: (v: any) => query(t, "update", undefined, v) }), delete: (t: any) => query(t, "delete") };
-  db.transaction = async (fn: any) => { const snapshot = structuredClone(state.rows); try { return await fn(db); } catch (error) { state.rows = snapshot; throw error; } };
+  const makeDb = (undo?: Array<() => void>): any => ({ select: (p?: any) => ({ from: (t: any) => query(t, "select", p, undefined, undo) }), insert: (t: any) => ({ values: (v: any) => query(t, "insert", undefined, v, undo) }), update: (t: any) => ({ set: (v: any) => query(t, "update", undefined, v, undo) }), delete: (t: any) => query(t, "delete", undefined, undefined, undo) });
+  const db = makeDb();
+  db.transaction = async (fn: any) => { const undo: Array<() => void> = []; try { return await fn(makeDb(undo)); } catch (error) { undo.reverse().forEach((revert) => revert()); throw error; } };
   return db;
 }
 const legacy = <T extends (...args: any[]) => any>(fn: T) => fn as (...args: any[]) => ReturnType<T>;
@@ -88,6 +110,9 @@ function form(values: Record<string, string>) { const data = new FormData(); Obj
 describe("server action authorization", () => {
   beforeEach(() => {
     state.actor = A;
+    state.sessions = [];
+    state.pauseInviteSelect = null;
+    vi.stubGlobal("React", React);
     state.rows = { users: [A, B, C].map((id) => ({ id, name: id === A ? "Alice" : "Private Bob", partnerId: null, partnerInviteCode: id === B ? "BOBCOD" : null, subscriptionTier: "free", subscriptionSource: null, alphaWeight: ".5", betaWeight: ".5", pillarVitalityWeight: ".25", pillarGrowthWeight: ".25", pillarSecurityWeight: ".25", pillarConnectionWeight: ".25", relEmotionalWeight: ".2", relTrustWeight: ".2", relFairnessWeight: ".2", relStressWeight: ".2", relAutonomyWeight: ".2" })), tasks: [{ id: resource, createdById: B, assigneeId: B, status: "pending" }], constraints: [{ id: resource, userId: B, isActive: true }], scenario_profiles: [{ id: resource, userId: B, mode: "exam" }], daily_logs: [{ id: resource, userId: B, date: "2099-01-01", notes: "Bob private" }], scores: [{ id: resource, userId: B, date: "2099-01-01", lifeScore: "9", relScore: "9", totalQuality: "9" }], weekly_checkins: [{ id: resource, userId: B, highlight: "Bob private" }] };
     state.db = memoryDb();
     state.rows.coaching_sessions = [{ id: resource, userId: B, messages: [{ role: "user", content: "Bob private", timestamp: "2099-01-01" }] }];
@@ -209,6 +234,80 @@ describe("server action authorization", () => {
     await legacy(linkPartner)("BOBCOD");
     expect(state.rows.users[2].partnerId).toBeNull();
   });
+  it("registration consumes an invitation and reuse creates a signed-in unlinked account", async () => {
+    await expect(registerAction(form({ email: "first@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow("Redirect:/overview?welcome=partner");
+    const first = state.rows.users.find((u) => u.email === "first@example.test")!;
+    expect(first.partnerId).toBe(B); expect(state.rows.users[1].partnerId).toBe(first.id);
+    expect(state.rows.users[1].partnerInviteCode).toBeNull();
+    await expect(registerAction(form({ email: "second@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/overview$/);
+    const second = state.rows.users.find((u) => u.email === "second@example.test")!;
+    expect(second.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(first.id);
+    expect(state.sessions).toEqual([first.id, second.id]);
+  });
+  it("registration does not overwrite an already-linked inviter even if its code remains", async () => {
+    state.rows.users[1].partnerId = C; state.rows.users[2].partnerId = B;
+    await expect(registerAction(form({ email: "new@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/overview$/);
+    const newcomer = state.rows.users.find((u) => u.email === "new@example.test")!;
+    expect(newcomer.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(C); expect(state.rows.users[2].partnerId).toBe(B);
+    expect(state.sessions).toEqual([newcomer.id]);
+  });
+  it("registration loses a stale invitation claim safely when dashboard redemption commits first", async () => {
+    let release!: () => void;
+    let read!: () => void;
+    const selected = new Promise<void>((resolve) => { read = resolve; });
+    const resume = new Promise<void>((resolve) => { release = resolve; });
+    state.pauseInviteSelect = async () => { read(); await resume; };
+    const registration = registerAction(form({ email: "racer@example.test", password: "password123", invite: "BOBCOD" })).catch((error) => error.message);
+    await selected;
+    await linkPartner("BOBCOD");
+    release();
+    expect(await registration).toBe("Redirect:/overview");
+    const newcomer = state.rows.users.find((u) => u.email === "racer@example.test")!;
+    expect(state.rows.users[1].partnerId).toBe(A); expect(state.rows.users[0].partnerId).toBe(B);
+    expect(newcomer.partnerId).toBeNull(); expect(state.sessions).toEqual([newcomer.id]);
+    expect(state.rows.users[1].partnerInviteCode).toBeNull();
+  });
+  it("dashboard loses a stale invitation claim safely when registration commits first", async () => {
+    let release!: () => void;
+    let read!: () => void;
+    const selected = new Promise<void>((resolve) => { read = resolve; });
+    const resume = new Promise<void>((resolve) => { release = resolve; });
+    state.pauseInviteSelect = async () => { read(); await resume; };
+    const dashboard = linkPartner("BOBCOD");
+    await selected;
+    await expect(registerAction(form({ email: "winner@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow("Redirect:/overview?welcome=partner");
+    release(); await dashboard;
+    const newcomer = state.rows.users.find((u) => u.email === "winner@example.test")!;
+    expect(state.rows.users[1].partnerId).toBe(newcomer.id); expect(newcomer.partnerId).toBe(B);
+    expect(state.rows.users[0].partnerId).toBeNull(); expect(state.rows.users[1].partnerInviteCode).toBeNull();
+    expect(state.sessions).toEqual([newcomer.id]);
+  });
+  it("rolls back an invitation claim if the actor became linked before its conditional update", async () => {
+    let release!: () => void;
+    let read!: () => void;
+    const selected = new Promise<void>((resolve) => { read = resolve; });
+    const resume = new Promise<void>((resolve) => { release = resolve; });
+    state.pauseInviteSelect = async () => { read(); await resume; };
+    const dashboard = linkPartner("BOBCOD");
+    await selected;
+    state.rows.users[0].partnerId = C; state.rows.users[2].partnerId = A;
+    release(); await dashboard;
+    expect(state.rows.users[0].partnerId).toBe(C); expect(state.rows.users[2].partnerId).toBe(A);
+    expect(state.rows.users[1].partnerId).toBeNull(); expect(state.rows.users[1].partnerInviteCode).toBe("BOBCOD");
+  });
+  it("the invite page consumes a successful redemption and cannot be replayed", async () => {
+    await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }).catch(() => {});
+    expect(state.rows.users[0].partnerId).toBe(B); expect(state.rows.users[1].partnerId).toBe(A);
+    expect(state.rows.users[1].partnerInviteCode).toBeNull();
+    state.actor = C;
+    await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }).catch(() => {});
+    expect(state.rows.users[2].partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(A);
+  });
+  it("the invite page cannot replace a linked inviter using a stale code", async () => {
+    state.rows.users[1].partnerId = C; state.rows.users[2].partnerId = B;
+    await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }).catch(() => {});
+    expect(state.rows.users[0].partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(C); expect(state.rows.users[2].partnerId).toBe(B);
+  });
   it("synchronizes only the session actor even with a forged legacy ID", async () => {
     await legacy(syncRevenueCatEntitlement)(B);
     expect(state.rows.users[0].subscriptionTier).toBe("premium"); expect(state.rows.users[1].subscriptionTier).toBe("free");
@@ -246,7 +345,7 @@ describe("server action authorization", () => {
   });
   it("all action entry points require authentication before data access", async () => {
     state.actor = "";
-    const actions = [() => submitDailyLog(daily as any), () => submitWeeklyCheckin(weekly), () => createTask({ title: "test", effortPoints: 1 } as any), () => updateTaskStatus(resource, "done"), () => completeExercise({ exerciseId: "test", title: "test", theoryBasis: "test", targetDimension: "trust", rating: 4 } as any), () => addConstraint(form({ name: "test", type: "redline", dimension: "trust" })), () => toggleConstraint(resource, false), () => removeConstraint(resource), () => legacy(activateScenario)(resource, "exam"), () => legacy(generateInviteCode)(), () => legacy(linkPartner)("BOBCOD"), () => legacy(unlinkPartner)(), () => legacy(getPartnerData)(30), () => updateProfile(form({ name: "test" })), () => legacy(updateWeights)(weights), () => legacy(exportData)(), () => legacy(completeOnboarding)(onboarding), () => legacy(syncRevenueCatEntitlement)()];
+    const actions: Array<() => Promise<unknown>> = [() => submitDailyLog(daily as any), () => submitWeeklyCheckin(weekly), () => createTask({ title: "test", effortPoints: 1 } as any), () => updateTaskStatus(resource, "done"), () => completeExercise({ exerciseId: "test", title: "test", theoryBasis: "test", targetDimension: "trust", rating: 4 } as any), () => addConstraint(form({ name: "test", type: "redline", dimension: "trust" })), () => toggleConstraint(resource, false), () => removeConstraint(resource), () => legacy(activateScenario)(resource, "exam"), () => legacy(generateInviteCode)(), () => legacy(linkPartner)("BOBCOD"), () => legacy(unlinkPartner)(), () => legacy(getPartnerData)(30), () => updateProfile(form({ name: "test" })), () => legacy(updateWeights)(weights), () => legacy(exportData)(), () => legacy(completeOnboarding)(onboarding), () => legacy(syncRevenueCatEntitlement)()];
     actions.push(() => sendCoachingMessage(resource, "test"), () => generateReport(30));
     for (const action of actions) await expect(action()).rejects.toThrow("Unauthorized");
   });
