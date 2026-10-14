@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { getAppUrl, getStripePriceId } from "@/lib/stripe/config";
-import { getSession } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/guard";
 
 export async function POST(request: NextRequest) {
-  const session = await getSession();
-  if (!session) {
+  const user = await getCurrentUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/overview?upgraded=true`,
       cancel_url: `${appUrl}/pricing`,
-      client_reference_id: session.userId,
+      client_reference_id: user.id,
       metadata: { tier },
     });
     return NextResponse.json({ url: checkoutSession.url });
