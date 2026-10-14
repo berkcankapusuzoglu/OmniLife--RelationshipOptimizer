@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — OmniLife",
@@ -11,7 +12,7 @@ export default function PrivacyPolicyPage() {
     <article className="prose prose-invert mx-auto max-w-3xl px-6 py-12">
       <h1>Privacy Policy</h1>
       <p className="text-muted-foreground text-sm">
-        Last updated: March 21, 2026
+        Last updated: October 14, 2026
       </p>
 
       <p>
@@ -64,7 +65,7 @@ export default function PrivacyPolicyPage() {
       <h3>Session Cookie</h3>
       <p>
         We set a single <strong>httpOnly session cookie</strong> when you log
-        in. It contains an encrypted session token and expires after{" "}
+        in. It contains a signed session token and expires after{" "}
         <strong>7 days</strong>. This cookie is essential for authentication and
         cannot be disabled while using the app.
       </p>
@@ -114,11 +115,20 @@ export default function PrivacyPolicyPage() {
 
       <h2>6. Data Retention</h2>
       <p>
-        We retain your data for as long as your account is active. If you delete
-        your account, we will permanently delete all your personal data,
-        including daily logs, scores, and relationship profiles, within{" "}
-        <strong>30 days</strong>. Anonymized, aggregated data that cannot be
-        linked back to you may be retained for service improvement.
+        We retain your app data while your account is active. After successful account deletion,
+        we immediately remove your account and active application records, including logs,
+        scores, check-ins, coaching conversations, scenarios, constraints, recommendations,
+        password-reset tokens, tasks you created, referrals, and associated mailing-list records.
+        Your partner retains their own account and data; your link, shared sync records, and
+        assignments to you are removed. Stripe billing cleanup must finish before app deletion;
+        a failure keeps your account available and gives retry instructions. App-store subscriptions
+        must be canceled through the store separately. Backup copies and provider records may follow
+        separate retention processes; we do not promise an unverified backup-erasure deadline.
+      </p>
+      <p>
+        Delete your account in Settings → Data or on the{" "}
+        <Link href="/delete-account">account deletion page</Link>, which also explains
+        sign-in recovery and the manual-request contact verification status.
       </p>
 
       <h2>7. Your Rights</h2>
@@ -152,8 +162,8 @@ export default function PrivacyPolicyPage() {
         </li>
       </ul>
       <p>
-        To exercise any of these rights, contact us at the address below. We
-        will respond within 30 days.
+        For account deletion, use the <Link href="/delete-account">account deletion page</Link>.
+        Manual deletion contact availability is shown there after the owner verifies a monitored address.
       </p>
 
       <h2>8. Children&apos;s Privacy</h2>
@@ -184,7 +194,9 @@ export default function PrivacyPolicyPage() {
         data rights, please contact us at:
       </p>
       <p>
-        <strong>Email:</strong> privacy@omnilife.app
+        See the <Link href="/delete-account">account deletion page</Link> for
+        the verified contact status and sign-in recovery options. A manual deletion
+        request requires verification that you own the account.
       </p>
     </article>
   );

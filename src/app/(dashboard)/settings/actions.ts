@@ -7,6 +7,29 @@ import { revalidatePath } from "next/cache";
 import type { Weights } from "@/lib/engine/types";
 import { requireAuth } from "@/lib/auth/guard";
 import { profileName, weightsInput } from "@/lib/auth/action-inputs";
+import { verifyPassword } from "@/lib/auth/password";
+import { deleteSession } from "@/lib/auth/session";
+import { BillingDeletionError, deleteAccount } from "@/lib/account/delete-account";
+import { redirect } from "next/navigation";
+
+export async function deleteAccountAction(_state: { error?: string }, formData: FormData): Promise<{ error?: string }> {
+  const user = await requireAuth();
+  if (formData.get("confirmation") !== "DELETE") {
+    return { error: "Type DELETE exactly to confirm permanent account deletion." };
+  }
+  const password = formData.get("password");
+  if (typeof password !== "string" || !password || password.length > 1024 || !await verifyPassword(password, user.passwordHash)) {
+    return { error: "Your current password is incorrect. Reset your password if you cannot sign in." };
+  }
+  try {
+    await deleteAccount(user.id);
+  } catch (error) {
+    if (error instanceof BillingDeletionError) return { error: error.message };
+    return { error: "Account deletion did not finish. Your app data has been kept. Billing may already have been canceled. Try again, or contact support through the deletion page." };
+  }
+  await deleteSession();
+  redirect("/delete-account?deleted=1");
+}
 
 export async function updateProfile(formData: FormData) {
   const user = await requireAuth();

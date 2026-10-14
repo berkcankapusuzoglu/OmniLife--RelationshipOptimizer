@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeightSliders } from "@/components/forms/WeightSliders";
 import { updateProfile, updateWeights, exportData } from "./actions";
 import { logoutAction } from "@/lib/auth/actions";
+import { DeleteAccountClient } from "@/app/(public)/delete-account/delete-account-client";
 import type { Weights } from "@/lib/engine/types";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -330,7 +331,7 @@ export function SettingsClient({
         </Card>
       </TabsContent>
 
-      <TabsContent value="data">
+      <TabsContent value="data" className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>Data Export</CardTitle>
@@ -357,6 +358,14 @@ export function SettingsClient({
               <Download className="mr-2 h-4 w-4" />
               Export Data
             </Button>
+          </CardContent>
+        </Card>
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle>Delete account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DeleteAccountClient />
           </CardContent>
         </Card>
       </TabsContent>
