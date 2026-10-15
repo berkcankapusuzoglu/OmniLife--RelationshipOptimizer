@@ -105,7 +105,7 @@ export default function RegisterPage() {
           </Button>
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href={inviteCode ? `/login?invite=${encodeURIComponent(inviteCode)}` : "/login"} className="text-primary hover:underline">
               Sign in
             </Link>
           </p>

@@ -8,7 +8,7 @@ import { users } from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "./password";
 import { createSession, deleteSession } from "./session";
 import { processReferral } from "@/lib/referrals";
-import { claimPartnerInvite } from "./authorization";
+import { inviteInput } from "./action-inputs";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -48,11 +48,7 @@ export async function registerAction(formData: FormData) {
     .values({ email, passwordHash, name })
     .returning({ id: users.id });
 
-  // Auto-link if invite code is present
-  const inviteCode = formData.get("invite");
-  const partnerLinked = typeof inviteCode === "string" && inviteCode.length > 0
-    ? await claimPartnerInvite(newUser.id, inviteCode)
-    : false;
+  const inviteCode = inviteInput.safeParse(formData.get("invite"));
 
   // Process referral if a referral code was provided
   if (ref) {
@@ -65,9 +61,7 @@ export async function registerAction(formData: FormData) {
 
   await createSession(newUser.id);
 
-  if (partnerLinked) {
-    redirect("/overview?welcome=partner");
-  }
+  if (inviteCode.success) redirect(`/invite/${inviteCode.data}`);
   redirect("/overview");
 }
 
@@ -101,6 +95,8 @@ export async function loginAction(formData: FormData) {
   }
 
   await createSession(user.id);
+  const inviteCode = inviteInput.safeParse(formData.get("invite"));
+  if (inviteCode.success) redirect(`/invite/${inviteCode.data}`);
   redirect("/overview");
 }
 

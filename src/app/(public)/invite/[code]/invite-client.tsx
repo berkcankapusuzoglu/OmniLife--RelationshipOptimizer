@@ -3,16 +3,14 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Sparkles, TrendingUp, Users } from "lucide-react";
+import { Heart, Sparkles, Users } from "lucide-react";
 
 export function InviteClient({
   firstName,
   code,
-  inviterScore,
 }: {
   firstName: string;
   code: string;
-  inviterScore: number | null;
 }) {
   const registerUrl = `/register?invite=${code}&from=${encodeURIComponent(firstName)}`;
 
@@ -36,21 +34,6 @@ export function InviteClient({
           </div>
 
           <CardContent className="p-6 space-y-6">
-            {inviterScore !== null && (
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 text-center space-y-1">
-                <div className="flex items-center justify-center gap-2 text-amber-400">
-                  <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm font-medium">Partner Challenge</span>
-                </div>
-                <p className="text-2xl font-bold tabular-nums">
-                  {Math.round(inviterScore)}/100
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {firstName}&apos;s relationship quality score. Can you beat it?
-                </p>
-              </div>
-            )}
-
             {/* Benefits */}
             <div className="space-y-3">
               <div className="flex items-start gap-3">
@@ -78,15 +61,15 @@ export function InviteClient({
               render={<Link href={registerUrl} />}
             >
               <Heart className="mr-2 h-5 w-5" />
-              Accept Invite
+              Create account to review invite
             </Button>
 
             <p className="text-center text-xs text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary hover:underline">
+              <Link href={`/login?invite=${code}`} className="text-primary hover:underline">
                 Sign in
               </Link>{" "}
-              to link automatically.
+              to review and confirm this invitation.
             </p>
           </CardContent>
         </Card>

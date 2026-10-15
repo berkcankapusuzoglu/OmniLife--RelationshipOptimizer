@@ -14,10 +14,12 @@ import { completeOnboarding } from "@/app/(dashboard)/onboarding/actions";
 import { syncRevenueCatEntitlement } from "@/lib/revenuecat/sync";
 import { sendCoachingMessage } from "@/app/(dashboard)/coaching/actions";
 import { generateReport } from "@/app/(dashboard)/settings/export-pdf/actions";
-import { registerAction } from "@/lib/auth/actions";
+import { loginAction, registerAction } from "@/lib/auth/actions";
+import { hashPassword } from "@/lib/auth/password";
 import { randomUUID } from "node:crypto";
-import InvitePage from "@/app/(public)/invite/[code]/page";
+import InvitePage, { generateMetadata as inviteMetadata } from "@/app/(public)/invite/[code]/page";
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 vi.mock("server-only", () => ({}));
 
 type MemoryRow = Record<string, unknown>;
@@ -34,7 +36,6 @@ vi.mock("@/lib/auth/guard", () => ({ requireAuth: async () => {
   if (!state.actor) throw new Error("Unauthorized");
   return state.rows.users.find((u) => u.id === state.actor);
 }, getCurrentUser: async () => state.actor ? state.rows.users.find((u) => u.id === state.actor) : null }));
-vi.mock("@/app/(public)/invite/[code]/invite-client", () => ({ InviteClient: () => null }));
 vi.mock("@/lib/auth/session", () => ({ getSession: async () => state.actor ? { userId: state.actor } : null, createSession: async (id: string) => { state.sessions.push(id); }, deleteSession: async () => {} }));
 vi.mock("@/lib/referrals", () => ({ processReferral: async () => {} }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
@@ -113,6 +114,16 @@ function memoryDb() {
 }
 const legacy = <T extends (...args: never[]) => unknown>(fn: T) => fn as unknown as (...args: unknown[]) => ReturnType<T>;
 function form(values: Record<string, string>) { const data = new FormData(); Object.entries(values).forEach(([k, v]) => data.set(k, v)); return data; }
+function confirmationAction(node: React.ReactNode): (data: FormData) => Promise<void> {
+  if (React.isValidElement(node)) {
+    const props = node.props as { action?: unknown; children?: React.ReactNode };
+    if (node.type === "form" && typeof props.action === "function") return props.action as (data: FormData) => Promise<void>;
+    for (const child of React.Children.toArray(props.children)) {
+      try { return confirmationAction(child); } catch { /* Search the next subtree. */ }
+    }
+  }
+  throw new Error("Confirmation form not found");
+}
 
 describe("server action authorization", () => {
   beforeEach(() => {
@@ -241,40 +252,43 @@ describe("server action authorization", () => {
     await legacy(linkPartner)("BOBCOD");
     expect(state.rows.users[2].partnerId).toBeNull();
   });
-  it("registration consumes an invitation and reuse creates a signed-in unlinked account", async () => {
-    await expect(registerAction(form({ email: "first@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow("Redirect:/overview?welcome=partner");
+  it("registration preserves the invitation for separate confirmation without linking", async () => {
+    await expect(registerAction(form({ email: "first@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
     const first = state.rows.users.find((u) => u.email === "first@example.test")!;
-    expect(first.partnerId).toBe(B); expect(state.rows.users[1].partnerId).toBe(first.id);
-    expect(state.rows.users[1].partnerInviteCode).toBeNull();
-    await expect(registerAction(form({ email: "second@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/overview$/);
+    expect(first.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBeNull();
+    expect(state.rows.users[1].partnerInviteCode).toBe("BOBCOD");
+    await expect(registerAction(form({ email: "second@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
     const second = state.rows.users.find((u) => u.email === "second@example.test")!;
-    expect(second.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(first.id);
+    expect(second.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBeNull();
     expect(state.sessions).toEqual([first.id, second.id]);
   });
   it("registration does not overwrite an already-linked inviter even if its code remains", async () => {
     state.rows.users[1].partnerId = C; state.rows.users[2].partnerId = B;
-    await expect(registerAction(form({ email: "new@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/overview$/);
+    await expect(registerAction(form({ email: "new@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
     const newcomer = state.rows.users.find((u) => u.email === "new@example.test")!;
     expect(newcomer.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(C); expect(state.rows.users[2].partnerId).toBe(B);
     expect(state.sessions).toEqual([newcomer.id]);
   });
-  it("registration loses a stale invitation claim safely when dashboard redemption commits first", async () => {
+  it("confirmation loses a stale invitation claim safely when dashboard redemption commits first", async () => {
+    const accept = confirmationAction(await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }));
     let release!: () => void;
     let read!: () => void;
     const selected = new Promise<void>((resolve) => { read = resolve; });
     const resume = new Promise<void>((resolve) => { release = resolve; });
     state.pauseInviteSelect = async () => { read(); await resume; };
-    const registration = registerAction(form({ email: "racer@example.test", password: "password123", invite: "BOBCOD" })).catch((error) => error.message);
+    state.actor = C;
+    const confirmation = accept(form({ code: "BOBCOD", confirm: "yes" })).catch((error: Error) => error.message);
     await selected;
+    state.actor = A;
     await linkPartner("BOBCOD");
     release();
-    expect(await registration).toBe("Redirect:/overview");
-    const newcomer = state.rows.users.find((u) => u.email === "racer@example.test")!;
+    expect(await confirmation).toBe("Redirect:/invite/BOBCOD?error=unavailable");
     expect(state.rows.users[1].partnerId).toBe(A); expect(state.rows.users[0].partnerId).toBe(B);
-    expect(newcomer.partnerId).toBeNull(); expect(state.sessions).toEqual([newcomer.id]);
+    expect(state.rows.users[2].partnerId).toBeNull();
     expect(state.rows.users[1].partnerInviteCode).toBeNull();
   });
-  it("dashboard loses a stale invitation claim safely when registration commits first", async () => {
+  it("dashboard loses a stale invitation claim safely when confirmation commits first", async () => {
+    const accept = confirmationAction(await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }));
     let release!: () => void;
     let read!: () => void;
     const selected = new Promise<void>((resolve) => { read = resolve; });
@@ -282,12 +296,11 @@ describe("server action authorization", () => {
     state.pauseInviteSelect = async () => { read(); await resume; };
     const dashboard = linkPartner("BOBCOD");
     await selected;
-    await expect(registerAction(form({ email: "winner@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow("Redirect:/overview?welcome=partner");
+    state.actor = C;
+    await expect(accept(form({ code: "BOBCOD", confirm: "yes" }))).rejects.toThrow(/^Redirect:\/overview\?linked=true$/);
     release(); await dashboard;
-    const newcomer = state.rows.users.find((u) => u.email === "winner@example.test")!;
-    expect(state.rows.users[1].partnerId).toBe(newcomer.id); expect(newcomer.partnerId).toBe(B);
+    expect(state.rows.users[1].partnerId).toBe(C); expect(state.rows.users[2].partnerId).toBe(B);
     expect(state.rows.users[0].partnerId).toBeNull(); expect(state.rows.users[1].partnerInviteCode).toBeNull();
-    expect(state.sessions).toEqual([newcomer.id]);
   });
   it("rolls back an invitation claim if the actor became linked before its conditional update", async () => {
     let release!: () => void;
@@ -302,13 +315,80 @@ describe("server action authorization", () => {
     expect(state.rows.users[0].partnerId).toBe(C); expect(state.rows.users[2].partnerId).toBe(A);
     expect(state.rows.users[1].partnerId).toBeNull(); expect(state.rows.users[1].partnerInviteCode).toBe("BOBCOD");
   });
-  it("the invite page consumes a successful redemption and cannot be replayed", async () => {
-    await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }).catch(() => {});
+  it("GET navigation with an authenticated cookie is read-only and requires explicit accessible consent", async () => {
+    const before = structuredClone(state.rows);
+    await inviteMetadata({ params: Promise.resolve({ code: "BOBCOD" }) });
+    const page = await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }).catch(() => null);
+    expect(state.rows).toEqual(before);
+    expect(typeof confirmationAction(page)).toBe("function");
+    const html = renderToStaticMarkup(page);
+    expect(html).toContain('name="confirm"'); expect(html).toContain('type="checkbox"'); expect(html).toContain("required");
+    expect(html).toContain("Confirm account link"); expect(html).not.toContain("Bob private");
+  });
+  it("only an explicit confirmation POST claims the invite and repeat claims fail closed", async () => {
+    const accept = confirmationAction(await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }));
+    await expect(accept(form({ code: "BOBCOD", confirm: "yes", userId: C }))).rejects.toThrow(/^Redirect:\/overview\?linked=true$/);
     expect(state.rows.users[0].partnerId).toBe(B); expect(state.rows.users[1].partnerId).toBe(A);
     expect(state.rows.users[1].partnerInviteCode).toBeNull();
     state.actor = C;
-    await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }).catch(() => {});
+    await expect(accept(form({ code: "BOBCOD", confirm: "yes" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD\?error=unavailable$/);
     expect(state.rows.users[2].partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(A);
+  });
+  it("confirmation rederives the actor and rejects missing consent, malformed codes, self and already-linked users", async () => {
+    const accept = confirmationAction(await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }));
+    const before = structuredClone(state.rows);
+    await expect(accept(form({ code: "BOBCOD" }))).rejects.toThrow("error=confirmation");
+    await expect(accept(form({ code: "bad/path", confirm: "yes" }))).rejects.toThrow("/invite/invalid?error=unavailable");
+    await expect(accept(form({ code: "ZZZZZZ", confirm: "yes" }))).rejects.toThrow("/invite/ZZZZZZ?error=unavailable");
+    state.actor = B;
+    await expect(accept(form({ code: "BOBCOD", confirm: "yes" }))).rejects.toThrow("error=unavailable");
+    expect(state.rows).toEqual(before);
+    state.actor = C; state.rows.users[2].partnerId = A;
+    await expect(accept(form({ code: "BOBCOD", confirm: "yes" }))).rejects.toThrow("error=unavailable");
+    expect(state.rows.users[1].partnerId).toBeNull(); expect(state.rows.users[2].partnerId).toBe(A);
+  });
+  it("anonymous navigation preserves auth continuation and reveals no score teaser", async () => {
+    state.actor = "";
+    const before = structuredClone(state.rows);
+    const html = renderToStaticMarkup(await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }));
+    expect(state.rows).toEqual(before);
+    expect(html).toContain("/register?invite=BOBCOD"); expect(html).toContain("/login?invite=BOBCOD");
+    expect(html).not.toContain("Partner Challenge");
+  });
+  it("a rendered form never trusts the account that originally loaded it", async () => {
+    const accept = confirmationAction(await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }));
+    state.actor = C;
+    await expect(accept(form({ code: "BOBCOD", confirm: "yes", userId: A }))).rejects.toThrow(/^Redirect:\/overview\?linked=true$/);
+    expect(state.rows.users[0].partnerId).toBeNull(); expect(state.rows.users[2].partnerId).toBe(B); expect(state.rows.users[1].partnerId).toBe(C);
+  });
+  it("invalid, used, self and already-linked invitations render no confirmation or private fields", async () => {
+    for (const mode of ["invalid", "used", "self", "linked"]) {
+      state.actor = mode === "self" ? B : A;
+      state.rows.users[0].partnerId = mode === "linked" ? C : null;
+      state.rows.users[1].partnerInviteCode = mode === "used" ? null : "BOBCOD";
+      const before = structuredClone(state.rows);
+      const page = await InvitePage({ params: Promise.resolve({ code: mode === "invalid" ? "bad/path" : "BOBCOD" }) });
+      expect(() => confirmationAction(page)).toThrow("Confirmation form not found");
+      const html = renderToStaticMarkup(page);
+      expect(html).toContain("Invitation unavailable"); expect(html).not.toContain("Private Bob");
+      expect(state.rows).toEqual(before);
+    }
+  });
+  it("login preserves the code for read-only confirmation without claiming", async () => {
+    state.rows.users[1].email = "bob@example.test"; state.rows.users[1].passwordHash = await hashPassword("password123");
+    await expect(loginAction(form({ email: "bob@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
+    expect(state.rows.users[1].partnerInviteCode).toBe("BOBCOD"); expect(state.rows.users[1].partnerId).toBeNull();
+    expect(state.sessions).toEqual([B]);
+  });
+  it("expired authentication and database failure cannot claim", async () => {
+    const accept = confirmationAction(await InvitePage({ params: Promise.resolve({ code: "BOBCOD" }) }));
+    const before = structuredClone(state.rows);
+    state.actor = "";
+    await expect(accept(form({ code: "BOBCOD", confirm: "yes" }))).rejects.toThrow(/^Redirect:\/login\?invite=BOBCOD$/);
+    state.actor = A;
+    state.db = { transaction: async () => { throw new Error("private database details"); } };
+    await expect(accept(form({ code: "BOBCOD", confirm: "yes" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD\?error=unavailable$/);
+    expect(state.rows).toEqual(before);
   });
   it("the invite page cannot replace a linked inviter using a stale code", async () => {
     state.rows.users[1].partnerId = C; state.rows.users[2].partnerId = B;

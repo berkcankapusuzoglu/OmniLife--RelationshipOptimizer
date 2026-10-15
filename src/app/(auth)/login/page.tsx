@@ -28,6 +28,9 @@ function ResetSuccessBanner() {
 }
 
 function LoginForm() {
+  const searchParams = useSearchParams();
+  const rawInvite = searchParams.get("invite") ?? "";
+  const invite = /^[a-zA-Z0-9]{6}$/.test(rawInvite) ? rawInvite.toUpperCase() : "";
   const [state, formAction, isPending] = useActionState(
     async (_prev: { error?: string } | undefined, formData: FormData) => {
       return await loginAction(formData);
@@ -44,6 +47,7 @@ function LoginForm() {
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
+        {invite && <input type="hidden" name="invite" value={invite} />}
         <CardContent className="flex flex-col gap-4">
           <Suspense fallback={null}>
             <ResetSuccessBanner />
@@ -90,7 +94,7 @@ function LoginForm() {
           </Button>
           <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline">
+            <Link href={invite ? `/register?invite=${invite}` : "/register"} className="text-primary hover:underline">
               Create one
             </Link>
           </p>
@@ -101,5 +105,5 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return <LoginForm />;
+  return <Suspense fallback={<p>Loading sign-in...</p>}><LoginForm /></Suspense>;
 }
