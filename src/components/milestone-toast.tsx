@@ -111,11 +111,11 @@ export function MilestoneToast({ milestones, onDismiss }: MilestoneToastProps) {
             key={i}
             className="confetti-piece absolute"
             style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2.5 + Math.random() * 3}s`,
-              width: `${6 + Math.random() * 6}px`,
-              height: `${6 + Math.random() * 6}px`,
+              left: `${(i * 37) % 100}%`,
+              animationDelay: `${((i * 17) % 30) / 10}s`,
+              animationDuration: `${2.5 + ((i * 13) % 30) / 10}s`,
+              width: `${6 + (i * 7) % 6}px`,
+              height: `${6 + (i * 11) % 6}px`,
               backgroundColor: [
                 "#f43f5e",
                 "#8b5cf6",
@@ -127,7 +127,7 @@ export function MilestoneToast({ milestones, onDismiss }: MilestoneToastProps) {
                 "#14b8a6",
               ][i % 8],
               borderRadius: i % 3 === 0 ? "50%" : "2px",
-              transform: `rotate(${Math.random() * 360}deg)`,
+              transform: `rotate(${(i * 137) % 360}deg)`,
             }}
           />
         ))}

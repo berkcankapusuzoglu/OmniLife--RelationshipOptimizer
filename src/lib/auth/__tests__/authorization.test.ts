@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { getTableColumns, getTableName, type SQL } from "drizzle-orm";
-import { PgDialect } from "drizzle-orm/pg-core";
+import { PgDialect, type PgTable } from "drizzle-orm/pg-core";
 import { submitDailyLog } from "@/app/(dashboard)/daily/actions";
 import { submitWeeklyCheckin } from "@/app/(dashboard)/weekly/actions";
 import { createTask, updateTaskStatus } from "@/app/(dashboard)/tasks/actions";
@@ -20,7 +20,15 @@ import InvitePage from "@/app/(public)/invite/[code]/page";
 import React from "react";
 vi.mock("server-only", () => ({}));
 
-const state = vi.hoisted(() => ({ actor: "", rows: {} as Record<string, Record<string, any>[]>, db: null as any, sessions: [] as string[], pauseInviteSelect: null as null | (() => Promise<void>) }));
+type MemoryRow = Record<string, unknown>;
+type MemoryQuery = PromiseLike<MemoryRow[]> & {
+  where(predicate: SQL): MemoryQuery;
+  orderBy(): MemoryQuery;
+  limit(count: number): MemoryQuery;
+  returning(): MemoryQuery;
+};
+
+const state = vi.hoisted(() => ({ actor: "", rows: {} as Record<string, MemoryRow[]>, db: null as unknown, sessions: [] as string[], pauseInviteSelect: null as null | (() => Promise<void>) }));
 vi.mock("@/lib/db", () => ({ getDb: () => state.db }));
 vi.mock("@/lib/auth/guard", () => ({ requireAuth: async () => {
   if (!state.actor) throw new Error("Unauthorized");
@@ -53,11 +61,11 @@ const onboarding = { ...assessment, relationshipStatus: "Married", goals: ["Buil
 // causes a visible leak or mutation, rather than merely changing a spy argument.
 function memoryDb() {
   const dialect = new PgDialect();
-  function query(table: any, kind: string, projection?: any, values?: any, undo?: Array<() => void>) {
+  function query(table: PgTable, kind: string, projection?: Record<string, unknown>, values: MemoryRow | MemoryRow[] = {}, undo?: Array<() => void>) {
     let predicate: SQL | undefined;
     let limit = Infinity;
-    const columns = getTableColumns(table) as Record<string, any>;
-    function matches(row: Record<string, any>) {
+    const columns = getTableColumns(table);
+    function matches(row: MemoryRow) {
       if (!predicate) return true;
       const compiled = dialect.sqlToQuery(predicate);
       const expression = compiled.sql
@@ -96,15 +104,14 @@ function memoryDb() {
       }
       return result;
     };
-    const chain: any = { where: (p: SQL) => { predicate = p; return chain; }, orderBy: () => chain, limit: (n: number) => { limit = n; return chain; }, returning: () => chain, then: (ok: any, fail: any) => Promise.resolve().then(execute).then(ok, fail) };
+    const chain: MemoryQuery = { where: (p: SQL) => { predicate = p; return chain; }, orderBy: () => chain, limit: (n: number) => { limit = n; return chain; }, returning: () => chain, then: (ok, fail) => Promise.resolve().then(execute).then(ok, fail) };
     return chain;
   }
-  const makeDb = (undo?: Array<() => void>): any => ({ select: (p?: any) => ({ from: (t: any) => query(t, "select", p, undefined, undo) }), insert: (t: any) => ({ values: (v: any) => query(t, "insert", undefined, v, undo) }), update: (t: any) => ({ set: (v: any) => query(t, "update", undefined, v, undo) }), delete: (t: any) => query(t, "delete", undefined, undefined, undo) });
+  const makeDb = (undo?: Array<() => void>) => ({ select: (p?: Record<string, unknown>) => ({ from: (t: PgTable) => query(t, "select", p, undefined, undo) }), insert: (t: PgTable) => ({ values: (v: MemoryRow | MemoryRow[]) => query(t, "insert", undefined, v, undo) }), update: (t: PgTable) => ({ set: (v: MemoryRow) => query(t, "update", undefined, v, undo) }), delete: (t: PgTable) => query(t, "delete", undefined, undefined, undo) });
   const db = makeDb();
-  db.transaction = async (fn: any) => { const undo: Array<() => void> = []; try { return await fn(makeDb(undo)); } catch (error) { undo.reverse().forEach((revert) => revert()); throw error; } };
-  return db;
+  return { ...db, transaction: async <T>(fn: (tx: typeof db) => Promise<T>) => { const undo: Array<() => void> = []; try { return await fn(makeDb(undo)); } catch (error) { undo.reverse().forEach((revert) => revert()); throw error; } } };
 }
-const legacy = <T extends (...args: any[]) => any>(fn: T) => fn as (...args: any[]) => ReturnType<T>;
+const legacy = <T extends (...args: never[]) => unknown>(fn: T) => fn as unknown as (...args: unknown[]) => ReturnType<T>;
 function form(values: Record<string, string>) { const data = new FormData(); Object.entries(values).forEach(([k, v]) => data.set(k, v)); return data; }
 
 describe("server action authorization", () => {
@@ -131,26 +138,26 @@ describe("server action authorization", () => {
     expect(state.rows.constraints).toEqual([{ id: resource, userId: B, isActive: true }]);
   });
   it("ignores forged actor fields when creating logs, exercises, constraints and tasks", async () => {
-    await submitDailyLog({ ...daily, userId: B } as any);
-    await completeExercise({ userId: B, exerciseId: "test", title: "Practice", theoryBasis: "test", targetDimension: "trust", rating: 4 } as any);
+    await legacy(submitDailyLog)({ ...daily, userId: B });
+    await legacy(completeExercise)({ userId: B, exerciseId: "test", title: "Practice", theoryBasis: "test", targetDimension: "trust", rating: 4 });
     await addConstraint(form({ userId: B, name: "Boundary", type: "redline", dimension: "trust", minValue: "2" }));
-    await createTask({ createdById: B, title: "Rest", effortPoints: 3 } as any);
+    await legacy(createTask)({ createdById: B, title: "Rest", effortPoints: 3 });
     expect(state.rows.daily_logs.filter((r) => r.id !== resource).every((r) => r.userId === A)).toBe(true);
     expect(state.rows.interventions[0].userId).toBe(A);
     expect(state.rows.constraints[1].userId).toBe(A);
     expect(state.rows.tasks[1].createdById).toBe(A);
   });
   it("rejects assignment to an unrelated user", async () => {
-    await expect(createTask({ title: "Rest", effortPoints: 3, assigneeId: B } as any)).rejects.toThrow();
+    await expect(createTask({ title: "Rest", effortPoints: 3, assigneeId: B })).rejects.toThrow();
     expect(state.rows.tasks).toHaveLength(1);
   });
   it("permits self and reciprocal linked-partner assignment, but rejects a stale link", async () => {
     state.rows.users[0].partnerId = B; state.rows.users[1].partnerId = A;
-    await createTask({ title: "Self", effortPoints: 1, assigneeId: A } as any);
-    await createTask({ title: "Partner", effortPoints: 1, assigneeId: B } as any);
+    await createTask({ title: "Self", effortPoints: 1, assigneeId: A });
+    await createTask({ title: "Partner", effortPoints: 1, assigneeId: B });
     expect(state.rows.tasks.slice(1).map((r) => r.assigneeId)).toEqual([A, B]);
     state.rows.users[1].partnerId = C;
-    await expect(createTask({ title: "Stale", effortPoints: 1, assigneeId: B } as any)).rejects.toThrow();
+    await expect(createTask({ title: "Stale", effortPoints: 1, assigneeId: B })).rejects.toThrow();
   });
   it("permits an owned task update and an owned constraint deletion", async () => {
     state.rows.tasks[0].createdById = A; state.rows.constraints[0].userId = A;
@@ -186,7 +193,7 @@ describe("server action authorization", () => {
     const own = state.rows.scenario_profiles[1];
     expect(own.userId).toBe(A); expect(own.id).toMatch(/^[0-9a-f-]{36}$/); expect(own.mode).toBe("exam");
     expect(state.rows.users[0].activeScenarioId).toBe(own.id);
-    await activateScenario(own.id, "exam");
+    await activateScenario(own.id as string, "exam");
     expect(state.rows.users[0].alphaWeight).toBe("0.65");
   });
   it("allows the assignee to complete a shared task", async () => {
@@ -311,7 +318,7 @@ describe("server action authorization", () => {
   it("synchronizes only the session actor even with a forged legacy ID", async () => {
     await legacy(syncRevenueCatEntitlement)(B);
     expect(state.rows.users[0].subscriptionTier).toBe("premium"); expect(state.rows.users[1].subscriptionTier).toBe("free");
-    expect((fetch as any).mock.calls[0][0]).toContain(A);
+    expect(vi.mocked(fetch).mock.calls[0][0]).toContain(A);
   });
   it("onboards only the authenticated actor", async () => {
     await legacy(completeOnboarding)({ ...onboarding, userId: B }).catch((error) => { if (error.message !== "Redirect:/overview") throw error; });
@@ -319,11 +326,11 @@ describe("server action authorization", () => {
     expect(state.rows.daily_logs[1].userId).toBe(A);
   });
   it("validates ranges and enums before any mutation", async () => {
-    await expect(submitDailyLog({ ...daily, vitality: 11 } as any)).rejects.toThrow();
+    await expect(submitDailyLog({ ...daily, vitality: 11 })).rejects.toThrow();
     await expect(submitWeeklyCheckin({ ...weekly, overallSatisfaction: -1 })).rejects.toThrow();
     await expect(updateTaskStatus(resource, "hacked")).rejects.toThrow();
-    await expect(createTask({ title: "", effortPoints: 99 } as any)).rejects.toThrow();
-    await expect(completeExercise({ exerciseId: "test", title: "test", theoryBasis: "test", targetDimension: "unknown", rating: 6 } as any)).rejects.toThrow();
+    await expect(createTask({ title: "", effortPoints: 99 })).rejects.toThrow();
+    await expect(completeExercise({ exerciseId: "test", title: "test", theoryBasis: "test", targetDimension: "unknown", rating: 6 })).rejects.toThrow();
     await expect(addConstraint(form({ name: "test", type: "unknown", dimension: "trust" }))).rejects.toThrow();
     await expect(legacy(updateWeights)({ ...weights, alpha: Infinity })).rejects.toThrow();
     expect(state.rows.tasks).toHaveLength(1); expect(state.rows.daily_logs).toHaveLength(1);
@@ -338,14 +345,14 @@ describe("server action authorization", () => {
   it("permits updates to an owned coaching conversation", async () => {
     state.rows.coaching_sessions[0].userId = A;
     await sendCoachingMessage(resource, "My message");
-    expect(state.rows.coaching_sessions[0].messages.map((m: any) => m.content)).toEqual(["Bob private", "My message", "Try a check-in"]);
+    expect((state.rows.coaching_sessions[0].messages as Array<{ content: string }>).map((m) => m.content)).toEqual(["Bob private", "My message", "Try a check-in"]);
   });
   it.each([0, -1, 366, Infinity, NaN, 1.5])("rejects unbounded therapist-export input %s", async (daysBack) => {
     await expect(generateReport(daysBack)).rejects.toThrow();
   });
   it("all action entry points require authentication before data access", async () => {
     state.actor = "";
-    const actions: Array<() => Promise<unknown>> = [() => submitDailyLog(daily as any), () => submitWeeklyCheckin(weekly), () => createTask({ title: "test", effortPoints: 1 } as any), () => updateTaskStatus(resource, "done"), () => completeExercise({ exerciseId: "test", title: "test", theoryBasis: "test", targetDimension: "trust", rating: 4 } as any), () => addConstraint(form({ name: "test", type: "redline", dimension: "trust" })), () => toggleConstraint(resource, false), () => removeConstraint(resource), () => legacy(activateScenario)(resource, "exam"), () => legacy(generateInviteCode)(), () => legacy(linkPartner)("BOBCOD"), () => legacy(unlinkPartner)(), () => legacy(getPartnerData)(30), () => updateProfile(form({ name: "test" })), () => legacy(updateWeights)(weights), () => legacy(exportData)(), () => legacy(completeOnboarding)(onboarding), () => legacy(syncRevenueCatEntitlement)()];
+    const actions: Array<() => Promise<unknown>> = [() => submitDailyLog(daily), () => submitWeeklyCheckin(weekly), () => createTask({ title: "test", effortPoints: 1 }), () => updateTaskStatus(resource, "done"), () => completeExercise({ exerciseId: "test", title: "test", theoryBasis: "test", targetDimension: "trust", rating: 4 }), () => addConstraint(form({ name: "test", type: "redline", dimension: "trust" })), () => toggleConstraint(resource, false), () => removeConstraint(resource), () => legacy(activateScenario)(resource, "exam"), () => legacy(generateInviteCode)(), () => legacy(linkPartner)("BOBCOD"), () => legacy(unlinkPartner)(), () => legacy(getPartnerData)(30), () => updateProfile(form({ name: "test" })), () => legacy(updateWeights)(weights), () => legacy(exportData)(), () => legacy(completeOnboarding)(onboarding), () => legacy(syncRevenueCatEntitlement)()];
     actions.push(() => sendCoachingMessage(resource, "test"), () => generateReport(30));
     for (const action of actions) await expect(action()).rejects.toThrow("Unauthorized");
   });

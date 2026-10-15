@@ -287,13 +287,13 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Heart className="h-5 w-5 text-primary" />
-              Welcome! Let's get to know you
+              Welcome! Let&apos;s get to know you
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-3">
               <Label className="text-base font-medium">
-                What's your relationship status?
+                What&apos;s your relationship status?
               </Label>
               <div className="flex flex-wrap gap-2">
                 {RELATIONSHIP_STATUSES.map((status) => (
@@ -444,7 +444,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Constraints define boundaries you don't want to cross. For
+              Constraints define boundaries you don&apos;t want to cross. For
               example, minimum trust level or weekly time budgets. You can always
               change these later.
             </p>
@@ -624,7 +624,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
               always do this later from the Partner page.
             </p>
             <div className="space-y-2">
-              <Label>Partner's Email</Label>
+              <Label>Partner&apos;s Email</Label>
               <Input
                 type="email"
                 value={partnerEmail}

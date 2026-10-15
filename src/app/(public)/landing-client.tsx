@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   Heart,
@@ -54,12 +54,7 @@ function AnimatedCounter({
   const hasAnimated = useRef(false);
 
   useEffect(() => {
-    // Reset on target change so re-mounts animate properly
     hasAnimated.current = false;
-    setCount(0);
-  }, [target]);
-
-  useEffect(() => {
     const el = ref.current;
     if (!el || hasAnimated.current) return;
 
@@ -184,16 +179,19 @@ const activityMessages = [
   "A couple in Berlin unlocked all 37 exercises",
 ];
 
+function subscribeTickerDismissal(onChange: () => void) {
+  window.addEventListener("ticker-dismissed", onChange);
+  return () => window.removeEventListener("ticker-dismissed", onChange);
+}
+
 function ActivityTicker() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visible, setVisible] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("ticker-dismissed")) {
-      setDismissed(true);
-    }
-  }, []);
+  const dismissed = useSyncExternalStore(
+    subscribeTickerDismissal,
+    () => typeof sessionStorage !== "undefined" && Boolean(sessionStorage.getItem("ticker-dismissed")),
+    () => false
+  );
 
   useEffect(() => {
     if (dismissed) return;
@@ -215,10 +213,10 @@ function ActivityTicker() {
   }, [dismissed, visible]);
 
   const handleDismiss = useCallback(() => {
-    setDismissed(true);
     setVisible(false);
     if (typeof window !== "undefined") {
       sessionStorage.setItem("ticker-dismissed", "1");
+      window.dispatchEvent(new Event("ticker-dismissed"));
     }
   }, []);
 

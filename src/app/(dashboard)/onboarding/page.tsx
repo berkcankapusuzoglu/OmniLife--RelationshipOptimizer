@@ -26,7 +26,7 @@ export default async function OnboardingPage() {
           Welcome to OmniLife
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Let's set up your relationship optimizer in just a few steps
+          Let&apos;s set up your relationship optimizer in just a few steps
         </p>
       </div>
       <OnboardingClient scenarioPresets={scenarioPresets} />

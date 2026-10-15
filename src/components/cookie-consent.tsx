@@ -1,21 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "omnilife-cookie-consent";
+const CONSENT_EVENT = "omnilife-cookie-consent-change";
+
+function subscribe(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(CONSENT_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(CONSENT_EVENT, onChange);
+  };
+}
 
 export function CookieConsent() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      setVisible(true);
-    }
-  }, []);
+  const visible = useSyncExternalStore(
+    subscribe,
+    () => !localStorage.getItem(STORAGE_KEY),
+    () => false
+  );
 
   function dismiss() {
     localStorage.setItem(STORAGE_KEY, "1");
-    setVisible(false);
+    window.dispatchEvent(new Event(CONSENT_EVENT));
   }
 
   if (!visible) return null;

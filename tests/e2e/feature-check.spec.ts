@@ -2,7 +2,7 @@
  * Feature verification tests against the live Vercel deployment.
  * Uses a shared browser context so session cookies persist across all tests.
  */
-import { test, expect, BrowserContext, Page } from '@playwright/test';
+import { test, expect, BrowserContext, Page, type Locator } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -136,7 +136,7 @@ test('3. Streak badge clickable — dialog appears', async () => {
   if (hasStreak) {
     // Find the StreakBadge button (the clickable badge component)
     const allBtns = await sharedPage.locator('button').all();
-    let streakBtn: any = null;
+    let streakBtn: Locator | null = null;
     for (const btn of allBtns) {
       const txt = await btn.textContent();
       if (txt && txt.includes('🔥')) {

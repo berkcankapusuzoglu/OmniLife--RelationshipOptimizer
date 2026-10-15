@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
         <CardHeader>
           <CardTitle className="text-xl">Check your email</CardTitle>
           <CardDescription>
-            If an account exists for that email, we've sent a password reset
+            If an account exists for that email, we&apos;ve sent a password reset
             link. It expires in 1 hour.
           </CardDescription>
         </CardHeader>
@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
       <CardHeader>
         <CardTitle className="text-xl">Forgot password?</CardTitle>
         <CardDescription>
-          Enter your email and we'll send you a reset link.
+          Enter your email and we&apos;ll send you a reset link.
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
