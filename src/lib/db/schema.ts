@@ -47,6 +47,11 @@ export const users = pgTable("users", {
   partnerInviteCode: text("partner_invite_code").unique(),
   activeScenarioId: uuid("active_scenario_id"),
   subscriptionTier: text("subscription_tier").default("free"),
+  // Current subscription owner: "stripe" | "revenuecat". Stripe ownership
+  // persists through payment failures so recovery can restore access.
+  // Null means unowned or unresolved legacy ownership. Provider writes guard
+  // ownership in UPDATE predicates; null paid rows require reconciliation.
+  subscriptionSource: text("subscription_source"),
   subscriptionExpiresAt: timestamp("subscription_expires_at", { withTimezone: true }),
   trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
   stripeCustomerId: text("stripe_customer_id"),

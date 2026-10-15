@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
-import { getAppUrl, getStripePriceId } from "@/lib/stripe/config";
+import { getStripePriceId } from "@/lib/stripe/config";
 import { getCurrentUser } from "@/lib/auth/guard";
 
 export async function POST(request: NextRequest) {
@@ -9,9 +9,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const priceType = body.priceType as "monthly" | "yearly";
-  const tier = (body.tier === "pro" ? "pro" : "premium") as "pro" | "premium";
+  const paid = user.subscriptionTier === "pro" || user.subscriptionTier === "premium";
+  if ((user.subscriptionSource && user.subscriptionSource !== "stripe") || (paid && user.subscriptionSource !== "stripe")) {
+    return NextResponse.json({ error: "Account access needs review before checkout." }, { status: 409 });
+  }
+
+  let body: unknown;
+  try { body = await request.json(); } catch {
+    return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
+  }
+  if (!body || typeof body !== "object" || !("tier" in body) || !("priceType" in body)) {
+    return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
+  }
+  const { priceType, tier } = body;
+  if (tier !== "pro" && tier !== "premium") {
+    return NextResponse.json({ error: "Invalid subscription tier" }, { status: 400 });
+  }
 
   if (priceType !== "monthly" && priceType !== "yearly") {
     return NextResponse.json(
@@ -20,12 +33,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const priceId = getStripePriceId(priceType, tier);
-  if (!priceId) {
-    return NextResponse.json(
-      { error: "Stripe price ID not configured" },
-      { status: 500 }
-    );
+  let priceId: string;
+  try {
+    priceId = getStripePriceId(priceType, tier);
+  } catch (err) {
+    console.error("Stripe price config error:", err);
+    return NextResponse.json({ error: "Checkout is temporarily unavailable." }, { status: 503 });
   }
 
   // Derive app URL from the incoming request to avoid env var issues
@@ -47,8 +60,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Stripe error";
-    console.error("Stripe checkout error:", message, "appUrl:", appUrl, "priceId:", priceId);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Stripe checkout error:", err);
+    return NextResponse.json({ error: "Checkout is temporarily unavailable." }, { status: 503 });
   }
 }

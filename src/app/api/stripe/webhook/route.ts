@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import { canGrantSubscription } from "@/lib/subscription/ownership";
+import { getStripeTierForPriceId } from "@/lib/stripe/config";
 import type Stripe from "stripe";
 
 export async function POST(request: NextRequest) {
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (!webhookSecret) {
     console.error("STRIPE_WEBHOOK_SECRET is not set");
     return NextResponse.json(
-      { error: "Webhook secret not configured" },
+      { error: "Webhook unavailable" },
       { status: 500 }
     );
   }
@@ -43,7 +45,8 @@ export async function POST(request: NextRequest) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.client_reference_id;
-      if (!userId) break;
+      if (!userId || session.mode !== "subscription" ||
+        (session.payment_status !== "paid" && session.payment_status !== "no_payment_required")) break;
 
       const subscriptionId =
         typeof session.subscription === "string"
@@ -54,19 +57,20 @@ export async function POST(request: NextRequest) {
           ? session.customer
           : session.customer?.id;
 
-      // Read tier from metadata (set at checkout creation); default to "premium"
-      const purchasedTier =
-        session.metadata?.tier === "pro" ? "pro" : "premium";
+      const purchasedTier = session.metadata?.tier;
+      if (!subscriptionId || !customerId || (purchasedTier !== "pro" && purchasedTier !== "premium")) break;
 
       await db
         .update(users)
         .set({
           subscriptionTier: purchasedTier,
-          stripeCustomerId: customerId ?? null,
-          stripeSubscriptionId: subscriptionId ?? null,
+          subscriptionSource: "stripe",
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          subscriptionExpiresAt: null,
           updatedAt: new Date(),
         })
-        .where(eq(users.id, userId));
+        .where(and(eq(users.id, userId), canGrantSubscription("stripe")));
       break;
     }
 
@@ -78,30 +82,37 @@ export async function POST(request: NextRequest) {
           : subscription.customer.id;
 
       const status = subscription.status;
-      // Determine tier from price ID: pro price IDs get "pro", otherwise "premium"
-      const proMonthlyId = process.env.STRIPE_PRO_MONTHLY_PRICE_ID;
-      const proYearlyId = process.env.STRIPE_PRO_YEARLY_PRICE_ID;
       const priceId = subscription.items?.data?.[0]?.price?.id ?? "";
-      const isProPrice = !!priceId && (priceId === proMonthlyId || priceId === proYearlyId);
       const tier =
         status === "active" || status === "trialing"
-          ? isProPrice
-            ? "pro"
-            : "premium"
+          ? getStripeTierForPriceId(priceId)
           : "free";
+      // Unknown/ambiguous prices cannot grant a default Premium entitlement.
+      if (!tier) {
+        console.warn("Stripe subscription price is not mapped to an entitlement");
+        break;
+      }
       const expiresAt =
         subscription.current_period_end
           ? new Date(subscription.current_period_end * 1000)
           : null;
 
+      const isDowngrade = tier === "free";
       await db
         .update(users)
         .set({
           subscriptionTier: tier,
-          subscriptionExpiresAt: expiresAt,
+          // Keep the subscription owner through recoverable payment failures.
+          // Deletion clears ownership; a later active update can restore access.
+          subscriptionSource: "stripe",
+          subscriptionExpiresAt: isDowngrade ? null : expiresAt,
           updatedAt: new Date(),
         })
-        .where(eq(users.stripeCustomerId, customerId));
+        .where(and(
+          eq(users.stripeCustomerId, customerId),
+          eq(users.stripeSubscriptionId, subscription.id),
+          eq(users.subscriptionSource, "stripe"),
+        ));
       break;
     }
 
@@ -116,11 +127,16 @@ export async function POST(request: NextRequest) {
         .update(users)
         .set({
           subscriptionTier: "free",
+          subscriptionSource: null,
           stripeSubscriptionId: null,
           subscriptionExpiresAt: null,
           updatedAt: new Date(),
         })
-        .where(eq(users.stripeCustomerId, customerId));
+        .where(and(
+          eq(users.stripeCustomerId, customerId),
+          eq(users.stripeSubscriptionId, subscription.id),
+          eq(users.subscriptionSource, "stripe"),
+        ));
       break;
     }
 

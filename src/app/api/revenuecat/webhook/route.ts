@@ -10,10 +10,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import type { SubscriptionTier } from "@/lib/subscription/tiers";
+import { canGrantSubscription } from "@/lib/subscription/ownership";
 
 // Map RevenueCat product_id → tier
 const PRODUCT_TO_TIER: Record<string, SubscriptionTier> = {
@@ -78,21 +79,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         .update(users)
         .set({
           subscriptionTier: tier,
-          subscriptionExpiresAt: expiresAt ?? undefined,
+          subscriptionSource: "revenuecat",
+          subscriptionExpiresAt: expiresAt,
         })
-        .where(eq(users.id, userId));
+        .where(and(eq(users.id, userId), canGrantSubscription("revenuecat")));
 
-      console.log(`[RevenueCat webhook] ${type}: ${userId} → ${tier}`);
-    } else if (type === "CANCELLATION" || type === "EXPIRATION") {
+    } else if (type === "CANCELLATION") {
+      // User disabled auto-renew. They keep their paid tier until the period
+      // ends — EXPIRATION (below) handles the actual downgrade. Only record
+      // the expiration date if the event provides one.
+      if (expiration_at_ms) {
+        await db
+          .update(users)
+          .set({ subscriptionExpiresAt: new Date(expiration_at_ms) })
+          .where(and(eq(users.id, userId), eq(users.subscriptionSource, "revenuecat")));
+      }
+
+    } else if (type === "EXPIRATION") {
       await db
         .update(users)
         .set({
           subscriptionTier: "free",
-          subscriptionExpiresAt: undefined,
+          subscriptionSource: null,
+          subscriptionExpiresAt: null,
         })
-        .where(eq(users.id, userId));
+        .where(and(eq(users.id, userId), eq(users.subscriptionSource, "revenuecat")));
 
-      console.log(`[RevenueCat webhook] ${type}: ${userId} → free`);
     } else {
       // Ignored event types: UNCANCELLATION, BILLING_ISSUE, PRODUCT_CHANGE, etc.
       console.log(`[RevenueCat webhook] Ignored event type: ${type}`);

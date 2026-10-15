@@ -8,11 +8,12 @@
 
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import type { SubscriptionTier } from "@/lib/subscription/tiers";
 import { requireAuth } from "@/lib/auth/guard";
+import { canGrantSubscription } from "@/lib/subscription/ownership";
 
 // Map RevenueCat entitlement IDs → app tier names.
 // Configure matching entitlement IDs in the RevenueCat dashboard.
@@ -36,8 +37,8 @@ interface RCSubscriberResponse {
  * Fetches the subscriber record from RevenueCat and updates the user's
  * subscriptionTier and subscriptionExpiresAt in the database.
  *
- * Called after a successful native purchase to ensure the DB reflects
- * the latest entitlement state.
+ * Reconciles historical server-side entitlements. Native purchases are disabled
+ * in the free release; this action cannot take ownership from another provider.
  */
 export async function syncRevenueCatEntitlement(): Promise<void> {
   const user = await requireAuth();
@@ -97,11 +98,18 @@ export async function syncRevenueCatEntitlement(): Promise<void> {
   }
 
   const db = getDb();
+
   await db
     .update(users)
     .set({
       subscriptionTier: resolvedTier,
-      subscriptionExpiresAt: expiresAt ?? undefined,
+      subscriptionSource: resolvedTier === "free" ? null : "revenuecat",
+      subscriptionExpiresAt: expiresAt,
     })
-    .where(eq(users.id, userId));
+    .where(and(
+      eq(users.id, userId),
+      resolvedTier === "free"
+        ? eq(users.subscriptionSource, "revenuecat")
+        : canGrantSubscription("revenuecat"),
+    ));
 }

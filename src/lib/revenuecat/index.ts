@@ -1,19 +1,7 @@
 /**
- * Retired RevenueCat client integration. All functions are inert in this release.
- * Server-granted entitlements are read from the account, not this SDK.
- *
- * Historical configuration (unused by this release):
- *   NEXT_PUBLIC_REVENUECAT_ANDROID_KEY
- *   NEXT_PUBLIC_REVENUECAT_IOS_KEY
- *
- * Historical RevenueCat product catalog:
- *   - Entitlements: "pro", "premium"
- *   - Products (Google Play / App Store):
- *       pro_monthly      → $4.99/mo
- *       pro_yearly       → $39.99/yr
- *       premium_monthly  → $7.99/mo
- *       premium_yearly   → $59.99/yr
- *   - Offerings: map each product to its package
+ * Retired native purchase exports retained for existing callers.
+ * These functions do not load a purchase SDK or change account access.
+ * Historical server-side entitlements are reconciled separately in sync.ts.
  */
 
 export type RCPackageId = "pro_monthly" | "pro_yearly" | "premium_monthly" | "premium_yearly";
