@@ -49,7 +49,34 @@ yarn-error.log*
 
 # Capacitor
 ios/
-android/
+
+# Android source is tracked; credentials and generated files are local only.
+*.keystore
+*.jks
+*.p12
+*.pfx
+/android/**/local.properties
+/android/**/keystore.properties
+/android/**/signing.properties
+/android/**/google-services.json
+/android/**/.gradle/
+/android/**/.kotlin/
+/android/**/build/
+/android/**/.cxx/
+/android/**/.externalNativeBuild/
+/android/**/*.iml
+/android/**/*.log
+/android/**/*.apk
+/android/**/*.aab
+/android/**/*.ap_
+/android/**/*.dex
+/android/**/*.class
+/android/capacitor-cordova-android-plugins/
+/android/capacitor.settings.gradle
+/android/app/capacitor.build.gradle
+/android/app/src/main/assets/*
+!/android/app/src/main/assets/.gitkeep
+/android/app/src/main/res/xml/config.xml
 
 # typescript
 *.tsbuildinfo

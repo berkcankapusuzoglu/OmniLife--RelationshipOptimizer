@@ -4,6 +4,11 @@ const config: CapacitorConfig = {
   appId: "com.omnilife.app",
   appName: "OmniLife",
   webDir: "out",
+  android: {
+    allowMixedContent: false,
+    webContentsDebuggingEnabled: false,
+    loggingBehavior: "debug",
+  },
   server: {
     // Load the live Vercel deployment
     url: "https://omnilife-relationship-optimizer.vercel.app",

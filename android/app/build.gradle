@@ -1,0 +1,83 @@
+apply plugin: 'com.android.application'
+
+def releaseSigning = [
+    path: System.getenv('KEYSTORE_PATH'),
+    alias: System.getenv('KEYSTORE_ALIAS'),
+    storePassword: System.getenv('KEYSTORE_PASSWORD'),
+    keyPassword: System.getenv('KEY_PASSWORD')
+]
+def hasReleaseSigning = releaseSigning.values().every { it != null && !it.isEmpty() }
+def allowUnsignedRelease = providers.gradleProperty('allowUnsignedRelease').orNull == 'true'
+
+android {
+    namespace = "com.omnilife.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseSigning.path)
+                storePassword releaseSigning.storePassword
+                keyAlias releaseSigning.alias
+                keyPassword releaseSigning.keyPassword
+            }
+        }
+    }
+
+    defaultConfig {
+        applicationId "com.omnilife.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 6
+        versionName "1.0.3"
+        aaptOptions {
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+            debuggable false
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+tasks.register('verifyReleaseSigning') {
+    doLast {
+        if (!hasReleaseSigning && !allowUnsignedRelease) {
+            throw new GradleException('Release signing requires KEYSTORE_PATH, KEYSTORE_ALIAS, KEYSTORE_PASSWORD, and KEY_PASSWORD. For local inspection only, use -PallowUnsignedRelease=true to build an unsigned artifact; never upload it.')
+        }
+        if (hasReleaseSigning && !file(releaseSigning.path).isFile()) {
+            throw new GradleException('KEYSTORE_PATH must identify an existing owner-provided signing key.')
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name == 'preReleaseBuild') {
+        dependsOn tasks.named('verifyReleaseSigning')
+    }
+}
+
+repositories {
+    flatDir {
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
