@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Connection error — OmniLife</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 32px 24px;
+        background: #09090b;
+        color: #fafafa;
+        font: 1rem/1.6 system-ui, sans-serif;
+      }
+      main { width: 100%; max-width: 28rem; }
+      .brand { color: #c4b5fd; font-weight: 700; }
+      h1 { font-size: 2rem; line-height: 1.2; }
+      p { color: #d4d4d8; }
+      a {
+        display: inline-block;
+        min-height: 48px;
+        margin-top: 12px;
+        padding: 12px 32px;
+        border-radius: 10px;
+        background: #ddd6fe;
+        color: #18181b;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      a:focus-visible { outline: 3px solid #fafafa; outline-offset: 5px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="brand">OmniLife</p>
+      <h1>Unable to connect</h1>
+      <p>Check your internet connection, then try again. OmniLife may also be temporarily unavailable.</p>
+      <a id="retry" href="https://omnilife-relationship-optimizer.vercel.app">Retry</a>
+    </main>
+  </body>
+</html>

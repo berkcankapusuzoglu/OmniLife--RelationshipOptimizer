@@ -11,9 +11,9 @@ npm ci
 npx cap sync android
 ```
 
-Sync regenerates `android/capacitor.settings.gradle`, `android/app/capacitor.build.gradle`, the Cordova compatibility project, plugin JSON, Capacitor config, and web assets. These files are ignored and must be regenerated after a fresh checkout or dependency change. The tracked assets `.gitkeep` ensures the destination directory exists for a remote-server sync.
+Sync regenerates `android/capacitor.settings.gradle`, `android/app/capacitor.build.gradle`, the Cordova compatibility project, plugin JSON, Capacitor config, and web assets. These files are ignored and must be regenerated after a fresh checkout or dependency change. The tracked `native-shell/index.html` is copied into the generated public assets for connection-error handling.
 
-The shell loads `https://omnilife-relationship-optimizer.vercel.app` from `capacitor.config.ts`. With this remote URL, Capacitor permits the local `out/` directory to be absent and emits a warning. `npm run build` checks the server application but does not deploy it or embed it in the AAB. Verify the deployed commit and native behavior separately before upload. The app has no bundled offline application; verify its connection-error and recovery behavior on device.
+The shell loads `https://omnilife-relationship-optimizer.vercel.app` from `capacitor.config.ts`. Its `webDir` is the tracked static `native-shell` directory; `server.errorPath` selects its `index.html` when the main page cannot load. This local page requires no network, scripts, or Capacitor plugins. Its accessible Retry link navigates to the configured HTTPS origin. A focused config test checks that the packaged error page exists and its Retry target matches `server.url`; update both together when changing the origin. `npm run build` checks the server application but does not deploy it or embed it in the AAB. Verify the deployed commit and native behavior separately before upload. Full application use still requires a connection.
 
 ## Signing
 

@@ -3,7 +3,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "com.omnilife.app",
   appName: "OmniLife",
-  webDir: "out",
+  webDir: "native-shell",
   android: {
     allowMixedContent: false,
     webContentsDebuggingEnabled: false,
@@ -13,6 +13,7 @@ const config: CapacitorConfig = {
     // Load the live Vercel deployment
     url: "https://omnilife-relationship-optimizer.vercel.app",
     cleartext: false,
+    errorPath: "index.html",
   },
   plugins: {
     SplashScreen: {
