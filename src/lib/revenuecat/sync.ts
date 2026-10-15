@@ -8,12 +8,12 @@
 
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import type { SubscriptionTier } from "@/lib/subscription/tiers";
 import { requireAuth } from "@/lib/auth/guard";
-import { canGrantSubscription } from "@/lib/subscription/ownership";
+import { canAdvanceRevenueCat } from "@/lib/subscription/ownership";
 
 // Map RevenueCat entitlement IDs → app tier names.
 // Configure matching entitlement IDs in the RevenueCat dashboard.
@@ -44,6 +44,7 @@ export async function syncRevenueCatEntitlement(): Promise<void> {
   const user = await requireAuth();
   const userId = user.id;
   const secretKey = process.env.REVENUECAT_SECRET_KEY;
+  const snapshotStartedAt = new Date();
   if (!secretKey) {
     console.warn("[RevenueCat] REVENUECAT_SECRET_KEY not set — skipping sync");
     return;
@@ -99,6 +100,10 @@ export async function syncRevenueCatEntitlement(): Promise<void> {
 
   const db = getDb();
 
+  // A lifetime/unknown period cannot establish monotonic lifecycle ordering.
+  // Preserve existing grants and require operator evidence for such changes.
+  if (resolvedTier !== "free" && !expiresAt) return;
+
   await db
     .update(users)
     .set({
@@ -109,7 +114,7 @@ export async function syncRevenueCatEntitlement(): Promise<void> {
     .where(and(
       eq(users.id, userId),
       resolvedTier === "free"
-        ? eq(users.subscriptionSource, "revenuecat")
-        : canGrantSubscription("revenuecat"),
+        ? and(eq(users.subscriptionSource, "revenuecat"), lte(users.subscriptionExpiresAt, snapshotStartedAt))
+        : canAdvanceRevenueCat(expiresAt!),
     ));
 }

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { getStripePriceId } from "@/lib/stripe/config";
 import { getCurrentUser } from "@/lib/auth/guard";
+import { randomUUID } from "node:crypto";
+import { and, eq } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { canGrantSubscription } from "@/lib/subscription/ownership";
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
@@ -48,6 +53,14 @@ export async function POST(request: NextRequest) {
     : `https://${origin ?? "omnilife-relationship-optimizer.vercel.app"}`;
 
   try {
+    const db = getDb();
+    const checkoutToken = randomUUID();
+    const reserved = await db.update(users).set({
+      stripePendingCheckoutToken: checkoutToken,
+      stripePendingCheckoutSessionId: null,
+    }).where(and(eq(users.id, user.id), canGrantSubscription("stripe"))).returning({ id: users.id });
+    if (!reserved.length) return NextResponse.json({ error: "Account access changed. Please try again." }, { status: 409 });
+
     const stripe = getStripe();
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -56,8 +69,16 @@ export async function POST(request: NextRequest) {
       success_url: `${appUrl}/overview?upgraded=true`,
       cancel_url: `${appUrl}/pricing`,
       client_reference_id: user.id,
-      metadata: { tier },
+      metadata: { tier, checkoutToken },
+      subscription_data: { metadata: { checkoutToken, appUserId: user.id } },
     });
+    const bound = await db.update(users).set({ stripePendingCheckoutSessionId: checkoutSession.id })
+      .where(and(eq(users.id, user.id), eq(users.stripePendingCheckoutToken, checkoutToken), canGrantSubscription("stripe")))
+      .returning({ id: users.id });
+    if (!bound.length) {
+      await stripe.checkout.sessions.expire(checkoutSession.id).catch(() => {});
+      return NextResponse.json({ error: "Checkout was superseded. Please try again." }, { status: 409 });
+    }
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err) {
     console.error("Stripe checkout error:", err);

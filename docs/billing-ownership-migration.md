@@ -21,8 +21,13 @@ are made by this script.
 3. Run the dry run with `--stripe-manifest <private-path>` to inspect proposed
    counts. Then run `node scripts/migrate-add-subscription-source.mjs --apply
    --stripe-manifest <private-path>` during a maintenance window. It adds the
-   nullable column, locks the users table against concurrent writes for the
-   transaction, and sets only the owner on exact matching null-source paid rows.
+   nullable source and pending-checkout columns, locks the users table against
+   concurrent writes for the transaction, and sets only the owner on exact
+   matching null-source paid rows. It preflights source values across all users,
+   including free accounts; invalid values block all DDL/backfill. After a clean
+   preflight it installs and validates `users_subscription_source_check`, which
+   allows only SQL NULL, `stripe`, or `revenuecat`. Repeated apply runs recreate
+   that check canonically and validate it under the lock.
    It changes no tier, expiry, or Stripe IDs. Repeating it is safe.
 4. Reconcile remaining paid rows with unknown ownership. This includes legacy
    RevenueCat accounts; the script never infers RevenueCat ownership. Inspect
@@ -33,10 +38,15 @@ are made by this script.
    decision; do not label them as a provider to make the count disappear.
 5. Run `node scripts/migrate-add-subscription-source.mjs --check` without a
    manifest. Archive its output with the operator's evidence. Release requires
-   `sourceColumnPresent: true`, `unresolvedPaidRows: 0`, and `ready: true`.
+   `sourceColumnPresent: true`, `checkoutStateColumnsPresent: true`,
+   `sourceConstraintValidated: true`, `invalidSourceRows: 0`,
+   `unresolvedPaidRows: 0`, and `ready: true`.
 
 The command prints `proposedStripeBackfills`, `appliedStripeBackfills`,
 `alreadyOwnedStripeRows`, `unmatchedManifestRecords`, and `unresolvedPaidRows`.
+`invalidSourceRows` counts every non-null value outside the provider allowlist,
+regardless of account tier. Inspect and reconcile those values from evidence;
+the migration never silently normalizes or deletes them.
 Exit 0 means the ownership check is ready, exit 2 means a release gate remains,
 and exit 1 means a command/validation/database error. A failed or unresolved run
 must not be treated as migration completion. An apply run may commit verified
@@ -73,22 +83,41 @@ The updater requires matching user ID, customer ID, subscription ID, tier, and
 expiry snapshot. It rejects stale/inactive evidence, duplicates, mismatched
 snapshots, and conflicting ownership. It never overwrites a known owner.
 
-## Handler ownership rules
+## Handler lifecycle rules
 
-Paid RevenueCat purchase/renewal/sync and completed Stripe subscription checkout
-may renew their own provider or claim a null-source row whose tier is explicitly
-`free`. A paid null-source legacy row is preserved pending reconciliation.
-Neither provider may take the other provider's entitlement, even for a paid
-event. Explicit same-provider checkout can replace a Stripe subscription ID;
-subsequent updates/deletions must match the current stored subscription ID.
+A paid null-source legacy row is preserved pending reconciliation. Neither
+provider can take the other's entitlement, including for a paid event.
 
-RevenueCat cancellation, expiration, and free sync require RevenueCat ownership
-in the UPDATE predicate. Stripe updates/deletions require Stripe ownership and
-the exact current subscription ID and customer. A failed Stripe payment can
-remove access while keeping ownership for later recovery; deletion clears both
-access and ownership. Unknown or ambiguous Stripe prices grant no default tier.
+RevenueCat purchase/renewal and active sync require a finite future expiry. They
+may claim an explicitly free, source-null account, or atomically advance a known
+RevenueCat expiry strictly forward. Equal/older periods are inert, including
+replays that would change tier. Cancellation never changes the entitlement
+period. Expiration requires an already-elapsed event expiry that exactly matches
+the current RevenueCat period in the UPDATE predicate. An empty sync can clear
+only a known RevenueCat period that had elapsed before its fetch began. Missing
+or lifetime expiry evidence cannot mutate existing lifecycle state; verify such
+accounts manually rather than inventing an expiry. Existing lifetime grants are
+preserved. Early revocation/refund cases require verified reconciliation.
 
-These predicates protect against cross-provider races. They do not provide a
-complete same-provider event ordering ledger. Keep historical webhook delivery
-and reconciliation under review, particularly if a subscription changes during
-checkout. Native billing and notification SDKs remain disabled in this release.
+Checkout issuance atomically reserves a fresh random token on the account, creates
+a Stripe session carrying that token, and binds the returned session ID before
+returning its URL. Only the latest issued checkout can complete. Completion must
+match both pending token and session ID in its UPDATE, and consumes both fields.
+Subscription deletion cannot recreate that state. Therefore replayed checkout A
+cannot replace binding B or restore A/B after deletion. A legitimate checkout
+after an ended subscription reserves fresh state and can complete normally.
+Session metadata also propagates token/account identity to the subscription;
+deletion or inactive updates revoke only matching pending state, even if they
+arrive before completion. Older subscription events cannot revoke newer tokens.
+
+Before rollout, expire or reconcile outstanding legacy checkout sessions without
+this issued state. Their completion cannot grant access automatically. Never
+backfill arbitrary tokens from webhook payloads to bypass the check. If multiple
+checkouts or provider ownership changes overlap, reconcile any superseded paid
+session with Stripe; entitlement protection is not automatic payment refunding.
+
+Stripe subscription updates/deletions also require the current Stripe owner,
+subscription ID, and customer. A failed payment keeps Stripe ownership for later
+recovery; deletion clears access and ownership. Unknown/ambiguous Stripe prices
+grant no default tier. These bounded rules do not implement a ledger for every
+possible provider event type. Native billing and notification SDKs remain off.

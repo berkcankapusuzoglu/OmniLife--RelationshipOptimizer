@@ -19,12 +19,23 @@ afterEach(() => {
 
 function database(rows, columnPresent = false) {
   const writes = [];
+  let checkoutColumnsPresent = false;
+  let constraintValidated = false;
   const sql = async (strings, ...values) => {
     const query = strings.join("?").replace(/\s+/g, " ").trim().toLowerCase();
+    if (query.startsWith("select") && query.includes("pg_constraint")) return [{ present: constraintValidated }];
+    if (query.startsWith("select") && query.includes("stripe_pending_checkout")) return [{ present: checkoutColumnsPresent }];
     if (query.startsWith("select exists")) return [{ present: columnPresent }];
     if (query.startsWith("select")) return rows.map(row => ({ ...row }));
     writes.push(query);
-    if (query.startsWith("alter")) { columnPresent = true; return []; }
+    if (query.startsWith("alter")) {
+      if (query.includes("add column if not exists subscription_source")) columnPresent = true;
+      if (query.includes("stripe_pending_checkout_session_id")) checkoutColumnsPresent = true;
+      if (query.includes("drop constraint")) constraintValidated = false;
+      if (query.includes("add constraint")) expect(query).toContain("check (subscription_source in ('stripe', 'revenuecat')) not valid");
+      if (query.includes("validate constraint")) constraintValidated = true;
+      return [];
+    }
     if (query.startsWith("lock")) return [];
     if (query.startsWith("update")) {
       // Assert the emitted write contract, including an optimistic expiry snapshot.
@@ -98,5 +109,23 @@ describe("subscription ownership migration", () => {
   });
   it("keeps the script syntactically valid without executing a migration", () => {
     expect(() => execFileSync(process.execPath, ["--check", migrationPath])).not.toThrow();
+  });
+  it.each(["free", "pro"])("reports invalid source values on %s rows before any constraint change", async tier => {
+    const { migrateSubscriptionSource } = await import("./subscription-source-migration.mjs");
+    const db = database([{ ...paidRow(), subscriptionTier: tier, subscriptionSource: "strpie" }], true);
+    for (const apply of [false, true]) {
+      const result = await migrateSubscriptionSource(db.sql, { apply, now });
+      expect(result).toMatchObject({ invalidSourceRows: 1, ready: false });
+    }
+    expect(db.writes.filter(query => query.startsWith("alter"))).toEqual([]);
+  });
+  it("requires a validated source constraint and checkout state columns for readiness", async () => {
+    const { migrateSubscriptionSource } = await import("./subscription-source-migration.mjs");
+    const db = database([{ ...paidRow(), subscriptionSource: "stripe" }], true);
+    const before = await migrateSubscriptionSource(db.sql, { now });
+    expect(before).toMatchObject({ sourceConstraintValidated: false, checkoutStateColumnsPresent: false, ready: false });
+    const after = await migrateSubscriptionSource(db.sql, { apply: true, now });
+    expect(after).toMatchObject({ sourceConstraintValidated: true, checkoutStateColumnsPresent: true, invalidSourceRows: 0, ready: true });
+    expect(db.writes.some(query => query.includes("validate constraint users_subscription_source_check"))).toBe(true);
   });
 });

@@ -396,6 +396,8 @@ describe("server action authorization", () => {
     expect(state.rows.users[0].partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(C); expect(state.rows.users[2].partnerId).toBe(B);
   });
   it("synchronizes only the session actor even with a forged legacy ID", async () => {
+    // A finite current period supplies the lifecycle evidence required for a grant.
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ subscriber: { entitlements: { premium: { expires_date: "2099-01-01T00:00:00Z", product_identifier: "test" } } } }) })));
     await legacy(syncRevenueCatEntitlement)(B);
     expect(state.rows.users[0].subscriptionTier).toBe("premium"); expect(state.rows.users[1].subscriptionTier).toBe("free");
     expect(vi.mocked(fetch).mock.calls[0][0]).toContain(A);

@@ -41,6 +41,14 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
 
+  async function revokePendingCheckout(subscription: Stripe.Subscription) {
+    const token = subscription.metadata?.checkoutToken;
+    const userId = subscription.metadata?.appUserId;
+    if (!token || !userId) return;
+    await db.update(users).set({ stripePendingCheckoutToken: null, stripePendingCheckoutSessionId: null })
+      .where(and(eq(users.id, userId), eq(users.stripePendingCheckoutToken, token)));
+  }
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -58,7 +66,8 @@ export async function POST(request: NextRequest) {
           : session.customer?.id;
 
       const purchasedTier = session.metadata?.tier;
-      if (!subscriptionId || !customerId || (purchasedTier !== "pro" && purchasedTier !== "premium")) break;
+      const checkoutToken = session.metadata?.checkoutToken;
+      if (!subscriptionId || !customerId || !session.id || !checkoutToken || (purchasedTier !== "pro" && purchasedTier !== "premium")) break;
 
       await db
         .update(users)
@@ -67,10 +76,16 @@ export async function POST(request: NextRequest) {
           subscriptionSource: "stripe",
           stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
+          stripePendingCheckoutToken: null,
+          stripePendingCheckoutSessionId: null,
           subscriptionExpiresAt: null,
           updatedAt: new Date(),
         })
-        .where(and(eq(users.id, userId), canGrantSubscription("stripe")));
+        .where(and(
+          eq(users.id, userId), canGrantSubscription("stripe"),
+          eq(users.stripePendingCheckoutToken, checkoutToken),
+          eq(users.stripePendingCheckoutSessionId, session.id),
+        ));
       break;
     }
 
@@ -98,6 +113,7 @@ export async function POST(request: NextRequest) {
           : null;
 
       const isDowngrade = tier === "free";
+      if (isDowngrade) await revokePendingCheckout(subscription);
       await db
         .update(users)
         .set({
@@ -118,6 +134,7 @@ export async function POST(request: NextRequest) {
 
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
+      await revokePendingCheckout(subscription);
       const customerId =
         typeof subscription.customer === "string"
           ? subscription.customer

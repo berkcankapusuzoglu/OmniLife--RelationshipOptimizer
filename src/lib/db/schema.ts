@@ -9,8 +9,9 @@ import {
   date,
   timestamp,
   jsonb,
+  check,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,10 @@ export const users = pgTable("users", {
   trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  // One-use checkout state is consumed by completion and is never recreated
+  // by subscription deletion or webhook replay.
+  stripePendingCheckoutToken: text("stripe_pending_checkout_token"),
+  stripePendingCheckoutSessionId: text("stripe_pending_checkout_session_id"),
   alphaWeight: numeric("alpha_weight", { precision: 5, scale: 4 }).default(
     "0.5"
   ),
@@ -109,7 +114,9 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (table) => [
+  check("users_subscription_source_check", sql`${table.subscriptionSource} in ('stripe', 'revenuecat')`),
+]);
 
 // ── Referrals ─────────────────────────────────────────────────────────────────
 

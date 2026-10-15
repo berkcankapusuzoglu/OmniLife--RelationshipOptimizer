@@ -29,8 +29,22 @@ async function readRows(sql) {
   return sql`select id, subscription_tier as "subscriptionTier",
     to_jsonb(u)->>'subscription_source' as "subscriptionSource",
     stripe_customer_id as "stripeCustomerId", stripe_subscription_id as "stripeSubscriptionId",
-    subscription_expires_at as "subscriptionExpiresAt" from users u
-    where subscription_tier in ('pro', 'premium')`;
+    subscription_expires_at as "subscriptionExpiresAt" from users u`;
+}
+
+async function readSchemaState(sql) {
+  const [{ present: sourceColumnPresent }] = await sql`select exists (select 1 from information_schema.columns
+    where table_schema = current_schema() and table_name = 'users' and column_name = 'subscription_source') as present`;
+  const [{ present: checkoutStateColumnsPresent }] = await sql`select count(*) = 2 as present from information_schema.columns
+    where table_schema = current_schema() and table_name = 'users'
+    and column_name in ('stripe_pending_checkout_token', 'stripe_pending_checkout_session_id')`;
+  const [{ present: sourceConstraintValidated }] = await sql`select exists (select 1 from pg_constraint
+    where conrelid = 'users'::regclass and conname = 'users_subscription_source_check' and contype = 'c' and convalidated) as present`;
+  return { sourceColumnPresent, checkoutStateColumnsPresent, sourceConstraintValidated };
+}
+
+function invalidSourceRows(rows) {
+  return rows.filter(row => row.subscriptionSource !== null && row.subscriptionSource !== "stripe" && row.subscriptionSource !== "revenuecat").length;
 }
 
 function sameExpiry(left, right) {
@@ -52,32 +66,43 @@ function planBackfill(rows, manifest) {
   return { eligible, alreadyOwned, unmatched };
 }
 
-function report(rows, plan, columnPresent, applied) {
-  const unresolved = rows.filter(row => row.subscriptionSource !== "stripe" && row.subscriptionSource !== "revenuecat").length;
+function report(rows, plan, schema, applied) {
+  const unresolved = rows.filter(row => ["pro", "premium"].includes(row.subscriptionTier) && row.subscriptionSource !== "stripe" && row.subscriptionSource !== "revenuecat").length;
+  const invalid = invalidSourceRows(rows);
   return {
-    sourceColumnPresent: columnPresent,
+    ...schema,
     proposedStripeBackfills: plan.eligible.length,
     appliedStripeBackfills: applied,
     alreadyOwnedStripeRows: plan.alreadyOwned,
     unmatchedManifestRecords: plan.unmatched,
     unresolvedPaidRows: unresolved,
-    ready: columnPresent && unresolved === 0 && plan.unmatched === 0,
+    invalidSourceRows: invalid,
+    ready: schema.sourceColumnPresent && schema.checkoutStateColumnsPresent && schema.sourceConstraintValidated && invalid === 0 && unresolved === 0 && plan.unmatched === 0,
   };
 }
 
 export async function migrateSubscriptionSource(sql, { apply = false, manifest = { stripe: [] }, now = new Date() } = {}) {
   validateManifest(manifest, now);
   if (!apply) {
-    const [{ present }] = await sql`select exists (select 1 from information_schema.columns
-      where table_schema = current_schema() and table_name = 'users' and column_name = 'subscription_source') as present`;
+    const schema = await readSchemaState(sql);
     const rows = await readRows(sql);
-    return report(rows, planBackfill(rows, manifest), present, 0);
+    return report(rows, planBackfill(rows, manifest), schema, 0);
   }
   return sql.begin(async transaction => {
-    await transaction`alter table users add column if not exists subscription_source text`;
     await transaction`lock table users in share row exclusive mode`;
+    const schema = await readSchemaState(transaction);
     const rows = await readRows(transaction);
     const plan = planBackfill(rows, manifest);
+    // Inspect every row, including free accounts, before constraint DDL/backfill.
+    if (invalidSourceRows(rows)) return report(rows, plan, schema, 0);
+    await transaction`alter table users add column if not exists subscription_source text`;
+    await transaction`alter table users add column if not exists stripe_pending_checkout_token text`;
+    await transaction`alter table users add column if not exists stripe_pending_checkout_session_id text`;
+    // Recreate our named check canonically; the table lock prevents concurrent writes.
+    await transaction`alter table users drop constraint if exists users_subscription_source_check`;
+    await transaction`alter table users add constraint users_subscription_source_check
+      check (subscription_source in ('stripe', 'revenuecat')) not valid`;
+    await transaction`alter table users validate constraint users_subscription_source_check`;
     let applied = 0;
     for (const entry of plan.eligible) {
       const updated = await transaction`update users set subscription_source = 'stripe'
@@ -87,6 +112,8 @@ export async function migrateSubscriptionSource(sql, { apply = false, manifest =
         returning id`;
       applied += updated.length;
     }
-    return report(await readRows(transaction), plan, true, applied);
+    return report(await readRows(transaction), plan, {
+      sourceColumnPresent: true, checkoutStateColumnsPresent: true, sourceConstraintValidated: true,
+    }, applied);
   });
 }

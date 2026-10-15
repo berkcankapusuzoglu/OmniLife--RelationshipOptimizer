@@ -13,7 +13,14 @@ vi.mock("next/headers", () => ({ cookies: async () => ({
   set: (_name: string, value: string) => { state.cookie = value; },
   delete: () => { state.cookie = undefined; },
 }) }));
-vi.mock("@/lib/db", () => ({ getDb: () => ({ select: () => ({ from: () => ({ where: (predicate: SQL) => ({ limit: async () => {
+vi.mock("@/lib/db", () => ({ getDb: () => ({
+  update: () => ({ set: (values: Record<string, unknown>) => ({ where: (predicate: SQL) => ({ returning: async () => {
+    const query = new PgDialect().sqlToQuery(predicate);
+    const rows = state.users.filter(user => user.id === query.params[0]);
+    rows.forEach(user => Object.assign(user, values));
+    return rows.map(user => ({ id: user.id }));
+  } }) }) }),
+  select: () => ({ from: () => ({ where: (predicate: SQL) => ({ limit: async () => {
   const query = new PgDialect().sqlToQuery(predicate);
   if (query.sql !== '"users"."id" = $1') throw new Error("Expected a user identity predicate");
   return state.users.filter((user) => user.id === query.params[0]);
@@ -22,7 +29,7 @@ vi.mock("@/lib/stripe/config", () => ({ getStripePriceId: () => "price-test", ge
 vi.mock("@/lib/stripe", () => ({ getStripe: () => {
   state.providerCalls.push("initialize");
   return {
-    checkout: { sessions: { create: async (input: { client_reference_id: string }) => { state.providerCalls.push("checkout"); state.checkoutReferences.push(input.client_reference_id); return { url: "https://billing.example.test/checkout" }; } } },
+    checkout: { sessions: { create: async (input: { client_reference_id: string }) => { state.providerCalls.push("checkout"); state.checkoutReferences.push(input.client_reference_id); return { id: "cs_test", url: "https://billing.example.test/checkout" }; } } },
     billingPortal: { sessions: { create: async () => { state.providerCalls.push("portal"); return { url: "https://billing.example.test/portal" }; } } },
   };
 } }));

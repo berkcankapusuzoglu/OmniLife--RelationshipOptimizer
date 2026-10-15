@@ -14,7 +14,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import type { SubscriptionTier } from "@/lib/subscription/tiers";
-import { canGrantSubscription } from "@/lib/subscription/ownership";
+import { canAdvanceRevenueCat } from "@/lib/subscription/ownership";
 
 // Map RevenueCat product_id → tier
 const PRODUCT_TO_TIER: Record<string, SubscriptionTier> = {
@@ -73,7 +73,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ received: true });
       }
 
-      const expiresAt = expiration_at_ms ? new Date(expiration_at_ms) : null;
+      if (typeof expiration_at_ms !== "number" || !Number.isFinite(expiration_at_ms) || expiration_at_ms <= Date.now()) {
+        return NextResponse.json({ received: true });
+      }
+      const expiresAt = new Date(expiration_at_ms);
+      if (!Number.isFinite(expiresAt.getTime())) return NextResponse.json({ received: true });
 
       await db
         .update(users)
@@ -82,20 +86,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           subscriptionSource: "revenuecat",
           subscriptionExpiresAt: expiresAt,
         })
-        .where(and(eq(users.id, userId), canGrantSubscription("revenuecat")));
+        .where(and(eq(users.id, userId), canAdvanceRevenueCat(expiresAt)));
 
     } else if (type === "CANCELLATION") {
-      // User disabled auto-renew. They keep their paid tier until the period
-      // ends — EXPIRATION (below) handles the actual downgrade. Only record
-      // the expiration date if the event provides one.
-      if (expiration_at_ms) {
-        await db
-          .update(users)
-          .set({ subscriptionExpiresAt: new Date(expiration_at_ms) })
-          .where(and(eq(users.id, userId), eq(users.subscriptionSource, "revenuecat")));
-      }
+      // Auto-renew cancellation does not change the entitlement period.
+      // Only purchase/renewal establishes expiry; delayed cancellation is inert.
 
     } else if (type === "EXPIRATION") {
+      if (typeof expiration_at_ms !== "number" || !Number.isFinite(expiration_at_ms) || expiration_at_ms > Date.now()) {
+        return NextResponse.json({ received: true });
+      }
+      const expiresAt = new Date(expiration_at_ms);
+      if (!Number.isFinite(expiresAt.getTime())) return NextResponse.json({ received: true });
       await db
         .update(users)
         .set({
@@ -103,7 +105,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           subscriptionSource: null,
           subscriptionExpiresAt: null,
         })
-        .where(and(eq(users.id, userId), eq(users.subscriptionSource, "revenuecat")));
+        .where(and(eq(users.id, userId), eq(users.subscriptionSource, "revenuecat"), eq(users.subscriptionExpiresAt, expiresAt)));
 
     } else {
       // Ignored event types: UNCANCELLATION, BILLING_ISSUE, PRODUCT_CHANGE, etc.

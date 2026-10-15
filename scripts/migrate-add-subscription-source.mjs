@@ -3,7 +3,7 @@ import { migrateSubscriptionSource } from "./subscription-source-migration.mjs";
 
 const help = `Usage: node scripts/migrate-add-subscription-source.mjs [--dry-run | --check | --apply] [--stripe-manifest PATH]
 Defaults to read-only dry-run. --check is the read-only deployment readiness gate.
---apply adds the nullable column and backfills only operator-verified Stripe rows.
+--apply preflights all provider values, adds nullable source/checkout state, validates the source CHECK, and backfills only operator-verified Stripe rows.
 Exit 0 means ownership is reconciled; exit 2 means an operator gate remains; exit 1 means an error.
 See docs/billing-ownership-migration.md for manifest evidence and legacy RevenueCat reconciliation.`;
 

@@ -2,13 +2,21 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "@/app/api/stripe/checkout/route";
 import { getStripePriceId } from "@/lib/stripe/config";
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
 
-const state = vi.hoisted(() => ({ loggedIn: true, tier: "free", source: null as string | null, create: vi.fn(), initialize: vi.fn() }));
+const state = vi.hoisted(() => ({ loggedIn: true, tier: "free", source: null as string | null, create: vi.fn(), initialize: vi.fn(), expire: vi.fn(), pending: {} as Record<string, unknown>, writes: [] as Array<{ sql: string; params: unknown[] }>, rejectAtWrite: 0 }));
 vi.mock("@/lib/auth/guard", () => ({ getCurrentUser: async () => state.loggedIn ? { id: "test-user", subscriptionTier: state.tier, subscriptionSource: state.source } : null }));
-vi.mock("@/lib/stripe", () => ({ getStripe: () => { state.initialize(); return { checkout: { sessions: { create: state.create } } }; } }));
+vi.mock("@/lib/stripe", () => ({ getStripe: () => { state.initialize(); return { checkout: { sessions: { create: state.create, expire: state.expire } } }; } }));
+vi.mock("@/lib/db", () => ({ getDb: () => ({ update: () => ({ set: (values: Record<string, unknown>) => ({ where: (predicate: SQL) => ({ returning: async () => {
+  state.writes.push(new PgDialect().sqlToQuery(predicate));
+  if (state.writes.length === state.rejectAtWrite) return [];
+  Object.assign(state.pending, values); return [{ id: "test-user" }];
+} }) }) }) }) }));
 function request(tier: unknown = "pro", priceType = "monthly") { return new NextRequest("https://example.test/api/stripe/checkout", { method: "POST", headers: { origin: "https://example.test" }, body: JSON.stringify({ tier, priceType }) }); }
 beforeEach(() => {
-  state.loggedIn = true; state.tier = "free"; state.source = null; state.create.mockReset().mockResolvedValue({ url: "https://checkout.example.test" }); state.initialize.mockClear();
+  state.loggedIn = true; state.tier = "free"; state.source = null; state.create.mockReset().mockResolvedValue({ id: "cs_created", url: "https://checkout.example.test" }); state.initialize.mockClear();
+  state.expire.mockReset().mockResolvedValue({}); state.pending = {}; state.writes = []; state.rejectAtWrite = 0;
   for (const name of ["STRIPE_PRO_MONTHLY_PRICE_ID", "STRIPE_PRO_YEARLY_PRICE_ID", "STRIPE_MONTHLY_PRICE_ID", "STRIPE_YEARLY_PRICE_ID"]) vi.stubEnv(name, "");
   vi.stubEnv("STRIPE_MONTHLY_PRICE_ID", "price_premium_monthly"); vi.stubEnv("STRIPE_YEARLY_PRICE_ID", "price_premium_yearly");
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -46,4 +54,23 @@ it.each([null, "revenuecat"])("does not charge a paid account with unresolved or
 it("keeps explicit web checkout available for the current Stripe owner", async () => {
   state.tier = "pro"; state.source = "stripe";
   expect((await POST(request("premium"))).status).toBe(200);
+});
+it("issues fresh one-use checkout state and binds the provider session before returning its URL", async () => {
+  expect((await POST(request("premium"))).status).toBe(200);
+  const token = state.create.mock.calls[0][0].metadata.checkoutToken;
+  expect(token).toMatch(/^[0-9a-f-]{36}$/);
+  expect(state.pending).toMatchObject({ stripePendingCheckoutToken: token, stripePendingCheckoutSessionId: "cs_created" });
+  expect(state.create.mock.calls[0][0].subscription_data).toEqual({ metadata: { checkoutToken: token, appUserId: "test-user" } });
+  expect(state.writes).toHaveLength(2);
+  expect(state.writes[0].sql).toContain('"users"."subscription_source"');
+  expect(state.writes[1].params).toContain(token);
+  await POST(request("premium")); expect(state.create.mock.calls[1][0].metadata.checkoutToken).not.toBe(token);
+});
+it("does not create a paid session when the atomic reservation fails", async () => {
+  state.rejectAtWrite = 1;
+  expect((await POST(request("premium"))).status).toBe(409); expect(state.create).not.toHaveBeenCalled();
+});
+it("does not return a superseded session and expires it when session binding fails", async () => {
+  state.rejectAtWrite = 2;
+  expect((await POST(request("premium"))).status).toBe(409); expect(state.expire).toHaveBeenCalledWith("cs_created");
 });
