@@ -21,7 +21,6 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({ getDb: () => state.db }));
 vi.mock("@/lib/auth/guard", () => ({ requireAuth: async () => state.actor }));
 vi.mock("next/navigation", () => ({ redirect: (path: string) => { throw new Error(`Redirect:${path}`); } }));
-vi.mock("@/lib/subscription/access", () => ({ getUserTier: async () => "premium", getFeatureLimits: () => ({ historyDays: 30 }) }));
 vi.mock("@/app/(dashboard)/insights/insights-client", () => ({ InsightsClient: () => null }));
 
 type ReadBuilder = PromiseLike<Row[]> & {
@@ -86,7 +85,10 @@ beforeEach(() => {
   state.actor = { id: "A", name: "Alice", partnerId: "B" };
   state.reads = [];
   state.rows = {
-    users: [{ id: "B", name: "Bob", partnerId: "A", email: "private@example.test", passwordHash: "private-password" }],
+    users: [
+      { id: "B", name: "Bob", partnerId: "A", email: "private@example.test", passwordHash: "private-password" },
+      { id: "A", name: "Alice", partnerId: "B", subscriptionTier: "premium", subscriptionExpiresAt: new Date("2026-11-14T00:00:00Z"), trialEndsAt: null },
+    ],
     scores: [
       { userId: "A", date: "2026-10-14", lifeScore: "70", relScore: "60", totalQuality: "65", weightsSnapshot: "private-weights" },
       { userId: "B", date: "2026-10-14", lifeScore: "80", relScore: "72", totalQuality: "76", constraintViolations: "private-violations" },
@@ -196,5 +198,53 @@ describe("Compare partner projections and reciprocal access", () => {
     else state.rows.users[0].partnerId = link === "unilateral" ? null : "C";
     expect(await getPartnerData(30)).toEqual({ partner: null, scores: [], logs: [] });
     expect(state.reads.filter((read) => read.table === "scores" || read.table === "daily_logs")).toEqual([]);
+  });
+});
+
+describe("Compare server-side entitlement window", () => {
+  beforeEach(() => {
+    const dates = ["2026-10-14", "2026-10-07", "2026-10-06", "2026-09-14", "2026-09-13", "2026-01-01"];
+    state.rows.scores = dates.map((date) => ({ userId: "B", date, lifeScore: "80", relScore: "72", totalQuality: "76" }));
+    state.rows.daily_logs = dates.map((date) => ({ userId: "B", date, vitalityScore: 7, growthScore: 6, securityScore: 8, connectionScore: 9, emotionalScore: 9, trustScore: 8, fairnessScore: 5, stressScore: 5, autonomyScore: 4, notes: "Private journal" }));
+  });
+
+  it.each([365, 31, 8, 1, 0, -1, Infinity, NaN, "30", null])("rejects unsupported caller window %s before partner-history reads", async (requested) => {
+    await expect(getPartnerData(requested as number)).rejects.toThrow();
+    expect(state.reads.filter((read) => read.table === "scores" || read.table === "daily_logs")).toEqual([]);
+  });
+
+  it.each(["free", "pro", "expired-paid", "expired-trial"])("caps a requested paid window to seven days for effective entitlement %s", async (entitlement) => {
+    const viewer = state.rows.users[1];
+    viewer.subscriptionTier = entitlement === "expired-paid" ? "premium" : entitlement === "expired-trial" ? "free" : entitlement;
+    viewer.subscriptionExpiresAt = entitlement === "expired-paid" ? new Date("2026-10-13T00:00:00Z") : null;
+    viewer.trialEndsAt = entitlement === "expired-trial" ? new Date("2026-10-13T00:00:00Z") : null;
+    const result = await getPartnerData(30);
+    expect(result.scores.map((score) => score.date)).toEqual(["2026-10-14", "2026-10-07"]);
+    expect(result.logs.map((log) => log.date)).toEqual(["2026-10-14", "2026-10-07"]);
+  });
+
+  it.each(["free", "expired-paid"])("rejects a direct 365-day request from a reciprocal %s viewer", async (entitlement) => {
+    const viewer = state.rows.users[1];
+    viewer.subscriptionTier = entitlement === "free" ? "free" : "premium";
+    viewer.subscriptionExpiresAt = new Date("2026-10-13T00:00:00Z");
+    await expect(getPartnerData(365)).rejects.toThrow();
+    expect(state.reads.filter((read) => read.table === "scores" || read.table === "daily_logs")).toEqual([]);
+  });
+
+  it.each(["paid", "lifetime", "trial"])("allows at most thirty days for an active premium %s entitlement", async (entitlement) => {
+    const viewer = state.rows.users[1];
+    if (entitlement === "lifetime") viewer.subscriptionExpiresAt = null;
+    if (entitlement === "trial") {
+      viewer.subscriptionTier = "free"; viewer.subscriptionExpiresAt = null; viewer.trialEndsAt = new Date("2026-10-15T00:00:00Z");
+    }
+    const result = await getPartnerData(30);
+    expect(result.scores.map((score) => score.date)).toEqual(["2026-10-14", "2026-10-07", "2026-10-06", "2026-09-14"]);
+    expect(result.logs.map((log) => log.date)).toEqual(["2026-10-14", "2026-10-07", "2026-10-06", "2026-09-14"]);
+  });
+
+  it("honors a narrower seven-day request even for premium", async () => {
+    const result = await getPartnerData(7);
+    expect(result.scores.map((score) => score.date)).toEqual(["2026-10-14", "2026-10-07"]);
+    expect(result.logs.map((log) => log.date)).toEqual(["2026-10-14", "2026-10-07"]);
   });
 });

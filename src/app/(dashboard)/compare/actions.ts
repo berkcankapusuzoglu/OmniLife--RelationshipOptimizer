@@ -5,13 +5,18 @@ import { scores, dailyLogs, users } from "@/lib/db/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth/guard";
 import { linkedPartnerId } from "@/lib/auth/authorization";
-import { dayLimitInput } from "@/lib/auth/action-inputs";
+import { getUserTier } from "@/lib/subscription/access";
+import { z } from "zod";
+
+const comparisonWindow = z.union([z.literal(7), z.literal(30)]);
 
 export async function getPartnerData(dayLimit: number) {
   const user = await requireAuth();
   const partnerId = await linkedPartnerId(user);
   if (!partnerId) return { partner: null, scores: [], logs: [] };
-  dayLimit = dayLimitInput.parse(dayLimit);
+  const requestedWindow = comparisonWindow.parse(dayLimit);
+  const tier = await getUserTier(user.id);
+  dayLimit = Math.min(requestedWindow, tier === "premium" ? 30 : 7);
   const db = getDb();
 
   const cutoffDate = new Date();
