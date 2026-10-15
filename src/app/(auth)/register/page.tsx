@@ -52,8 +52,8 @@ export default function RegisterPage() {
             <div className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/5 p-3">
               <Heart className="h-4 w-4 text-rose-400 shrink-0" />
               <p className="text-sm text-muted-foreground">
-                You&apos;ll be automatically linked with {fromName} after
-                signing up. Couple bonuses will be unlocked!
+                After signing up, review {fromName}&apos;s invitation before
+                choosing to link accounts.
               </p>
             </div>
           )}
