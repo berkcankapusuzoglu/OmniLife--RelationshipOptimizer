@@ -1,13 +1,15 @@
 # Google Play Store Publishing Guide
 
-Last updated: 2026-10-14. Engineering basis: Tasks 2–5 through `dc4df8e`.
+Last updated: 2026-10-16. Verified source: `da4d67b`, including independently reviewed authorization, billing and inherited-file corrections plus archive line-ending reproducibility.
 
 This is an operator guide for the free Android v1 release. Complete the [field-by-field declaration pack](google-play-data-safety.md) and every OWNER CONFIRMATION gate before submission. This document does not authorize a Play Console submission or production rollout.
+
+The [1.0.3 closed-test checklist](release/1.0.3-closed-test-checklist.md) records source verification, the unsigned artifact hash, production prerequisites, device acceptance and Console steps. Publication remains **NO-GO** until deployment/migration/configuration, signing, authenticated device acceptance and owner declarations/testing are complete. Live checks on 2026-10-15 found stale purchase content and 404 responses for `/delete-account` and `/api/keepalive`; this source work did not deploy an update.
 
 ## Current State
 
 - Capacitor 8 configured: `appId: com.omnilife.app`, `appName: OmniLife`
-- Android source/bundle generation and device verification are separate release tasks; do not infer an AAB exists from this guide.
+- Android source is tracked: code 6 / 1.0.3, compile/target API 36. A verified **unsigned inspection AAB** exists; no signed upload candidate or authenticated device acceptance is established.
 - Capacitor dependencies: app, haptics, splash-screen, status-bar, browser. No active push-notification or purchase SDK in v1.
 - App loads live Vercel URL in native WebView (`https://omnilife-relationship-optimizer.vercel.app`)
 - `androidScheme: 'https'` not explicitly set (Capacitor 8 defaults to https)
@@ -50,26 +52,13 @@ Option B — use [Android Asset Studio](https://romannurik.github.io/AndroidAsse
 - `versionCode` — increment for EVERY upload to Play Store
 - `versionName` — user-visible version string (e.g., "1.0.0")
 
-### Signing keystore (DO THIS ONCE, BACK IT UP):
-```bash
-keytool -genkey -v -keystore android/app/omnilife-release.keystore \
-  -alias omnilife -keyalg RSA -keysize 2048 -validity 10000
-```
+### Existing upload key and signing environment
 
-**CRITICAL: Never lose this keystore. Without it you cannot update your app.**
+Use the existing owner-controlled upload key for this listing. Never generate a replacement key without the listing's approved key-reset process. Back it up securely outside version control.
 
-### Set environment variables before building:
-```bash
-# Linux/macOS/Git Bash
-export KEYSTORE_PASSWORD="your-password"
-export KEY_PASSWORD="your-password"
+Provide all four variables through the release environment or secret manager: `KEYSTORE_PATH`, `KEYSTORE_ALIAS`, `KEYSTORE_PASSWORD`, and `KEY_PASSWORD`. Do not print values or pass passwords as command arguments. See [verified Android build configuration](ANDROID_BUILD_CONFIG.md).
 
-# Windows Command Prompt
-set KEYSTORE_PASSWORD=your-password
-set KEY_PASSWORD=your-password
-```
-
-Verify release signing, minification and resource-shrinking configuration in the generated `android/app/build.gradle`; do not infer those settings from this guide. Keep keystore material and credentials outside version control.
+The tracked `android/app/build.gradle` fails closed when signing inputs are absent; release minification/resource shrinking are enabled. `-PallowUnsignedRelease=true` is for inspection only and must never be used for a Play upload candidate. Verify the final signed AAB and upload-certificate fingerprint before submission.
 
 ## Phase 4: Build Release Bundle
 
@@ -132,13 +121,15 @@ RevenueCat/Google Play Billing integration needs its own implementation, testing
 ```bash
 npm install @revenuecat/purchases-capacitor
 ```
-Configure products in RevenueCat dashboard: `pro_monthly` ($4.99), `pro_yearly` ($39.99), `premium_monthly` ($7.99), `premium_yearly` ($59.99).
+Historical product references: `pro_monthly` ($3.99), `pro_yearly` ($29.99), `premium_monthly` ($4.99), `premium_yearly` ($39.99).
+
+Those amounts match the current web reference prices in `src/lib/subscription/tiers.ts`. They are not verified RevenueCat/Play offerings or a launch configuration; the owner must independently establish any future store catalog.
 
 ## Phase 8: Testing & Review
 
 1. **Internal testing**: Owner uploads the verified AAB to the intended track after explicitly approving submission
 2. **Pre-launch report**: Firebase Test Lab runs automated tests (check for crashes)
-3. **Closed testing**: Share with beta testers via email list
+3. **Closed testing**: Owner configures the closed track, obtains actual opt-ins, maintains at least 12 continuously opted-in testers for 14 days where required, and completes the pre-launch report/feedback loop in the [release checklist](release/1.0.3-closed-test-checklist.md).
 4. **Production**: Owner confirms eligibility, declaration answers, naming decision, and final rollout approval. Review timing is determined by Google.
 
 ### Common Review Issues

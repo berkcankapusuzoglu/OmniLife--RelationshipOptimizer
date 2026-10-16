@@ -28,6 +28,26 @@ Provide **all four** variables through the release environment or a secret manag
 
 No key, alias, or password is hardcoded. The original key must remain outside tracked source. Never generate a replacement key for an existing Play listing without following its key-reset process. Never pass passwords in command arguments or commit `.env`, keystores, signing properties, or `local.properties`.
 
+### Enter signing credentials privately on Windows
+
+After the preparation above, open your own PowerShell window in the repository root and run the following. Keep the existing keystore in its current private location. Enter its full path and existing alias when asked; passwords are masked. Nothing is saved to a credential file or your permanent Windows environment. The values exist only in this PowerShell process and its build process; the password variables are removed afterward. A different terminal or an already running Codex session cannot inherit them.
+
+```powershell
+$env:KEYSTORE_PATH = Read-Host 'Full path to the existing .keystore or .jks file'
+$env:KEYSTORE_ALIAS = Read-Host 'Existing key alias'
+try {
+    $env:KEYSTORE_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host 'Keystore password' -AsSecureString)).Password
+    $env:KEY_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host 'Key password' -AsSecureString)).Password
+    & .\android\gradlew.bat -p android --no-daemon :app:bundleRelease --console=plain
+    if ($LASTEXITCODE -ne 0) { throw 'Android signing/build failed; inspect the Gradle error above.' }
+}
+finally {
+    Remove-Item Env:\KEYSTORE_PASSWORD, Env:\KEY_PASSWORD -ErrorAction SilentlyContinue
+}
+```
+
+If you do not know the alias, run `keytool -list -keystore <existing-keystore-path>` using the JDK 21 binary. It prompts for the keystore password privately and lists the aliases. Do not create a new alias or key. The key password may differ from the keystore password; use the original values. After a successful build, verify the signature and checksum below before treating the output as an upload candidate.
+
 ```powershell
 Set-Location android
 .\gradlew.bat --no-daemon clean :app:bundleRelease --console=plain
