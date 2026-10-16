@@ -1,0 +1,3 @@
+# Vitest must receive LF hashbangs from clean archives and Windows checkouts.
+scripts/check-secrets.mjs text eol=lf
+scripts/check-secrets.test.mjs text eol=lf
