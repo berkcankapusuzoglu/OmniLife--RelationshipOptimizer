@@ -1,98 +1,32 @@
-# Next Steps — OmniLife Relationship Optimizer
+# Next Steps: OmniLife Relationship Optimizer
 
-Last updated: 2026-03-22
+Updated 2026-10-16. The [1.0.3 closed-test checklist](docs/release/1.0.3-closed-test-checklist.md) is the authoritative operational handoff. Use it for evidence, current blockers and owner decisions. This roadmap does not authorize deployment or Play submission.
 
-## Current Status
+## Approved launch
 
-- **Live at**: https://omnilife-relationship-optimizer.vercel.app
-- **DB**: Supabase PostgreSQL (active, schema synced)
-- **Payments**: Stripe code ready, needs product creation + env vars
-- **Native app**: Capacitor configured, needs `npx cap add ios/android`
+Keep OmniLife, package `com.omnilife.app` and the existing hosted origin. Android is free with access-only existing paid entitlements. Native purchase controls, external payment links, Billing/RevenueCat SDKs and push startup/permissions are absent. Web Stripe remains available subject to private configuration and migration checks.
 
-## Immediate (This Week)
+Source declares Android versionCode 6 / versionName 1.0.3. Local tests use Vitest; Playwright and smoke scripts support optional authenticated coverage through privately supplied `E2E_EMAIL` and `E2E_PASSWORD`. Source and local checks do not prove live database health, deployment state, signing identity, device acceptance or Play eligibility.
 
-### 1. Custom Domain
-- [ ] Buy domain (recommended: `omnilife.app` or similar)
-- [ ] Add in Vercel → Settings → Domains
-- [ ] Update DNS records per Vercel instructions
-- [ ] Update `NEXT_PUBLIC_APP_URL` env var
-- [ ] Update `metadataBase` in `src/app/layout.tsx`
+## Remaining release gates
 
-### 2. Stripe Setup
-- [ ] Create Stripe account at dashboard.stripe.com (if not done)
-- [ ] Create product: "OmniLife Premium Monthly" → $7.99/mo recurring
-- [ ] Create product: "OmniLife Premium Yearly" → $59.99/yr recurring
-- [ ] Copy price IDs (`price_...`)
-- [ ] Add env vars to Vercel:
-  - `STRIPE_SECRET_KEY` = `sk_test_...`
-  - `STRIPE_MONTHLY_PRICE_ID` = `price_...`
-  - `STRIPE_YEARLY_PRICE_ID` = `price_...`
-- [ ] Add webhook endpoint: `https://YOUR-DOMAIN/api/stripe/webhook`
-  - Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
-- [ ] Add `STRIPE_WEBHOOK_SECRET` = `whsec_...` to Vercel
-- [ ] Redeploy: `npx vercel --prod --yes`
-- [ ] Test with card `4242 4242 4242 4242`
+- Follow the release checklist's credential rotation, strong production `SESSION_SECRET`, migration, backup, privacy, monitored-contact and provider configuration gates. Historical database pause claims are not current health evidence; the owner must verify current availability and TLS privately.
+- Reconcile legacy billing ownership and run the documented read-only checks before deployment. See [billing ownership migration](docs/billing-ownership-migration.md); do not blindly assign a provider to ambiguous paid accounts or run an unreviewed schema push. Verify concurrent queries/transactions with the intended pooler: [Supabase documents a postgres.js pipelining compatibility risk](https://supabase.com/docs/guides/database/postgres-js) that local mocks and the constant keepalive read cannot validate.
+- Configure a strong server-only `CRON_SECRET` in Vercel for the daily 08:00 UTC `/api/keepalive` job. Vercel sends `Authorization: Bearer <CRON_SECRET>` automatically. Missing configuration returns 503; absent/incorrect authorization returns 401. The authenticated query is only `select 1`, with generic failure output. Verify the deployed job privately; no GitHub scheduler is required. A ping neither proves schema correctness nor guarantees provider pause prevention. See [Vercel cron authentication](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
+- After owner approval and deployment prerequisites, verify public routes, account creation/login, daily logging, partner consent/limits, deletion, web billing and native purchase suppression against the intended hosted release. Use test accounts whose credentials stay out of logs and source.
+- Sign with the existing authorized upload key via the four private environment variables in [Android build configuration](docs/ANDROID_BUILD_CONFIG.md). Verify artifact hash/certificate, version availability and final signed device acceptance, including offline recovery.
+- Have the owner confirm privacy/retention and Play declarations, app access, contact monitoring, naming risk and testing eligibility. Follow the checklist for closed-test users, required continuous testing, feedback/pre-launch report triage and separate explicit production-rollout approval. No owner confirmation is inferred here.
 
-### 3. Native App (iOS/Android)
-- [ ] On a Mac: `npx cap add ios && npx cap sync && npx cap open ios`
-- [ ] Configure Apple Developer account ($99/yr)
-- [ ] Set up Firebase project for push notifications
-- [ ] Upload APNs key to Firebase
-- [ ] Build and submit to App Store
-- [ ] On any machine: `npx cap add android && npx cap sync && npx cap open android`
-- [ ] Build and submit to Google Play ($25 one-time)
+## Separate post-launch backlog
 
-## Short Term (Weeks 2-4)
+These ideas preserve earlier planning context; they are not prerequisites or authorization for this free Android release.
 
-### 4. Marketing Launch
-- [ ] Create TikTok account (@omnilife.app)
-- [ ] Create Instagram account
-- [ ] Record first TikTok: "Taking our relationship quiz live"
-- [ ] Post to r/relationship_advice (organic, helpful, no hard sell)
-- [ ] Submit to Product Hunt
-- [ ] Submit to Indie Hackers
-
-### 5. Google Search Console
-- [ ] Add site to Google Search Console
-- [ ] Submit sitemap: `https://YOUR-DOMAIN/sitemap.xml`
-- [ ] Monitor indexing of blog posts
-
-### 6. Analytics
-- [ ] Set up PostHog or Mixpanel (swap `trackEvent` implementation)
-- [ ] Monitor: quiz completion rate, signup conversion, daily log retention
-
-## Medium Term (Months 2-3)
-
-### 7. Content Growth
-- [ ] Write 5 more blog posts per month
-- [ ] Create YouTube Shorts / TikToks weekly
-- [ ] Build email newsletter (subscribers table already exists)
-- [ ] Guest post on relationship blogs
-
-### 8. Product Improvements
-- [ ] Social sign-in (Apple, Google) — reduces mobile signup friction
-- [ ] Push notifications via Firebase Cloud Messaging
-- [ ] Weekly email digest with score summary
-- [ ] AI-powered insight generation from daily log notes
-
-### 9. Partnerships
-- [ ] Reach out to couples therapists for free pro accounts
-- [ ] Contact relationship podcasts for sponsorship ($200-500/ep)
-- [ ] Connect with wedding planners for pre-marriage assessments
-
-## Revenue Targets
-
-| Timeline | Users | Paying (15%) | MRR |
-|----------|-------|-------------|-----|
-| Month 3 | 500 | 75 | $600 |
-| Month 6 | 2,000 | 300 | $2,400 |
-| Month 12 | 10,000 | 1,500 | $12,000 |
-| Month 18 | 30,000 | 4,500 | $36,000 |
-
-## Architecture Notes
-
-- The app uses a lazy DB singleton — builds succeed without DATABASE_URL
-- Stripe is optional — the app works fully without Stripe env vars (payments disabled)
-- Capacitor loads the live Vercel URL — no static export needed
-- All public pages have OG images via `/api/og` for social sharing
-- The daily log wizard is 11 steps, designed for <45 second completion on mobile
+- Improve partner invitation/comparison UX and surface divergence insights without adding native upsells.
+- Review referral reward promises against the current 30-day trial extension, bonus tiers and status transitions before marketing larger rewards.
+- Verify Resend sending-domain configuration and improve password-reset delivery feedback.
+- Review web billing failure notifications and subscription-management UX after legacy ownership reconciliation.
+- Improve error boundaries, responsive layouts and onboarding feedback. Offline data entry/sync is a separate feature; the current native fallback covers connection recovery.
+- Validate optimizer recommendations against longitudinal outcomes; consider hard constraint behavior, richer Pareto analysis and couple-level optimization through separate domain review.
+- Plan analytics and quiz-to-account attribution only after choosing data minimization, consent and privacy changes. Current logging does not establish measured funnel performance.
+- Explore blog content, quiz share assets, short videos, search indexing and measured retention experiments after release readiness. Prior acquisition/MRR forecasts were assumptions, not measured results.
+- Treat iOS, native subscriptions/RevenueCat and push notifications as separate projects. Any rename/domain/package change needs an explicit owner decision and migration plan; this launch keeps the existing identity.

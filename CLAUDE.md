@@ -11,6 +11,9 @@ npm run dev          # Start Next.js dev server (Turbopack)
 npm run build        # Production build
 npm run build:check  # Build + verify
 npm run lint         # ESLint
+npm test             # Vitest unit and integration tests
+npm run test:e2e     # Playwright (authenticated cases require local credentials)
+npm run check:secrets # Scan tracked source without printing secret values
 npm run db:push      # Push Drizzle schema to Supabase (loads .env.local via dotenv-cli)
 npm run db:studio    # Open Drizzle Studio (visual DB browser)
 npm run cap:sync     # Sync Capacitor native platforms
@@ -18,13 +21,13 @@ npm run cap:ios      # Open iOS project in Xcode
 npm run cap:android  # Open Android project in Android Studio
 ```
 
-No test runner is configured yet.
+Read the installed Next.js guides under `node_modules/next/dist/docs/` before framework changes, as required by AGENTS.md.
 
 ## Production
 
 - **Live URL**: https://omnilife-relationship-optimizer.vercel.app
-- **Deploy**: `npx vercel --prod --yes` (Vercel CLI, already authenticated)
-- **DB**: Supabase PostgreSQL (project `rlanchnpacwxloheszse`, us-east-1)
+- **Operational authority**: [1.0.3 closed-test checklist](docs/release/1.0.3-closed-test-checklist.md). Local verification does not confirm deployment, database health, configuration, signing or Play readiness. Follow its owner gates before deployment/submission.
+- **DB**: Supabase PostgreSQL. Verify availability and TLS privately before deployment; historical pause reports are not current health evidence.
 - **Test account**: set `E2E_EMAIL` and `E2E_PASSWORD` in your local environment; do not commit test credentials.
 
 ## Architecture
@@ -59,24 +62,26 @@ Priority-ordered rules map score states → interventions. Exercise selection fa
 
 ### Database
 
-**Drizzle ORM** with `postgres` driver (not `@neondatabase/serverless`). Supabase PostgreSQL via **Transaction Pooler** (required for serverless). Schema in `src/lib/db/schema.ts` — 10 tables, 3 enums.
+**Drizzle ORM** with the `postgres` driver. Supabase transaction pooling is the intended deployment connection. Schema in `src/lib/db/schema.ts` is authoritative for tables, enums and constraints.
 
-Tables: `users`, `daily_logs`, `scores`, `weekly_checkins`, `tasks`, `constraints`, `scenario_profiles`, `interventions`, `referrals`, `subscribers`
+The lazy client disables prepared statements for the shared transaction pooler, caps each instance at one connection and sets a 10-second connection timeout. The connection URL's TLS settings still require operator verification. Do not disable certificate verification as a workaround.
+
+Verify concurrent queries and transactions against the intended pooler before deployment. [Supabase's postgres.js guide](https://supabase.com/docs/guides/database/postgres-js) warns about pipelining compatibility; the local mock suite and `select 1` probe do not establish live pooler compatibility.
 
 **Lazy singleton** in `src/lib/db/index.ts` via `getDb()` — delays creation until first call to avoid crashes during `next build` when `DATABASE_URL` isn't set.
 
 ### Auth
 
-Cookie-based sessions. `createSession()` stores base64-encoded JSON `{userId, token, expiresAt}` in an httpOnly cookie (7-day expiry). `requireAuth()` reads the cookie, fetches the user from DB, and redirects to `/login` if missing.
+Cookie-based sessions use a versioned HMAC-SHA-256 signed payload and a required server-only `SESSION_SECRET`. Sessions are signed, not encrypted, and expire after seven days. Verification rejects unsigned legacy cookies, malformed/altered payloads and expired signatures. `requireAuth()` fetches the authenticated database user or redirects to `/login`. Derive every action's identity from that user and enforce ownership in database predicates. Partner reads require reciprocal linkage and server-enforced access limits.
 
 ### Subscription System
 
 Three-tier freemium model in `src/lib/subscription/tiers.ts`:
-- **Free**: 5 exercises, 7-day history, basic insights
-- **Pro** ($4.99/mo, $39.99/yr): unlimited exercises, 90-day history, weekly reports
-- **Premium** ($7.99/mo, $59.99/yr): everything in Pro + AI coaching, therapist export, partner features
+- **Free**: exercise limit 3, 7-day history, basic scores and partner linking
+- **Pro** ($3.99/mo, $29.99/yr): full exercises, history, advanced insights and export
+- **Premium** ($4.99/mo, $39.99/yr): everything in Pro + AI coaching, therapist export, partner features
 
-`PremiumGate` component blurs premium content for free users. Stripe integration at `src/lib/stripe/` and `src/app/api/stripe/`.
+`TIERS` defines current limits and web prices. `getUserTier()` accounts for expiry and active referral trials. Gates must also enforce access server-side. Stripe integration at `src/lib/stripe/` and `src/app/api/stripe/` is for web browsers. Android is free with access-only existing entitlements: no prices, purchase links, checkout, subscription-management controls or upgrade instructions.
 
 ### Viral Mechanics
 
@@ -89,7 +94,7 @@ Three-tier freemium model in `src/lib/subscription/tiers.ts`:
 
 ### AI Coaching (`src/lib/coaching/`)
 
-Claude-powered relationship coach at `/coaching`. Premium feature. Uses streaming responses with conversation history stored per-user.
+Premium coaching at `/coaching` uses the Gemini integration. Confirm provider configuration, retention and disclosures through the release checklist before deployment; do not infer that the live service is enabled from source alone.
 
 ### Analytics (`src/lib/analytics/track.ts`)
 
@@ -102,7 +107,7 @@ Lightweight `trackEvent(name, properties, userId)` for key user actions (daily l
 
 ### Push Notifications (`src/lib/push/`)
 
-Capacitor push plugin (`@capacitor/push-notifications`). Firebase FCM for Android, APNs for iOS. Registration and token management handled client-side.
+Push support is dormant. The free Android release removes the push SDK, registration startup and notification permissions. Reintroducing push requires a separate implementation and privacy review.
 
 ### Data Export (`src/lib/export/`)
 
@@ -124,7 +129,7 @@ Mode persists in localStorage. Default is quick.
 
 ### Native App (Capacitor)
 
-Capacitor config at `capacitor.config.ts` — loads live Vercel URL in native WebView. Push notification + biometric plugins installed. Run `npx cap add ios && npx cap sync` to build. See `NATIVE_APP.md`.
+Capacitor config at `capacitor.config.ts` loads the hosted Vercel origin in a native WebView, with a bundled offline fallback. Android source is tracked. See `docs/ANDROID_BUILD_CONFIG.md` for sync/build instructions and the release checklist for acceptance gates. Native Billing/RevenueCat/push SDKs and permissions are absent from this free release.
 
 ## Key Conventions
 
@@ -152,13 +157,13 @@ Capacitor config at `capacitor.config.ts` — loads live Vercel URL in native We
 
 - **Mobile-first**: Use `min-h-[100dvh]` not `min-h-screen`. Add `touch-action: none` on slider wrappers. Use `viewport-fit: cover` for safe-area support.
 
-- **Environment**: `.env.local` must contain `DATABASE_URL` with a Supabase **transaction pooler** connection string. Stripe vars are optional (app works without them, payments disabled). This file is gitignored. `drizzle-kit` does not auto-load `.env.local` — the npm scripts use `dotenv-cli` to handle this.
+- **Environment**: Supply `DATABASE_URL` and a strong `SESSION_SECRET` privately. `.env.local` is gitignored; never print or commit its values. Stripe configuration is required for web purchases. `drizzle-kit` does not auto-load `.env.local`; npm database scripts use `dotenv-cli`. Configuration and live health remain owner gates.
 
-- **Stripe env var names**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_MONTHLY_PRICE_ID`, `STRIPE_YEARLY_PRICE_ID`, `NEXT_PUBLIC_APP_URL`. The config helper is at `src/lib/stripe/config.ts`. Always wrap Stripe API calls in try/catch — uncaught errors produce 500 with empty body.
+- **Stripe env var names**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_PRO_YEARLY_PRICE_ID`, `STRIPE_MONTHLY_PRICE_ID`, `STRIPE_YEARLY_PRICE_ID`, `NEXT_PUBLIC_APP_URL`. The un-prefixed prices are Premium; Pro requires distinct Pro price IDs. Missing or ambiguous configuration fails closed without a fallback to another tier. Never return provider/driver error details to clients. Read `docs/billing-ownership-migration.md` before deploying the billing schema changes.
 
-- **DB migrations**: `drizzle-kit db:push` fails with CHECK constraints (drizzle-kit 0.31.x bug). Run migrations directly via Node.js script using the `postgres` package with `.env.local` loaded via `dotenv`.
+- **DB migrations**: Review committed migration SQL and its operator procedure; validate backups and reconciliation before applying production changes. Do not use a blanket schema push as release verification or improvise live database scripts.
 
-- **Pathname detection in middleware**: To pass the current URL path to Server Components (e.g., for redirect guards in layouts), use Next.js middleware to set a custom request header: `requestHeaders.set("x-pathname", request.nextUrl.pathname)` with `NextResponse.next({ request: { headers: requestHeaders } })`. Then read via `headers().get("x-pathname")` in the Server Component. Setting headers on the RESPONSE does NOT work — must set on the REQUEST.
+- **Pathname detection in proxy**: To pass the current URL path to Server Components (e.g., for redirect guards in layouts), set a custom request header: `requestHeaders.set("x-pathname", request.nextUrl.pathname)` with `NextResponse.next({ request: { headers: requestHeaders } })`. Then read via `(await headers()).get("x-pathname")` in the Server Component. Set it on the request, not the response.
 
 - **Onboarding redirect guard**: `src/app/(dashboard)/layout.tsx` redirects users with `onboardingCompleted=false` to `/onboarding`. It uses `x-pathname` from middleware to avoid an infinite redirect loop when already on `/onboarding`. The onboarding page lives at `(dashboard)/onboarding/` and is wrapped by the dashboard layout (shows sidebar + bottom nav).
 
@@ -166,7 +171,7 @@ Capacitor config at `capacitor.config.ts` — loads live Vercel URL in native We
 
 - **Android WebView cookie persistence**: Override `MainActivity.java` to call `CookieManager.getInstance().setAcceptCookie(true)` in `onCreate` and `CookieManager.getInstance().flush()` in `onStop` to ensure session cookies survive app close/reopen.
 
-- **Android Firebase crash fix**: Without `google-services.json`, `FirebaseInitProvider` crashes on startup. Suppress it in `AndroidManifest.xml` with `tools:node="remove"` on the provider, plus `firebase_messaging_auto_init_enabled=false` metadata. Keep the push plugin installed for future use.
+- **Android Firebase**: Push/Firebase SDK startup is absent from the free release. Do not restore the removed plugin to solve historical startup guidance.
 
 - **Public layout back navigation**: `src/app/(public)/layout.tsx` has a `<BackButton>` client component (`src/components/back-button.tsx`) using `router.back()`. All public pages (pricing, terms, privacy) automatically get a back button.
 
@@ -176,24 +181,9 @@ Capacitor config at `capacitor.config.ts` — loads live Vercel URL in native We
 
 - **Stripe webhook events needed**: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. The webhook handler is at `src/app/api/stripe/webhook/route.ts`. Do NOT enable IP restrictions on the Stripe API key — Vercel uses dynamic IPs.
 
-- **RevenueCat (native in-app purchases)**: Handles iOS/Android purchases via `@revenuecat/purchases-capacitor`. Stripe remains for web. All RC client code is guarded with `Capacitor.isNativePlatform()`.
-  - **Env vars**:
-    - `NEXT_PUBLIC_REVENUECAT_ANDROID_KEY` — public Android API key (from RC dashboard → Projects → API Keys)
-    - `NEXT_PUBLIC_REVENUECAT_IOS_KEY` — public iOS API key
-    - `REVENUECAT_SECRET_KEY` — server-side secret key for REST API calls (sync.ts)
-    - `REVENUECAT_WEBHOOK_SECRET` — authorization header value for webhook validation
-  - **Webhook**: `POST /api/revenuecat/webhook`. Configure in RC dashboard → Project → Integrations → Webhooks. Set Authorization header to value of `REVENUECAT_WEBHOOK_SECRET`. Events handled: `INITIAL_PURCHASE`, `RENEWAL`, `CANCELLATION`, `EXPIRATION`.
-  - **RevenueCat dashboard setup required**:
-    1. Create entitlements: `pro`, `premium`
-    2. Create products in Google Play Console and App Store Connect:
-       - `pro_monthly` ($4.99/mo), `pro_yearly` ($39.99/yr)
-       - `premium_monthly` ($7.99/mo), `premium_yearly` ($59.99/yr)
-    3. Create an offering and attach each product as a package with matching identifiers
-    4. Attach products to their entitlements (pro products → `pro`, premium products → `premium`)
-  - **Files**: `src/lib/revenuecat/index.ts` (client), `src/lib/revenuecat/sync.ts` (server sync), `src/app/api/revenuecat/webhook/route.ts` (webhook), `src/components/native-upgrade-button.tsx` (UI)
-  - **Product ID mapping** (RC entitlement → app tier): `pro` → `"pro"`, `premium` → `"premium"`
+- **RevenueCat**: Client compatibility stubs are dormant; do not mount initialization or reinstall a purchase SDK. The retained server webhook/sync supports legacy access and deletion workflows with authentication and atomic provider-ownership checks. Historical provider secrets, if needed, remain server-only. Native purchase setup is a separate post-launch project.
 
-- **Android release build**: Keystore at `android/app/omnilife-release.keystore`, alias `omnilife`. Supply `KEYSTORE_PASSWORD` and `KEY_PASSWORD` through your local environment or secret manager; never put their values in source or shell history. AAB output: `android/app/build/outputs/bundle/release/app-release.aab`. Current versionCode 3, versionName 1.0.2.
+- **Android release build**: Source declares versionCode 6 / versionName 1.0.3; verify availability in Play before signing. Use the existing authorized upload key through `KEYSTORE_PATH`, `KEYSTORE_ALIAS`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`, supplied privately. Never regenerate a key as a routine build step. Signing, device acceptance and artifact identity are separate owner gates. See `docs/ANDROID_BUILD_CONFIG.md` and the release checklist.
 
 - **Android `onStop()` access modifier**: `BridgeActivity.onStop()` is `public` — override must also be `public`, not `protected`. Java compilation fails otherwise.
 
@@ -205,23 +195,25 @@ Capacitor config at `capacitor.config.ts` — loads live Vercel URL in native We
 
 ## Next Steps & Planned Improvements
 
-### Immediate (In Progress)
-- **Google Play subscriptions** — merchant account set up (Apr 2026). Need to create 4 products in Play Console once subscriptions page unlocks (may need merchant account propagation, ~few hours). Product IDs: `pro_monthly` ($3.99), `pro_yearly` ($29.99), `premium_monthly` ($4.99), `premium_yearly` ($39.99)
-- **RevenueCat Android app config** — entitlements ✅, webhook ✅, env vars ✅, but need to: add Android app in RC → Apps & providers (package: `com.omnilife.app`), create 4 products, create offering, link to entitlements. Then update `NEXT_PUBLIC_REVENUECAT_ANDROID_KEY` in Vercel with real Android key.
-- **Android versionCode 5 / 1.0.2** — built with BILLING permission, rolled out to internal testing Apr 2026. Stay on internal testing until subscriptions + RC are fully configured.
+### Current release
+
+Use [the release checklist](docs/release/1.0.3-closed-test-checklist.md) as the operational handoff. Keep the OmniLife name, package `com.omnilife.app` and existing deployment URL for this release. The owner must resolve or accept naming risk before production rollout; no rename is authorized here. Follow `NEXT_STEPS.md` for remaining owner gates and the separate post-launch backlog.
+
+### Keepalive operations
+
+`vercel.json` schedules `/api/keepalive` once daily at 08:00 UTC. Supply a strong server-only `CRON_SECRET` in the Vercel deployment environment. Vercel sends it as `Authorization: Bearer <CRON_SECRET>`; the route requires the exact header and returns 503 without configuration or 401 without valid authorization before accessing the database. The authenticated query is only `select 1`; failures expose a generic message. There is no GitHub backup scheduler. Owner deployment, scheduler invocation and database availability/TLS checks remain unverified. A successful ping does not guarantee provider pause prevention or validate application schema.
+
+References: [Vercel cron authentication](https://vercel.com/docs/cron-jobs/manage-cron-jobs), [Supabase pooler configuration](https://supabase.com/docs/guides/database/connecting-to-postgres).
 
 ### High Priority
-- **iOS build & App Store submission** — skipping for now (no Apple Developer account yet, $99/yr). When ready: `npx cap add ios && npx cap sync`, open in Xcode, submit to App Store Connect
-- **Firebase push notifications** — add Firebase project for Android (download `google-services.json` → `android/app/`), configure APNs for iOS. Currently suppressed to avoid crash; push plugin is installed
+- **iOS and native monetization/push** are separate post-launch projects requiring their own implementation, testing and privacy review.
 - **Partner features polish** — the partner invite/compare flow exists but needs UX refinement; divergence detection (`src/lib/engine/divergence.ts`) is computed but not prominently surfaced
 - **Password reset email delivery** — Resend integration exists (`src/lib/email/`) but needs a verified sending domain in Resend dashboard
 
 ### Growth & Monetization
-- **AI Coaching** ✅ LIVE — real Gemini 2.0 Flash calls via `GEMINI_API_KEY`. Free tier: 1,500 req/day. See `docs/AI_COACHING.md`. Premium-only, conversation history maintained per session.
-- **Pricing** ✅ UPDATED — Pro: $3.99/mo, $29.99/yr. Premium: $4.99/mo, $39.99/yr. Stripe price IDs updated in Vercel env vars.
-- **Stripe price IDs** (updated Apr 2026): Pro monthly `price_1TJCKLQxDITIiPCKUiUHyxXK`, Pro yearly `price_1TJCLzQxDITIiPCK0yFxC7f1`, Premium monthly `price_1TJCMnQxDITIiPCKMZO5MXFo`, Premium yearly `price_1TJCN6QxDITIiPCKj9sFzqSw`
+- **AI coaching and web pricing configuration** require private production verification; source code alone does not establish live provider state. Keep current prices centralized in `TIERS`.
 - **Onboarding conversion funnel** — add analytics events for each onboarding step to identify drop-off; A/B test paywall placement
-- **Referral rewards automation** — referral system exists at `/refer` but reward fulfillment (premium unlock) needs to be automated on referral conversion
+- **Referral rewards** — fulfillment IS automated: `processReferral` (`src/lib/referrals/index.ts`) runs on referred signup and extends the referrer's `trialEndsAt` by 30 days (premium trial). Still missing: promised bonus tiers (e.g., 6 months at 5 referrals — stats only add +1 month at 5) and referral status transitions (records stay `signed_up`; nothing moves them to `rewarded`)
 - **Blog content** — MDX blog at `/blog` exists for SEO; needs actual articles about relationship health, communication, etc.
 
 ### Engine Improvements

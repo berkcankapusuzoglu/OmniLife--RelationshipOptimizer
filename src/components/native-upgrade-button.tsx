@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { isNativePlatform, useNativePlatform } from "@/lib/capacitor/platform";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export function NativeUpgradeButton({
   className,
   children,
 }: NativeUpgradeButtonProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const native = useNativePlatform();
@@ -38,6 +40,10 @@ export function NativeUpgradeButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceType: interval, tier }),
       });
+      if (res.status === 401) {
+        router.push("/register");
+        return;
+      }
       const data = await res.json();
       if (!res.ok || !data.url) {
         setError(data.error ?? "Checkout unavailable. Please try again.");

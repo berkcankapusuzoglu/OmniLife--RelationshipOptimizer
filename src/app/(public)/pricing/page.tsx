@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getCurrentUser } from "@/lib/auth/guard";
+import { getUserTier } from "@/lib/subscription/access";
 import { PricingClient } from "./pricing-client";
 
 export const metadata: Metadata = {
@@ -19,10 +21,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const user = await getCurrentUser();
+  const currentTier = user ? await getUserTier(user.id) : "free";
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">
-      <PricingClient currentTier="free" />
+      <PricingClient currentTier={currentTier} userId={user?.id} />
     </div>
   );
 }

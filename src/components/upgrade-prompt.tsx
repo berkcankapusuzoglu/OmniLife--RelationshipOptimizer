@@ -3,6 +3,7 @@
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { TIERS } from "@/lib/subscription/tiers";
 import Link from "next/link";
 import { useNativePlatform } from "@/lib/capacitor/platform";
 
@@ -36,14 +37,14 @@ export function UpgradePrompt({
             size="sm"
             render={<Link href="/pricing" />}
           >
-            Start 7-Day Free Trial
+            Compare Plans
           </Button>
           <Button
             size="sm"
             render={<Link href="/pricing" />}
             className="bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-500 hover:to-violet-500"
           >
-            Upgrade — $7.99/mo
+            Upgrade — ${TIERS.premium.monthlyPrice}/mo
           </Button>
         </div>}
       </CardContent>

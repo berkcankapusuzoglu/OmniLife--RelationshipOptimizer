@@ -7,6 +7,8 @@ import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { PricingClient } from "@/app/(public)/pricing/pricing-client";
 import PricingPage from "@/app/(public)/pricing/page";
 import LandingClient from "@/app/(public)/landing-client";
+import { ExercisesClient } from "@/app/(dashboard)/exercises/exercises-client";
+import { TIERS } from "@/lib/subscription/tiers";
 
 const platform = vi.hoisted(() => ({ native: true, server: false }));
 vi.mock("@capacitor/core", () => ({ Capacitor: { isNativePlatform: () => platform.native, getPlatform: () => platform.native ? "android" : "web" } }));
@@ -16,7 +18,16 @@ vi.mock("react", async (importOriginal) => {
 });
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@/lib/auth/guard", () => ({ getCurrentUser: async () => ({ id: "test-user", subscriptionTier: "free" }) }));
+vi.mock("@/lib/subscription/access", () => ({ getUserTier: async () => "free" }));
 vi.mock("@/lib/revenuecat/sync", () => ({ syncRevenueCatEntitlement: vi.fn() }));
+vi.mock("@/app/(dashboard)/exercises/actions", () => ({ completeExercise: vi.fn() }));
+vi.mock("@/lib/recommendations/engine", () => ({
+  getRecommendedExercises: () => Array.from({ length: 4 }, (_, i) => ({
+    id: `exercise-${i}`, title: `Exercise ${i}`, description: "Guided practice",
+    category: "emotional", durationMinutes: 5, targetDimensions: ["emotional"],
+    theoryBasis: "Communication practice", instructions: ["Listen"], difficulty: "easy",
+  })),
+}));
 
 function html(node: React.ReactNode) { return renderToStaticMarkup(node); }
 function expectNoBilling(markup: string) {
@@ -45,6 +56,11 @@ describe("free native release purchase surfaces", () => {
     expectNoBilling(markup);
     expect(markup).toContain("Personalized coaching");
   });
+  it("keeps the actual exercise-limit prompt neutral on native", () => {
+    const markup = html(<ExercisesClient currentScores={null} recentExerciseIds={[]} userTier="free" />);
+    expect(markup).toContain("3 of 4 exercises");
+    expectNoBilling(markup);
+  });
   it.each(["free", "pro", "premium"])("makes native direct pricing safe for %s users", async (tier) => {
     expectNoBilling(html(<PricingClient currentTier={tier} userId="test-user" />));
     expectNoBilling(html(await PricingPage()));
@@ -68,5 +84,16 @@ describe("free native release purchase surfaces", () => {
     expect(free).toContain("Go Premium");
     expect(html(<PricingClient currentTier="premium" />)).toContain("Manage Subscription");
     expect(html(<PremiumGate userTier="free" feature="insights">Chart</PremiumGate>)).toContain('href="/pricing"');
+  });
+  it("shows current web offers without unsupported trial or price-lock promises", () => {
+    platform.native = false;
+    const landing = html(<LandingClient />);
+    expect(landing).toContain(`$${TIERS.premium.monthlyPrice}`);
+    expect(landing).toContain(TIERS.free.featureList[3]);
+    expect(landing).toContain(TIERS.premium.featureList[1]);
+    expect(landing).not.toMatch(/free trial|lock in|before it increases/i);
+    const prompt = html(<UpgradePrompt featureDescription="Guided exercises" />);
+    expect(prompt).toContain(`$${TIERS.premium.monthlyPrice}/mo`);
+    expect(prompt).not.toMatch(/free trial|\$7\.99/i);
   });
 });

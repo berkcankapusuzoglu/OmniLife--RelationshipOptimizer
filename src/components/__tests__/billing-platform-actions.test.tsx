@@ -5,6 +5,7 @@ import { PricingClient } from "@/app/(public)/pricing/pricing-client";
 import { SettingsClient } from "@/app/(dashboard)/settings/settings-client";
 
 const platform = vi.hoisted(() => ({ native: false }));
+const push = vi.hoisted(() => vi.fn());
 vi.mock("@capacitor/core", () => ({ Capacitor: { isNativePlatform: () => platform.native } }));
 // Inspect the returned element tree and invoke real handlers without a DOM renderer.
 vi.mock("react", async importOriginal => ({
@@ -12,7 +13,7 @@ vi.mock("react", async importOriginal => ({
   useState: (value: unknown) => [value, () => {}],
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/app/(dashboard)/settings/actions", () => ({ updateProfile: vi.fn(), updateWeights: vi.fn(), exportData: vi.fn() }));
 vi.mock("@/lib/auth/actions", () => ({ logoutAction: vi.fn() }));
 vi.mock("@/app/(public)/delete-account/delete-account-client", () => ({ DeleteAccountClient: () => null }));
@@ -36,6 +37,7 @@ function settings(tier: string) {
 }
 
 beforeEach(() => {
+  push.mockReset();
   platform.native = false;
   vi.stubGlobal("React", React);
   vi.stubGlobal("window", { location: { href: "" } });
@@ -52,6 +54,12 @@ it("preserves the web Stripe checkout payload and redirect", async () => {
   await onClick!();
   expect(fetch).toHaveBeenCalledWith("/api/stripe/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: '{"priceType":"yearly","tier":"pro"}' });
   expect(window.location.href).toBe("https://checkout.example.test/session");
+});
+it("sends an anonymous web purchaser to registration without an unsupported return parameter", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 401, json: async () => ({ error: "Unauthorized" }) })));
+  await control(NativeUpgradeButton({ tier: "pro", interval: "monthly" }), "Go Pro")!();
+  expect(push).toHaveBeenCalledWith("/register");
+  expect(window.location.href).toBe("");
 });
 it("preserves web portal management from direct pricing and settings", async () => {
   await control(PricingClient({ currentTier: "premium" }), "Manage Subscription")!();

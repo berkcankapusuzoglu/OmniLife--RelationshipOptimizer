@@ -210,7 +210,7 @@ export function ExercisesClient({
       {hasMore && (
         <div className="col-span-full">
           <UpgradePrompt
-            featureDescription={`You're seeing ${exerciseLimit} of ${exercises.length} exercises. Upgrade to unlock all ${exercises.length} personalized exercises.`}
+            featureDescription={`You're seeing ${exerciseLimit} of ${exercises.length} exercises available for your account.`}
           />
         </div>
       )}

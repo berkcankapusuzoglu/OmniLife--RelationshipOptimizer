@@ -33,6 +33,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TIERS } from "@/lib/subscription/tiers";
 import { useNativePlatform } from "@/lib/capacitor/platform";
 
 // ─── Animated Counter ────────────────────────────────────────────────
@@ -819,9 +820,6 @@ export default function LandingClient() {
               Everything you need to get started is completely free. Unlock
               advanced features as your relationship grows.
             </p>
-            <p className="mt-2 text-sm font-medium text-violet-400">
-              14-day free trial on Premium — no credit card required
-            </p>
           </div>
         </FadeIn>
         <div className="mt-16 grid gap-8 sm:grid-cols-2">
@@ -840,13 +838,7 @@ export default function LandingClient() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 text-sm">
-                  {[
-                    "Daily logging & scoring",
-                    "9-dimension breakdown",
-                    "10 guided exercises",
-                    "Weekly insights",
-                    "Basic trend charts",
-                  ].map((item) => (
+                  {TIERS.free.featureList.map((item) => (
                     <li key={item} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-emerald-400" />
                       {item}
@@ -880,45 +872,29 @@ export default function LandingClient() {
                   For couples who are serious about growth
                 </CardDescription>
                 <p className="mt-4">
-                  <span className="text-4xl font-bold">$7.99</span>
+                  <span className="text-4xl font-bold">
+                    ${TIERS.premium.monthlyPrice}
+                  </span>
                   <span className="text-muted-foreground">/month</span>
-                </p>
-                <p className="mt-1 text-xs text-amber-400 font-medium">
-                  Launch pricing — lock in $7.99/mo before it increases
                 </p>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 text-sm">
-                  {[
-                    "Everything in Free",
-                    "All 37 exercises unlocked",
-                    "Partner linking & shared view",
-                    "6 scenario modes",
-                    "Balance analysis & deep insights",
-                    "Household task fairness tracking",
-                    "Export & data portability",
-                    "Priority support",
-                  ].map((item) => (
+                  {[...TIERS.pro.featureList, ...TIERS.premium.featureList.slice(1)].map((item) => (
                     <li key={item} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-violet-400" />
                       {item}
                     </li>
                   ))}
                 </ul>
-                <p className="mt-4 text-xs text-muted-foreground">
-                  Join <span className="font-semibold text-foreground">3,200+</span> premium couples
-                </p>
               </CardContent>
               <CardFooter className="border-t border-white/5 pt-4 flex-col gap-2">
                 <Button
                   className="w-full shadow-lg shadow-violet-500/20"
-                  render={<Link href="/register" />}
+                  render={<Link href="/pricing" />}
                 >
-                  Start 14-Day Free Trial
+                  Compare Plans
                 </Button>
-                <p className="text-xs text-muted-foreground">
-                  No credit card required
-                </p>
               </CardFooter>
             </Card>
           </FadeIn>
