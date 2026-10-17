@@ -12,11 +12,11 @@ function validateManifest(manifest, now) {
     if (!entry || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.userId ?? "") ||
       !/^cus_[A-Za-z0-9]+$/.test(entry.stripeCustomerId ?? "") || !/^sub_[A-Za-z0-9]+$/.test(entry.stripeSubscriptionId ?? "") ||
       !["pro", "premium"].includes(entry.subscriptionTier) || !["active", "trialing"].includes(entry.providerStatus) ||
-      !Number.isFinite(Date.parse(entry.providerExpiresAt)) || Date.parse(entry.providerExpiresAt) <= now.getTime() ||
-      !(entry.recordedExpiresAt === null || (typeof entry.recordedExpiresAt === "string" && Number.isFinite(Date.parse(entry.recordedExpiresAt))))) {
+      timestampMicros(entry.providerExpiresAt) === undefined || timestampMicros(entry.providerExpiresAt) <= BigInt(now.getTime()) * 1000n ||
+      !(entry.recordedExpiresAt === null || timestampMicros(entry.recordedExpiresAt) !== undefined)) {
       throw new Error("Invalid or inactive Stripe ownership evidence");
     }
-    if (entry.recordedExpiresAt !== null && Date.parse(entry.recordedExpiresAt) !== Date.parse(entry.providerExpiresAt)) {
+    if (entry.recordedExpiresAt !== null && !sameExpiry(entry.recordedExpiresAt, entry.providerExpiresAt)) {
       throw new Error("Recorded expiry differs from verified Stripe expiry; reconcile the account before backfill");
     }
     if (seen.has(entry.userId.toLowerCase())) throw new Error("Duplicate manifest account");
@@ -25,7 +25,7 @@ function validateManifest(manifest, now) {
   for (const entry of manifest.manual ?? []) {
     if (!entry || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.userId ?? "") ||
       !["pro", "premium"].includes(entry.subscriptionTier) || entry.stripeCustomerId !== null || entry.stripeSubscriptionId !== null || entry.ownerConfirmed !== true ||
-      !(entry.recordedExpiresAt === null || (typeof entry.recordedExpiresAt === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(entry.recordedExpiresAt) && Number.isFinite(Date.parse(entry.recordedExpiresAt))))) {
+      !(entry.recordedExpiresAt === null || timestampMicros(entry.recordedExpiresAt) !== undefined)) {
       throw new Error("Invalid or unconfirmed manual ownership evidence");
     }
     if (seen.has(entry.userId.toLowerCase())) throw new Error("Duplicate manifest account");
@@ -35,10 +35,11 @@ function validateManifest(manifest, now) {
 
 async function readRows(sql) {
   // to_jsonb permits a read-only preflight even before the new column exists.
+  // JSON timestamp text retains microseconds that the driver's Date parser loses.
   return sql`select id, subscription_tier as "subscriptionTier",
     to_jsonb(u)->>'subscription_source' as "subscriptionSource",
     stripe_customer_id as "stripeCustomerId", stripe_subscription_id as "stripeSubscriptionId",
-    subscription_expires_at as "subscriptionExpiresAt" from users u`;
+    to_jsonb(u)->>'subscription_expires_at' as "subscriptionExpiresAt" from users u`;
 }
 
 async function readSchemaState(sql) {
@@ -49,9 +50,9 @@ async function readSchemaState(sql) {
     and column_name in ('stripe_pending_checkout_token', 'stripe_pending_checkout_session_id')`;
   const [constraint] = await sql`select convalidated as validated, pg_get_expr(conbin, conrelid) as expression from pg_constraint
     where conrelid = 'users'::regclass and conname = 'users_subscription_source_check' and contype = 'c'`;
-  // PostgreSQL deparses IN into = ANY; verify the complete canonical expression.
-  const sourceConstraintValidated = constraint?.validated === true && constraint.expression.replace(/\s+/g, "") ===
-    "(subscription_source=ANY(ARRAY['stripe'::text,'revenuecat'::text,'manual'::text]))";
+  // Compare PostgreSQL's complete canonical expression without changing SQL literals.
+  const sourceConstraintValidated = constraint?.validated === true && constraint.expression ===
+    "(subscription_source = ANY (ARRAY['stripe'::text, 'revenuecat'::text, 'manual'::text]))";
   return { sourceColumnPresent, checkoutStateColumnsPresent, sourceConstraintValidated };
 }
 
@@ -59,8 +60,24 @@ function invalidSourceRows(rows) {
   return rows.filter(row => row.subscriptionSource !== null && !["stripe", "revenuecat", "manual"].includes(row.subscriptionSource)).length;
 }
 
+function timestampMicros(value) {
+  if (typeof value !== "string") return undefined;
+  // PostgreSQL stores microseconds. Reject greater precision and unsupported formats.
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?(Z|([+-])(\d{2}):(\d{2}))$/.exec(value);
+  if (!match || match[1].startsWith("0000")) return undefined;
+  const milliseconds = Date.parse(`${match[1]}Z`);
+  if (!Number.isFinite(milliseconds) || new Date(milliseconds).toISOString().slice(0, 19) !== match[1]) return undefined;
+  const offsetHours = Number(match[5] ?? 0);
+  const offsetMinutes = Number(match[6] ?? 0);
+  if (offsetHours > 15 || offsetMinutes > 59) return undefined;
+  const offset = (offsetHours * 60 + offsetMinutes) * (match[4] === "-" ? -1 : 1);
+  return BigInt(milliseconds) * 1000n + BigInt((match[2] ?? "").padEnd(6, "0")) - BigInt(offset) * 60_000_000n;
+}
+
 function sameExpiry(left, right) {
-  return left == null || right == null ? left == null && right == null : new Date(left).getTime() === new Date(right).getTime();
+  if (left === null || right === null) return left === right;
+  const instant = timestampMicros(left);
+  return instant !== undefined && instant === timestampMicros(right);
 }
 
 function planBackfill(rows, entries, source) {
@@ -123,11 +140,12 @@ export async function migrateSubscriptionSource(sql, { apply = false, manifest =
       check (subscription_source in ('stripe', 'revenuecat', 'manual')) not valid`;
     await transaction`alter table users validate constraint users_subscription_source_check`;
     let applied = 0;
+    // Bind expiry as text so the driver's timestamptz serializer cannot truncate it.
     for (const entry of plan.stripe.eligible) {
       const updated = await transaction`update users set subscription_source = 'stripe'
         where subscription_source is null and id = ${entry.userId}
         and stripe_customer_id = ${entry.stripeCustomerId} and stripe_subscription_id = ${entry.stripeSubscriptionId}
-        and subscription_tier = ${entry.subscriptionTier} and subscription_expires_at is not distinct from ${entry.recordedExpiresAt}::timestamptz
+        and subscription_tier = ${entry.subscriptionTier} and subscription_expires_at is not distinct from ${entry.recordedExpiresAt}::text::timestamptz
         returning id`;
       if (updated.length !== 1) throw new Error("Ownership snapshot changed; no backfills committed");
       applied += updated.length;
@@ -137,7 +155,7 @@ export async function migrateSubscriptionSource(sql, { apply = false, manifest =
       const updated = await transaction`update users set subscription_source = 'manual'
         where subscription_source is null and id = ${entry.userId}
         and stripe_customer_id is null and stripe_subscription_id is null
-        and subscription_tier = ${entry.subscriptionTier} and subscription_expires_at is not distinct from ${entry.recordedExpiresAt}::timestamptz
+        and subscription_tier = ${entry.subscriptionTier} and subscription_expires_at is not distinct from ${entry.recordedExpiresAt}::text::timestamptz
         returning id`;
       if (updated.length !== 1) throw new Error("Ownership snapshot changed; no backfills committed");
       appliedManual += updated.length;

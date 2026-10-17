@@ -109,6 +109,10 @@ current `recordedExpiresAt` as an ISO timestamp or JSON `null`, both Stripe IDs
 explicitly JSON `null`, and `ownerConfirmed: true`. Confirmation means the owner
 has reviewed the complimentary grant and ruled out conflicting provider billing.
 The database snapshot must have those same null Stripe IDs, tier, and expiry.
+Expiry matching preserves PostgreSQL's full microsecond precision and compares
+equivalent ISO timezone offsets as the same instant. Use at most six fractional
+second digits; unsupported timestamp formats or precision are rejected rather
+than rounded. This also applies to Stripe expiry evidence.
 The following account UUID is synthetic; keep actual evidence outside the repo.
 
 ```json

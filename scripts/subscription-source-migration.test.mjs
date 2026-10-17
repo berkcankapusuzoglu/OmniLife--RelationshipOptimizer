@@ -28,7 +28,7 @@ function database(rows, columnPresent = false, constraintExpression = null) {
     if (query.startsWith("select") && query.includes("pg_constraint")) return constraintValidated ? [{ validated: true, expression: constraintExpression }] : [];
     if (query.startsWith("select") && query.includes("stripe_pending_checkout")) return [{ present: checkoutColumnsPresent }];
     if (query.startsWith("select exists")) return [{ present: columnPresent }];
-    if (query.startsWith("select")) return rows.map(row => ({ ...row }));
+    if (query.startsWith("select")) return rows.map(row => ({ ...row, subscriptionExpiresAt: row.subscriptionExpiresAt === null || query.includes("to_jsonb(u)->>'subscription_expires_at'") ? row.subscriptionExpiresAt : new Date(row.subscriptionExpiresAt) }));
     writes.push(query);
     if (query.startsWith("alter")) {
       if (query.includes("add column if not exists subscription_source")) columnPresent = true;
@@ -46,7 +46,8 @@ function database(rows, columnPresent = false, constraintExpression = null) {
       // Assert the emitted write contract, including an optimistic expiry snapshot.
       const manual = query.includes("set subscription_source = 'manual'");
       expect(query).toMatch(/^update users set subscription_source = '(stripe|manual)' where /);
-      for (const condition of ["subscription_source is null", "id = ?", "subscription_tier = ?", "subscription_expires_at is not distinct from ?"]) expect(query).toContain(condition);
+      // An inferred timestamptz parameter also goes through the driver's lossy Date serializer.
+      for (const condition of ["subscription_source is null", "id = ?", "subscription_tier = ?", "subscription_expires_at is not distinct from ?::text::timestamptz"]) expect(query).toContain(condition);
       if (manual) for (const condition of ["stripe_customer_id is null", "stripe_subscription_id is null"]) expect(query).toContain(condition);
       else for (const condition of ["stripe_customer_id = ?", "stripe_subscription_id = ?"]) expect(query).toContain(condition);
       const [id, customer, subscription, tier, expiry] = manual ? [values[0], null, null, values[1], values[2]] : values;
@@ -110,11 +111,49 @@ describe("subscription ownership migration", () => {
     expect(await migrateSubscriptionSource(db.sql, { apply: true, manifest: input, now })).toMatchObject({ appliedManualBackfills: 0, unmatchedManifestRecords: 1, ready: false });
     expect(db.writes.filter(query => query.startsWith("update"))).toEqual([]); expect(row.subscriptionSource).toBeNull();
   });
-  it.each(["(subscription_source = ANY (ARRAY['stripe'::text, 'revenuecat'::text]))", "true"])("rejects a named validated noncanonical constraint: %s", async expression => {
+  it.each(["(subscription_source = ANY (ARRAY['stripe'::text, 'revenuecat'::text]))", "true", "(subscription_source = ANY (ARRAY['stripe'::text, 'revenuecat'::text, 'man ual'::text]))", "(subscription_source = ANY (ARRAY['str ipe'::text, 'revenuecat'::text, 'manual'::text]))", "(subscription_source = ANY (ARRAY['stripe'::text, 'revenue cat'::text, 'manual'::text]))"])("rejects a named validated noncanonical constraint: %s", async expression => {
     const { migrateSubscriptionSource } = await import("./subscription-source-migration.mjs");
     const db = database([{ ...manualRow(), subscriptionSource: "manual" }], true, expression);
     expect(await migrateSubscriptionSource(db.sql, { now })).toMatchObject({ sourceConstraintValidated: false, invalidSourceRows: 0, unresolvedPaidRows: 0, ready: false });
     expect(db.writes).toEqual([]);
+  });
+  it.each([
+    ["2026-11-01T00:00:00.123Z", "2026-11-01T00:00:00.123987Z"],
+    ["2026-11-01T00:00:00.123987Z", "2026-11-01T00:00:00.123Z"],
+    ["2026-11-01T00:00:00.123987Z", "2026-11-01T00:00:00.123988Z"],
+  ])("blocks mixed-manifest writes when an owned manual expiry %s differs from evidence %s", async (storedExpiry, recordedExpiry) => {
+    const { migrateSubscriptionSource } = await import("./subscription-source-migration.mjs");
+    const owned = { ...manualRow(), subscriptionSource: "manual", subscriptionExpiresAt: storedExpiry };
+    const eligibleStripe = { ...paidRow(), id: "00000000-0000-4000-8000-000000000002" };
+    const input = { ...manifest(), manual: [{ ...manualManifest().manual[0], recordedExpiresAt: recordedExpiry }] }; input.stripe[0].userId = eligibleStripe.id;
+    const db = database([owned, eligibleStripe], true);
+    for (const apply of [false, true]) {
+      expect(await migrateSubscriptionSource(db.sql, { apply, manifest: input, now })).toMatchObject({ alreadyOwnedManualRows: 0, unmatchedManifestRecords: 1, appliedStripeBackfills: 0, appliedManualBackfills: 0, ready: false });
+    }
+    expect(db.writes.filter(query => query.startsWith("update") || query.startsWith("alter"))).toEqual([]);
+    expect(eligibleStripe.subscriptionSource).toBeNull(); expect(owned.subscriptionExpiresAt).toBe(storedExpiry);
+  });
+  it.each(["2026-10-31T20:00:00.123987-04:00", "2026-11-01T05:30:00.123987+05:30", "2026-11-01T00:00:00.123987Z"])("backfills and rechecks an exactly matching microsecond instant: %s", async recordedExpiry => {
+    const { migrateSubscriptionSource } = await import("./subscription-source-migration.mjs");
+    const row = { ...manualRow(), subscriptionExpiresAt: "2026-11-01T00:00:00.123987Z" };
+    const input = manualManifest(); input.manual[0].recordedExpiresAt = recordedExpiry;
+    const db = database([row]);
+    expect(await migrateSubscriptionSource(db.sql, { apply: true, manifest: input, now })).toMatchObject({ appliedManualBackfills: 1, unmatchedManifestRecords: 0, ready: true });
+    expect(row.subscriptionExpiresAt).toBe("2026-11-01T00:00:00.123987Z");
+    expect(await migrateSubscriptionSource(db.sql, { manifest: input, now })).toMatchObject({ alreadyOwnedManualRows: 1, unmatchedManifestRecords: 0, ready: true });
+  });
+  it.each(["2026-11-01T00:00:00.1239871Z", "2026-02-30T00:00:00Z"])("rejects unsupported precision or normalized invalid dates: %s", async recordedExpiry => {
+    const { migrateSubscriptionSource } = await import("./subscription-source-migration.mjs");
+    const input = manualManifest(); input.manual[0].recordedExpiresAt = recordedExpiry;
+    const db = database([manualRow()]);
+    await expect(migrateSubscriptionSource(db.sql, { apply: true, manifest: input, now })).rejects.toThrow("manual ownership evidence");
+    expect(db.writes).toEqual([]);
+  });
+  it("rejects Stripe provider proof differing by a microsecond before any writes", async () => {
+    const { migrateSubscriptionSource } = await import("./subscription-source-migration.mjs");
+    const input = manifest(); input.stripe[0].recordedExpiresAt = "2026-11-01T00:00:00.123987Z"; input.stripe[0].providerExpiresAt = "2026-11-01T00:00:00.123988Z";
+    const db = database([{ ...paidRow(), subscriptionExpiresAt: input.stripe[0].recordedExpiresAt }]);
+    await expect(migrateSubscriptionSource(db.sql, { apply: true, manifest: input, now })).rejects.toThrow("Recorded expiry differs"); expect(db.writes).toEqual([]);
   });
   it("disables the legacy premium grant before credentials or a DB connection", () => {
     temporaryDirectory = mkdtempSync(path.join(tmpdir(), "billing-migration-help-"));
