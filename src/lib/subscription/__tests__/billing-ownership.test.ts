@@ -83,6 +83,19 @@ beforeEach(() => {
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
+describe("manual ownership", () => {
+  it.each([future, null])("preserves a manual grant with expiry %s through provider webhooks and sync", async expiry => {
+    state.row = { ...row("manual"), subscription_expires_at: expiry, stripe_customer_id: null, stripe_subscription_id: null };
+    const original = { ...state.row };
+    for (const type of ["CANCELLATION", "EXPIRATION", "INITIAL_PURCHASE", "RENEWAL"]) { await rc(type); expect(state.row).toEqual(original); }
+    await syncRevenueCatEntitlement(); expect(state.row).toEqual(original);
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ subscriber: { entitlements: { pro: { expires_date: "2100-01-01", product_identifier: "pro_monthly" } } } }) })));
+    await syncRevenueCatEntitlement(); expect(state.row).toEqual(original);
+    for (const type of ["customer.subscription.updated", "customer.subscription.deleted"]) { await stripeEvent(type); expect(state.row).toEqual(original); }
+    await checkoutEvent(); expect(state.row).toEqual(original);
+  });
+});
+
 describe("RevenueCat ownership", () => {
   it.each(["CANCELLATION", "EXPIRATION", "INITIAL_PURCHASE", "RENEWAL"])("does not mutate Stripe access on %s", async type => {
     const original = { ...state.row };

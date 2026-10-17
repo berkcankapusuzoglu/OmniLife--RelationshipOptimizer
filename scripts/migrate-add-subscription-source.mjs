@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { migrateSubscriptionSource } from "./subscription-source-migration.mjs";
 
-const help = `Usage: node scripts/migrate-add-subscription-source.mjs [--dry-run | --check | --apply] [--stripe-manifest PATH]
+const help = `Usage: node scripts/migrate-add-subscription-source.mjs [--dry-run | --check | --apply] [--ownership-manifest PATH]
 Defaults to read-only dry-run. --check is the read-only deployment readiness gate.
---apply preflights all provider values, adds nullable source/checkout state, validates the source CHECK, and backfills only operator-verified Stripe rows.
+--stripe-manifest PATH is a compatibility alias for --ownership-manifest PATH; supply only one manifest.
+--apply preflights all ownership evidence, adds nullable source/checkout state, validates the source CHECK, and backfills only operator-verified Stripe or manual rows.
 Exit 0 means ownership is reconciled; exit 2 means an operator gate remains; exit 1 means an error.
 See docs/billing-ownership-migration.md for manifest evidence and legacy RevenueCat reconciliation.`;
 
@@ -11,16 +12,17 @@ async function main(args) {
   if (args.includes("--help")) { console.log(help); return; }
   const modes = args.filter(arg => ["--dry-run", "--check", "--apply"].includes(arg));
   if (modes.length > 1) throw new Error("Choose only one migration mode");
-  let manifest;
+  let manifestPath;
   for (let index = 0; index < args.length; index++) {
-    if (args[index] === "--stripe-manifest") {
+    if (["--stripe-manifest", "--ownership-manifest"].includes(args[index])) {
       const filename = args[++index];
-      if (!filename || filename.startsWith("--") || manifest) throw new Error("Expected one manifest path");
-      manifest = JSON.parse(await readFile(filename, "utf8"));
+      if (!filename || filename.startsWith("--") || manifestPath) throw new Error("Expected one manifest path");
+      manifestPath = filename;
     } else if (!["--dry-run", "--check", "--apply"].includes(args[index])) {
       throw new Error("Unknown migration argument");
     }
   }
+  const manifest = manifestPath ? JSON.parse(await readFile(manifestPath, "utf8")) : undefined;
   const { config } = await import("dotenv");
   config({ path: ".env.local", quiet: true });
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL must be configured for the operator command");

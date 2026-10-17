@@ -47,7 +47,7 @@ it("does not expose provider errors or internal configuration", async () => {
   state.create.mockRejectedValue(new Error("internal credentials or deployment details"));
   const response = await POST(request("premium")); expect(response.status).toBe(503); expect(await response.json()).toEqual({ error: "Checkout is temporarily unavailable." });
 });
-it.each([null, "revenuecat"])("does not charge a paid account with unresolved or other-provider ownership: %s", async source => {
+it.each([null, "revenuecat", "manual"])("does not charge a paid account with unresolved or other-provider ownership: %s", async source => {
   state.tier = "premium"; state.source = source;
   expect((await POST(request("premium"))).status).toBe(409); expect(state.create).not.toHaveBeenCalled();
 });

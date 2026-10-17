@@ -115,7 +115,7 @@ export const users = pgTable("users", {
     .notNull()
     .defaultNow(),
 }, (table) => [
-  check("users_subscription_source_check", sql`${table.subscriptionSource} in ('stripe', 'revenuecat')`),
+  check("users_subscription_source_check", sql`${table.subscriptionSource} in ('stripe', 'revenuecat', 'manual')`),
 ]);
 
 // ── Referrals ─────────────────────────────────────────────────────────────────
