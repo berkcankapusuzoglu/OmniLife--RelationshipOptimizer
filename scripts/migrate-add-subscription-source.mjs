@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { migrateSubscriptionSource } from "./subscription-source-migration.mjs";
+import { databaseConnectionOptions } from "../src/lib/db/connection-options.mjs";
 
 const help = `Usage: node scripts/migrate-add-subscription-source.mjs [--dry-run | --check | --apply] [--ownership-manifest PATH]
 Defaults to read-only dry-run. --check is the read-only deployment readiness gate.
@@ -27,7 +28,7 @@ async function main(args) {
   config({ path: ".env.local", quiet: true });
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL must be configured for the operator command");
   const { default: postgres } = await import("postgres");
-  const sql = postgres(process.env.DATABASE_URL, { max: 1, prepare: false });
+  const sql = postgres(process.env.DATABASE_URL, databaseConnectionOptions(process.env.DATABASE_SSL_CA));
   try {
     const result = await migrateSubscriptionSource(sql, { apply: modes[0] === "--apply", manifest });
     console.log(JSON.stringify({ mode: modes[0]?.slice(2) ?? "dry-run", ...result }, null, 2));

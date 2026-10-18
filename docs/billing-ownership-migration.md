@@ -10,6 +10,16 @@ Back up the database first. Use an operator account and the intended
 and provider exports outside the repository. No Stripe or RevenueCat API calls
 are made by this script.
 
+Database connections require certificate verification. Set the optional
+server-only `DATABASE_SSL_CA` to the PEM certificate contents (including the
+`BEGIN CERTIFICATE` and `END CERTIFICATE` lines) when the provider CA is not in
+the system trust store. Do not set it to a file path. Runtime and this operator
+command use the same strict TLS options; malformed explicit PEM is a static
+configuration error. Omitting the CA uses system roots and does not prove that
+the provider connection will succeed. This verifies client-to-pooler TLS; the
+pooler's internal `pg_stat_ssl` view describes a separate pooler-to-database
+connection.
+
 1. Run `node scripts/migrate-add-subscription-source.mjs --dry-run`.
    This makes no schema or data changes, including when the column is absent.
    It prints counts and returns exit 2 while ownership is unresolved.
