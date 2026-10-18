@@ -9,17 +9,23 @@ function getResend() {
   return resend;
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
+}
+
 export async function sendPasswordResetEmail(
   to: string,
   resetUrl: string
 ): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not set — password reset email not sent");
-    return;
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from || (process.env.NODE_ENV === "production" && /@resend\.dev\s*>?\s*$/i.test(from))) {
+    throw new Error("Password reset email is not configured");
   }
 
-  await getResend().emails.send({
-    from: "OmniLife <onboarding@resend.dev>",
+  try {
+    const result = await getResend().emails.send({
+    from,
     to,
     subject: "Reset your OmniLife password",
     html: `
@@ -50,7 +56,7 @@ export async function sendPasswordResetEmail(
                 We received a request to reset the password for your OmniLife account. Click the button below to choose a new password.
               </p>
               <div style="text-align:center;margin-bottom:24px;">
-                <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#0d9488);color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;">
+              <a href="${escapeHtml(resetUrl)}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#0d9488);color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;">
                   Reset Password
                 </a>
               </div>
@@ -58,7 +64,7 @@ export async function sendPasswordResetEmail(
                 This link expires in <strong style="color:#a1a1aa;">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email.
               </p>
               <p style="color:#52525b;font-size:12px;margin:0;">
-                Or copy this link: <span style="color:#7c3aed;">${resetUrl}</span>
+                Or copy this link: <span style="color:#7c3aed;">${escapeHtml(resetUrl)}</span>
               </p>
             </td>
           </tr>
@@ -77,5 +83,9 @@ export async function sendPasswordResetEmail(
 </body>
 </html>
     `,
-  });
+    });
+    if (result.error) throw new Error("provider failure");
+  } catch {
+    throw new Error("Password reset email delivery failed");
+  }
 }

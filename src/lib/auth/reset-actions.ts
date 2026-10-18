@@ -9,9 +9,15 @@ import { users, passwordResets } from "@/lib/db/schema";
 import { hashPassword } from "./password";
 import { sendPasswordResetEmail } from "@/lib/email";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "https://omnilife-relationship-optimizer.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://omnilife-relationship-optimizer.vercel.app";
+
+function getResetBaseUrl(): string {
+  const url = new URL(BASE_URL);
+  if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
+    throw new Error("Password reset origin must use HTTPS");
+  }
+  return url.origin;
+}
 
 export async function requestPasswordResetAction(formData: FormData) {
   const email = (formData.get("email") as string | null)?.trim().toLowerCase();
@@ -42,12 +48,11 @@ export async function requestPasswordResetAction(formData: FormData) {
     expiresAt,
   });
 
-  const resetUrl = `${BASE_URL}/reset-password?token=${token}`;
-
   try {
+    const resetUrl = `${getResetBaseUrl()}/reset-password?token=${encodeURIComponent(token)}`;
     await sendPasswordResetEmail(user.email, resetUrl);
-  } catch (err) {
-    console.error("Failed to send password reset email:", err);
+  } catch {
+    console.error("Password reset delivery operation failed");
     // Don't expose email sending failures to the user
   }
 
@@ -87,16 +92,17 @@ export async function resetPasswordAction(formData: FormData) {
 
   const passwordHash = await hashPassword(password);
 
-  await db
-    .update(users)
-    .set({ passwordHash })
-    .where(eq(users.id, reset.userId));
-
-  // Mark token as used
-  await db
-    .update(passwordResets)
-    .set({ usedAt: now })
-    .where(eq(passwordResets.id, reset.id));
+  const committed = await db.transaction(async (tx) => {
+    const [claimed] = await tx.update(passwordResets)
+      .set({ usedAt: now })
+      .where(and(eq(passwordResets.id, reset.id), gt(passwordResets.expiresAt, now), isNull(passwordResets.usedAt)))
+      .returning({ userId: passwordResets.userId });
+    if (!claimed) return false;
+    const updated = await tx.update(users).set({ passwordHash }).where(eq(users.id, claimed.userId)).returning({ id: users.id });
+    if (!updated.length) throw new Error("Password reset user update failed");
+    return true;
+  });
+  if (!committed) return { error: "This reset link is invalid or has expired. Please request a new one." };
 
   redirect("/login?reset=success");
 }
