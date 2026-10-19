@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Post-restore production smoke test for OmniLife Relationship Optimizer.
+ * Post-restore production smoke test for Couplemetric.
  *
  * Usage:
  *   node scripts/smoke.mjs [baseUrl]

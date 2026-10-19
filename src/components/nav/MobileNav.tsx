@@ -55,7 +55,7 @@ export function MobileNav() {
         <SheetContent side="left" className="w-72 p-0">
           <SheetHeader className="border-b px-4 py-3">
             <SheetTitle className="text-lg font-bold tracking-tight">
-              OmniLife
+              Couplemetric
             </SheetTitle>
           </SheetHeader>
           <div className="px-3 py-4">

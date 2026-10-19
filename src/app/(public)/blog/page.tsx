@@ -4,11 +4,11 @@ import { getAllPosts } from "@/lib/blog/posts";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Blog — OmniLife Relationship Optimizer",
+  title: "Blog — Couplemetric",
   description:
     "Research-backed articles on relationship scoring, couples assessment, scenario modes, and the psychology behind a healthier partnership.",
   openGraph: {
-    title: "Blog — OmniLife Relationship Optimizer",
+    title: "Blog — Couplemetric",
     description:
       "Research-backed articles on relationship scoring, couples assessment, and the psychology behind a healthier partnership.",
     type: "website",
@@ -30,7 +30,7 @@ export default function BlogListPage() {
     <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
       <header className="mb-12 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          The OmniLife Blog
+          The Couplemetric Blog
         </h1>
         <p className="mt-4 text-lg text-muted-foreground">
           Research-backed insights on relationship health, scoring science, and

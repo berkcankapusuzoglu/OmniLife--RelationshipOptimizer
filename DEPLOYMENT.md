@@ -1,4 +1,4 @@
-# Deployment Guide — OmniLife Relationship Optimizer
+# Deployment Guide — Couplemetric
 
 ## Prerequisites
 

@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.omnilife.app",
-  appName: "OmniLife",
+  appId: "app.couplemetric.android",
+  appName: "Couplemetric",
   webDir: "native-shell",
   android: {
     allowMixedContent: false,

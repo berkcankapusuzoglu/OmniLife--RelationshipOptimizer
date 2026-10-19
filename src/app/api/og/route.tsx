@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
               O
             </div>
             <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "24px", fontWeight: 600 }}>
-              OmniLife
+              Couplemetric
             </span>
           </div>
 

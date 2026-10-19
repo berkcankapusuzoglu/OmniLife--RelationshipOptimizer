@@ -14,13 +14,13 @@ export const blogPosts: BlogPost[] = [
     slug: "science-behind-relationship-scoring",
     title: "The Science Behind Relationship Scoring",
     description:
-      "Discover how OmniLife uses 9 weighted dimensions, multi-objective optimization, and the Pareto frontier to produce a single relationship score that actually means something.",
+      "Discover how Couplemetric uses 9 weighted dimensions, multi-objective optimization, and the Pareto frontier to produce a single relationship score that actually means something.",
     date: "2026-03-18",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["relationship score", "data science", "couples assessment"],
     readingTime: "7 min read",
     content: `
-<p>Most couples apps give you a vague thumbs-up or a mood emoji. OmniLife takes a fundamentally different approach: we treat your relationship the way an engineer treats a complex system — with measurable inputs, transparent weights, and a score you can act on.</p>
+<p>Most couples apps give you a vague thumbs-up or a mood emoji. Couplemetric takes a fundamentally different approach: we treat your relationship the way an engineer treats a complex system — with measurable inputs, transparent weights, and a score you can act on.</p>
 
 <h2>The 9 Dimensions We Measure</h2>
 
@@ -45,13 +45,13 @@ export const blogPosts: BlogPost[] = [
 
 <h2>Weighted Scoring: Not All Dimensions Are Equal</h2>
 
-<p>A flat average across nine dimensions would be misleading. Research tells us that trust erosion harms a relationship more quickly than, say, a dip in exercise habits. OmniLife applies <strong>configurable weights</strong> — default values drawn from meta-analyses — so the final number reflects severity, not just magnitude.</p>
+<p>A flat average across nine dimensions would be misleading. Research tells us that trust erosion harms a relationship more quickly than, say, a dip in exercise habits. Couplemetric applies <strong>configurable weights</strong> — default values drawn from meta-analyses — so the final number reflects severity, not just magnitude.</p>
 
 <p>Your Life Score is the weighted average of the four pillars, scaled to 0-100. Your Relationship Score is the weighted average of the five relational dimensions, also 0-100. The two combine via a tunable alpha/beta blend into a single <strong>Total Quality</strong> score.</p>
 
 <h2>Penalties: When Something Is Seriously Wrong</h2>
 
-<p>Raw averages can hide problems. A couple might score 9/10 on four dimensions but 2/10 on trust. The average looks fine; the relationship is not. OmniLife applies three penalty functions:</p>
+<p>Raw averages can hide problems. A couple might score 9/10 on four dimensions but 2/10 on trust. The average looks fine; the relationship is not. Couplemetric applies three penalty functions:</p>
 
 <ol>
   <li><strong>Redline Penalties</strong> — if any dimension drops below a critical threshold, a quadratic penalty kicks in. This models the clinical reality that a single severe deficit can outweigh many strengths.</li>
@@ -61,15 +61,15 @@ export const blogPosts: BlogPost[] = [
 
 <h2>The Pareto Frontier: Optimizing Trade-offs</h2>
 
-<p>In multi-objective optimization, the <strong>Pareto frontier</strong> is the set of solutions where you cannot improve one objective without worsening another. OmniLife borrows this concept: your ideal state is the point on the frontier where life satisfaction and relationship satisfaction are both maximized — without sacrificing either.</p>
+<p>In multi-objective optimization, the <strong>Pareto frontier</strong> is the set of solutions where you cannot improve one objective without worsening another. Couplemetric borrows this concept: your ideal state is the point on the frontier where life satisfaction and relationship satisfaction are both maximized — without sacrificing either.</p>
 
-<p>The scoring engine identifies where you sit relative to that frontier and recommends the smallest changes that move you toward it. This is why the couples assessment in OmniLife feels different: it is not just a snapshot, it is a direction vector.</p>
+<p>The scoring engine identifies where you sit relative to that frontier and recommends the smallest changes that move you toward it. This is why the couples assessment in Couplemetric feels different: it is not just a snapshot, it is a direction vector.</p>
 
 <h2>Why a Single Number Matters</h2>
 
 <p>Skeptics ask: can you really reduce a relationship to a number? The answer is nuanced. The number is not the relationship — it is a <em>compass bearing</em>. It tells you whether things are improving, stable, or declining. It removes the guesswork from "are we doing okay?" and replaces it with data you can discuss together.</p>
 
-<p>The relationship score becomes most powerful when tracked over time. A single data point is interesting; a trend line is actionable. OmniLife's weekly review shows you that trend and connects it to specific behaviors, exercises, and life events.</p>
+<p>The relationship score becomes most powerful when tracked over time. A single data point is interesting; a trend line is actionable. Couplemetric's weekly review shows you that trend and connects it to specific behaviors, exercises, and life events.</p>
 
 <p>If you are curious what your baseline looks like, <a href="/quiz" class="text-primary underline">take our free relationship quiz</a> and see your first score in under five minutes.</p>
 `,
@@ -78,9 +78,9 @@ export const blogPosts: BlogPost[] = [
     slug: "why-most-couples-apps-fail",
     title: "Why Most Couples Apps Fail (And What We Do Differently)",
     description:
-      "The couples app market is littered with abandoned downloads. Here is why most fail and how OmniLife's relationship optimizer avoids their mistakes.",
+      "The couples app market is littered with abandoned downloads. Here is why most fail and how Couplemetric's relationship optimizer avoids their mistakes.",
     date: "2026-03-15",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["couples app", "product design", "relationship optimizer"],
     readingTime: "6 min read",
     content: `
@@ -90,37 +90,37 @@ export const blogPosts: BlogPost[] = [
 
 <p>Most couples apps collect input but never close the loop. You answer questions, but nothing measurable changes. There is no score, no trend, no clear signal that your effort is working. Humans are wired to repeat behaviors that produce visible results. Without a feedback loop, motivation dies.</p>
 
-<p>OmniLife closes the loop with a <strong>daily relationship score</strong> and a weekly trend review. Every check-in moves a number. Every exercise has a measurable impact. You can see, concretely, that the 10 minutes you spent on a gratitude exercise this morning moved your emotional responsiveness score up by 0.3 points.</p>
+<p>Couplemetric closes the loop with a <strong>daily relationship score</strong> and a weekly trend review. Every check-in moves a number. Every exercise has a measurable impact. You can see, concretely, that the 10 minutes you spent on a gratitude exercise this morning moved your emotional responsiveness score up by 0.3 points.</p>
 
 <h2>Problem 2: One-Size-Fits-All Content</h2>
 
 <p>A couple navigating a newborn's first months has radically different needs than a couple in a long-distance phase or one where a partner is deep in exam season. Generic advice — "plan a date night!" — is tone-deaf when you are sleep-deprived and haven't showered in two days.</p>
 
-<p>OmniLife's <strong>scenario modes</strong> adapt every recommendation to your current life context. The app knows that during crisis mode, exercises should be short, low-energy, and focused on stress regulation. During a growth phase, it can push more ambitious connection-building activities.</p>
+<p>Couplemetric's <strong>scenario modes</strong> adapt every recommendation to your current life context. The app knows that during crisis mode, exercises should be short, low-energy, and focused on stress regulation. During a growth phase, it can push more ambitious connection-building activities.</p>
 
 <h2>Problem 3: Ignoring Individual Well-Being</h2>
 
 <p>Relationship health does not exist in a vacuum. If one partner is burnt out, anxious, or financially stressed, no amount of couples exercises will fix the relationship. Most couples apps treat the relationship as an isolated system.</p>
 
-<p>OmniLife measures <strong>both individual life quality and relationship quality</strong>. The four life pillars — vitality, growth, security, connection — feed directly into the relationship assessment. The app might recommend that the best thing you can do for your relationship today is go for a run or sort out that overdue bill.</p>
+<p>Couplemetric measures <strong>both individual life quality and relationship quality</strong>. The four life pillars — vitality, growth, security, connection — feed directly into the relationship assessment. The app might recommend that the best thing you can do for your relationship today is go for a run or sort out that overdue bill.</p>
 
 <h2>Problem 4: No Accountability Structure</h2>
 
 <p>Journaling apps rely on intrinsic motivation. That works for about 8% of the population. The rest of us need structure: reminders, streaks, partner challenges, and visible consequences for skipping.</p>
 
-<p>OmniLife builds accountability into the system. Daily logs feed the scoring engine. Missed days are visible in your trend line. Partner challenges create gentle social pressure. The weekly review is a natural checkpoint that both partners can discuss over coffee.</p>
+<p>Couplemetric builds accountability into the system. Daily logs feed the scoring engine. Missed days are visible in your trend line. Partner challenges create gentle social pressure. The weekly review is a natural checkpoint that both partners can discuss over coffee.</p>
 
 <h2>Problem 5: Privacy Concerns Kill Honesty</h2>
 
 <p>If both partners can see every answer in real time, honesty evaporates. Nobody will rate their satisfaction with equity as a 3/10 if their partner is watching the screen. Most couples apps either force full transparency or ignore the problem.</p>
 
-<p>OmniLife keeps <strong>individual logs private by default</strong>. The shared view shows aggregated scores and trends, not raw answers. This lets each partner be honest without fear of triggering a fight. When both people are honest, the data is useful. When they are performing, it is noise.</p>
+<p>Couplemetric keeps <strong>individual logs private by default</strong>. The shared view shows aggregated scores and trends, not raw answers. This lets each partner be honest without fear of triggering a fight. When both people are honest, the data is useful. When they are performing, it is noise.</p>
 
 <h2>What a Relationship Optimizer Actually Looks Like</h2>
 
 <p>The term "relationship optimizer" sounds clinical, but the experience is not. It is a five-minute daily check-in, a curated exercise matched to your current needs, and a weekly conversation starter backed by real data. The math runs silently in the background. What you see is clarity.</p>
 
-<p>The difference between OmniLife and a typical couples app is the difference between a fitness tracker and a motivational poster. Both want you to be healthier. Only one gives you data you can act on.</p>
+<p>The difference between Couplemetric and a typical couples app is the difference between a fitness tracker and a motivational poster. Both want you to be healthier. Only one gives you data you can act on.</p>
 
 <p>Ready to see the difference? <a href="/register" class="text-primary underline">Create a free account</a> and run your first couples assessment today.</p>
 `,
@@ -129,17 +129,17 @@ export const blogPosts: BlogPost[] = [
     slug: "scenario-modes-navigate-life-challenges",
     title: "How to Use Scenario Modes to Navigate Life's Challenges",
     description:
-      "Exam season, a new baby, a long-distance stretch — life throws curveballs. Learn how OmniLife's scenario modes adapt your relationship plan to what's actually happening.",
+      "Exam season, a new baby, a long-distance stretch — life throws curveballs. Learn how Couplemetric's scenario modes adapt your relationship plan to what's actually happening.",
     date: "2026-03-12",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["scenario modes", "relationship optimizer", "couples app"],
     readingTime: "7 min read",
     content: `
-<p>Life is not steady-state. Some months are calm; others feel like everything is on fire at once. A relationship strategy that works during a peaceful summer will fail spectacularly during exam season, a cross-country move, or the first weeks with a newborn. OmniLife's <strong>scenario modes</strong> solve this by dynamically adjusting your scoring weights, exercise recommendations, and daily expectations.</p>
+<p>Life is not steady-state. Some months are calm; others feel like everything is on fire at once. A relationship strategy that works during a peaceful summer will fail spectacularly during exam season, a cross-country move, or the first weeks with a newborn. Couplemetric's <strong>scenario modes</strong> solve this by dynamically adjusting your scoring weights, exercise recommendations, and daily expectations.</p>
 
 <h2>The Six Built-In Modes</h2>
 
-<p>OmniLife ships with six scenario presets, each designed around a specific life phase:</p>
+<p>Couplemetric ships with six scenario presets, each designed around a specific life phase:</p>
 
 <h3>1. Default Mode</h3>
 <p>Balanced weights across all dimensions. Use this when life is relatively stable and you want general relationship optimization. The scoring engine treats all nine dimensions with their standard research-backed weights.</p>
@@ -167,13 +167,13 @@ export const blogPosts: BlogPost[] = [
 
 <h2>Creating Custom Scenarios</h2>
 
-<p>The six presets cover common phases, but your life may not fit neatly into a box. OmniLife lets you create <strong>custom scenario profiles</strong> with your own weight distributions. Moving to a new city? Blend elements of crisis mode and long-distance mode. Starting a business together? Combine growth emphasis with stress regulation focus.</p>
+<p>The six presets cover common phases, but your life may not fit neatly into a box. Couplemetric lets you create <strong>custom scenario profiles</strong> with your own weight distributions. Moving to a new city? Blend elements of crisis mode and long-distance mode. Starting a business together? Combine growth emphasis with stress regulation focus.</p>
 
 <h2>When to Switch Modes</h2>
 
 <p>The app does not switch modes automatically — that is a deliberate design choice. Scenario changes should be a <strong>conscious conversation</strong> between partners. "Hey, exams start next week — should we switch to exam mode?" That conversation itself is a relationship-building moment.</p>
 
-<p>OmniLife will suggest a mode switch when your score patterns match a known scenario signature (e.g., vitality scores dropping suddenly often correlates with a new-baby or crisis phase), but the final decision is always yours.</p>
+<p>Couplemetric will suggest a mode switch when your score patterns match a known scenario signature (e.g., vitality scores dropping suddenly often correlates with a new-baby or crisis phase), but the final decision is always yours.</p>
 
 <p>Scenario modes are available on all plans. <a href="/register" class="text-primary underline">Sign up free</a> and explore which mode fits your current chapter.</p>
 `,
@@ -182,44 +182,44 @@ export const blogPosts: BlogPost[] = [
     slug: "psychology-of-relationship-exercises",
     title: "The Psychology of Relationship Exercises",
     description:
-      "From Gottman's Love Maps to Self-Determination Theory, here is the research behind every exercise OmniLife recommends — and why they work.",
+      "From Gottman's Love Maps to Self-Determination Theory, here is the research behind every exercise Couplemetric recommends — and why they work.",
     date: "2026-03-08",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["psychology", "relationship quiz", "Gottman", "couples assessment"],
     readingTime: "8 min read",
     content: `
-<p>When OmniLife recommends an exercise, it is not pulling from a generic list of "things couples should do." Every recommendation is grounded in at least one of three major psychological frameworks, selected because your current scores indicate it will move the needle. Here is the research behind the system.</p>
+<p>When Couplemetric recommends an exercise, it is not pulling from a generic list of "things couples should do." Every recommendation is grounded in at least one of three major psychological frameworks, selected because your current scores indicate it will move the needle. Here is the research behind the system.</p>
 
 <h2>Framework 1: The Gottman Method</h2>
 
-<p>Dr. John Gottman spent four decades studying couples in his "Love Lab" at the University of Washington. His research identified specific, observable behaviors that predict relationship success or failure with over 90% accuracy. Three of his concepts are central to OmniLife's exercise library:</p>
+<p>Dr. John Gottman spent four decades studying couples in his "Love Lab" at the University of Washington. His research identified specific, observable behaviors that predict relationship success or failure with over 90% accuracy. Three of his concepts are central to Couplemetric's exercise library:</p>
 
 <h3>Bids for Connection</h3>
 <p>A bid is any attempt to connect — a question, a touch, a sigh, a shared observation. Gottman found that in stable relationships, partners respond to bids positively ("turning toward") about 86% of the time. In relationships that eventually dissolve, that number drops to 33%.</p>
 
-<p>OmniLife's <strong>emotional responsiveness</strong> dimension tracks this directly. When your score is low, the app recommends "bid awareness" exercises: structured prompts to notice and respond to your partner's bids throughout the day. These are small — a text reply, a moment of eye contact — but the data shows they compound dramatically.</p>
+<p>Couplemetric's <strong>emotional responsiveness</strong> dimension tracks this directly. When your score is low, the app recommends "bid awareness" exercises: structured prompts to notice and respond to your partner's bids throughout the day. These are small — a text reply, a moment of eye contact — but the data shows they compound dramatically.</p>
 
 <h3>Love Maps</h3>
 <p>A Love Map is Gottman's term for the mental model you hold of your partner's inner world — their fears, dreams, stressors, and joys. Couples with detailed Love Maps navigate conflict better because they understand the emotional landscape behind their partner's reactions.</p>
 
-<p>OmniLife includes Love Map exercises: structured question exchanges designed to update and deepen your knowledge of each other. These appear more frequently when your <strong>trust and safety</strong> score is moderate but your <strong>emotional responsiveness</strong> is lagging — a pattern that suggests familiarity without intimacy.</p>
+<p>Couplemetric includes Love Map exercises: structured question exchanges designed to update and deepen your knowledge of each other. These appear more frequently when your <strong>trust and safety</strong> score is moderate but your <strong>emotional responsiveness</strong> is lagging — a pattern that suggests familiarity without intimacy.</p>
 
 <h3>The Four Horsemen</h3>
-<p>Criticism, contempt, defensiveness, and stonewalling — Gottman's "Four Horsemen of the Apocalypse" — are the most reliable predictors of relationship failure. OmniLife's scoring engine detects patterns associated with these behaviors (rising stress scores combined with falling fairness and trust) and recommends targeted antidotes: gentle start-ups instead of criticism, appreciation exercises to counter contempt, responsibility-taking prompts for defensiveness, and self-soothing techniques for stonewalling.</p>
+<p>Criticism, contempt, defensiveness, and stonewalling — Gottman's "Four Horsemen of the Apocalypse" — are the most reliable predictors of relationship failure. Couplemetric's scoring engine detects patterns associated with these behaviors (rising stress scores combined with falling fairness and trust) and recommends targeted antidotes: gentle start-ups instead of criticism, appreciation exercises to counter contempt, responsibility-taking prompts for defensiveness, and self-soothing techniques for stonewalling.</p>
 
 <h2>Framework 2: Attachment Theory</h2>
 
 <p>Developed by John Bowlby and expanded by Sue Johnson into Emotionally Focused Therapy (EFT), attachment theory holds that adult romantic bonds follow the same patterns as infant-caregiver bonds. Secure attachment — the feeling that your partner is a reliable safe haven — is the foundation of relationship satisfaction.</p>
 
-<p>OmniLife's <strong>trust and safety</strong> dimension is a direct measure of attachment security. When this score drops, the recommendation engine prioritizes exercises that rebuild felt safety: vulnerability exchanges, consistent small gestures (the "daily deposit"), and structured conversations about needs and fears.</p>
+<p>Couplemetric's <strong>trust and safety</strong> dimension is a direct measure of attachment security. When this score drops, the recommendation engine prioritizes exercises that rebuild felt safety: vulnerability exchanges, consistent small gestures (the "daily deposit"), and structured conversations about needs and fears.</p>
 
-<p>The couples assessment in OmniLife does not measure attachment style directly — that requires clinical instruments — but it tracks the <em>behavioral outputs</em> of attachment patterns. A partner who scores high on autonomy but low on emotional responsiveness may be exhibiting avoidant patterns. The exercises adapt accordingly, gently encouraging connection without overwhelming the avoidant partner's need for space.</p>
+<p>The couples assessment in Couplemetric does not measure attachment style directly — that requires clinical instruments — but it tracks the <em>behavioral outputs</em> of attachment patterns. A partner who scores high on autonomy but low on emotional responsiveness may be exhibiting avoidant patterns. The exercises adapt accordingly, gently encouraging connection without overwhelming the avoidant partner's need for space.</p>
 
 <h2>Framework 3: Self-Determination Theory (SDT)</h2>
 
 <p>SDT, developed by Deci and Ryan, identifies three universal psychological needs: <strong>autonomy</strong>, <strong>competence</strong>, and <strong>relatedness</strong>. When all three are met within a relationship, intrinsic motivation flourishes — partners <em>want</em> to invest in the relationship, rather than feeling obligated.</p>
 
-<p>OmniLife maps these needs directly:</p>
+<p>Couplemetric maps these needs directly:</p>
 
 <ul>
   <li><strong>Autonomy</strong> → the autonomy respect dimension. Exercises that protect individual identity: solo hobby time, boundary-setting conversations, independent goal tracking.</li>
@@ -240,13 +240,13 @@ export const blogPosts: BlogPost[] = [
     slug: "understanding-your-relationship-score",
     title: "Understanding Your Relationship Score: A Complete Guide",
     description:
-      "Your OmniLife score is more than a number. This guide explains how to read it, what the penalties mean, and exactly what to improve first.",
+      "Your Couplemetric score is more than a number. This guide explains how to read it, what the penalties mean, and exactly what to improve first.",
     date: "2026-03-05",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["relationship score", "guide", "relationship quiz"],
     readingTime: "7 min read",
     content: `
-<p>You have taken the relationship quiz, submitted your first daily log, and now you are staring at a number. Maybe it is 72. Maybe it is 45. What does it mean? This guide breaks down every component of your OmniLife relationship score so you know exactly where you stand and what to do about it.</p>
+<p>You have taken the relationship quiz, submitted your first daily log, and now you are staring at a number. Maybe it is 72. Maybe it is 45. What does it mean? This guide breaks down every component of your Couplemetric relationship score so you know exactly where you stand and what to do about it.</p>
 
 <h2>The Three Numbers That Matter</h2>
 
@@ -267,7 +267,7 @@ export const blogPosts: BlogPost[] = [
 
 <h2>Understanding Penalties</h2>
 
-<p>Penalties are what make OmniLife's couples assessment smarter than a simple average. Three types of penalties can reduce your Total Quality score:</p>
+<p>Penalties are what make Couplemetric's couples assessment smarter than a simple average. Three types of penalties can reduce your Total Quality score:</p>
 
 <h3>Redline Penalties</h3>
 <p>If any single dimension drops below its critical threshold (typically 3/10), a quadratic penalty activates. Quadratic means the penalty grows faster as the score gets worse. A dimension at 3 might cost you 2 points; a dimension at 1 costs you 8.</p>
@@ -304,7 +304,7 @@ export const blogPosts: BlogPost[] = [
 
 <h2>Sharing Scores With Your Partner</h2>
 
-<p>OmniLife shows each partner their own scores by default. The shared dashboard displays <em>combined</em> trends — an average of both partners' inputs — without revealing individual answers. This protects honesty while enabling joint reflection.</p>
+<p>Couplemetric shows each partner their own scores by default. The shared dashboard displays <em>combined</em> trends — an average of both partners' inputs — without revealing individual answers. This protects honesty while enabling joint reflection.</p>
 
 <p>During your weekly review, we recommend discussing the trend direction rather than the absolute number. "Our trust score has been climbing for three weeks" is a more productive conversation starter than "Your trust score is only 6."</p>
 
@@ -317,11 +317,11 @@ export const blogPosts: BlogPost[] = [
     description:
       "Not sure if your relationship is on track? These 10 warning signs — mapped to the 9 dimensions of relationship health — reveal whether it is time to take action.",
     date: "2026-03-21",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["relationship problems", "relationship check", "couples assessment"],
     readingTime: "7 min read",
     content: `
-<p>Every relationship hits rough patches. The difference between couples who recover and those who drift apart is often awareness — noticing the signs early enough to course-correct. Below are ten signs your relationship needs a check-up, each tied to the dimensions that OmniLife measures so you know exactly where to focus.</p>
+<p>Every relationship hits rough patches. The difference between couples who recover and those who drift apart is often awareness — noticing the signs early enough to course-correct. Below are ten signs your relationship needs a check-up, each tied to the dimensions that Couplemetric measures so you know exactly where to focus.</p>
 
 <h2>1. Conversations Have Become Transactional</h2>
 
@@ -361,7 +361,7 @@ export const blogPosts: BlogPost[] = [
 
 <h2>10. You Cannot Remember Your Last Good Week</h2>
 
-<p>Not a good day — a good <em>week</em>. If positive stretches are rare and brief, your overall trend line is pointing down. This is exactly the pattern OmniLife's scoring engine is designed to detect: not a single bad data point, but a sustained decline across multiple dimensions.</p>
+<p>Not a good day — a good <em>week</em>. If positive stretches are rare and brief, your overall trend line is pointing down. This is exactly the pattern Couplemetric's scoring engine is designed to detect: not a single bad data point, but a sustained decline across multiple dimensions.</p>
 
 <h2>What to Do If You Recognized Yourself</h2>
 
@@ -378,7 +378,7 @@ export const blogPosts: BlogPost[] = [
     description:
       "Learn research-backed communication techniques for couples — from active listening and gentle start-ups to conflict repair and weekly check-ins that actually work.",
     date: "2026-03-20",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["couples communication", "relationship communication tips", "conflict resolution"],
     readingTime: "8 min read",
     content: `
@@ -388,7 +388,7 @@ export const blogPosts: BlogPost[] = [
 
 <p>Dr. John Gottman's research at the University of Washington identified a precise sequence that predicts communication failure. It starts with a <strong>harsh start-up</strong> — opening a conversation with criticism or blame — which triggers defensiveness, which triggers contempt or stonewalling. Within six minutes, the conversation is unsalvageable.</p>
 
-<p>The good news: Gottman also found that couples who master just a few specific skills can reverse this pattern entirely. The skills map directly to two of OmniLife's core dimensions: <strong>emotional responsiveness</strong> and <strong>trust and safety</strong>.</p>
+<p>The good news: Gottman also found that couples who master just a few specific skills can reverse this pattern entirely. The skills map directly to two of Couplemetric's core dimensions: <strong>emotional responsiveness</strong> and <strong>trust and safety</strong>.</p>
 
 <h2>Skill 1: The Gentle Start-Up</h2>
 
@@ -433,17 +433,17 @@ export const blogPosts: BlogPost[] = [
   <li>"We are on the same team here. What do we both need?"</li>
 </ul>
 
-<p>The key insight: repair attempts only work if the receiving partner <em>accepts</em> them. Rejecting a repair attempt — ignoring the olive branch, continuing to escalate — is one of the strongest predictors of relationship failure. OmniLife's trust and safety dimension captures this dynamic: low scores often reflect a pattern of failed repairs.</p>
+<p>The key insight: repair attempts only work if the receiving partner <em>accepts</em> them. Rejecting a repair attempt — ignoring the olive branch, continuing to escalate — is one of the strongest predictors of relationship failure. Couplemetric's trust and safety dimension captures this dynamic: low scores often reflect a pattern of failed repairs.</p>
 
 <h2>Skill 4: The Weekly Check-In</h2>
 
-<p>Daily communication handles logistics and micro-moments. But couples also need a structured, recurring space to discuss the relationship itself. OmniLife's weekly review is built on this principle.</p>
+<p>Daily communication handles logistics and micro-moments. But couples also need a structured, recurring space to discuss the relationship itself. Couplemetric's weekly review is built on this principle.</p>
 
 <h3>A Simple Check-In Format</h3>
 
 <ol>
   <li><strong>Appreciations</strong> (5 minutes) — Each partner shares three specific things they appreciated about the other this week. Specificity matters: "Thank you for handling the grocery run on Tuesday when I was swamped" lands harder than "Thanks for being helpful."</li>
-  <li><strong>Score Review</strong> (5 minutes) — Look at your OmniLife trend together. Which dimensions went up? Which went down? Discuss the data, not blame.</li>
+  <li><strong>Score Review</strong> (5 minutes) — Look at your Couplemetric trend together. Which dimensions went up? Which went down? Discuss the data, not blame.</li>
   <li><strong>One Issue</strong> (15 minutes) — Each partner raises one issue using the gentle start-up formula. Solve one; table the other for next week if needed. Trying to address everything at once leads to overwhelm.</li>
   <li><strong>Next Week</strong> (5 minutes) — Identify one specific action each partner will take in the coming week. Keep it small and measurable.</li>
 </ol>
@@ -452,7 +452,7 @@ export const blogPosts: BlogPost[] = [
 
 <h2>Communication and Your Relationship Score</h2>
 
-<p>In OmniLife's framework, communication is not a standalone dimension — it is the mechanism through which every dimension improves. Better communication directly lifts your emotional responsiveness score. It indirectly improves trust (because honest conversations build safety), fairness (because needs get voiced before resentment builds), and stress regulation (because shared problem-solving is more effective than solo coping).</p>
+<p>In Couplemetric's framework, communication is not a standalone dimension — it is the mechanism through which every dimension improves. Better communication directly lifts your emotional responsiveness score. It indirectly improves trust (because honest conversations build safety), fairness (because needs get voiced before resentment builds), and stress regulation (because shared problem-solving is more effective than solo coping).</p>
 
 <p>Want to see where your communication stands? <a href="/quiz" class="text-primary underline">Take the free relationship quiz</a> to measure your emotional responsiveness and trust dimensions — the two scores most tightly linked to communication quality.</p>
 `,
@@ -461,9 +461,9 @@ export const blogPosts: BlogPost[] = [
     slug: "long-distance-relationship-survival-guide",
     title: "Long Distance Relationship Survival Guide",
     description:
-      "Practical strategies for making a long-distance relationship work — from building trust across time zones to using OmniLife's long-distance scenario mode.",
+      "Practical strategies for making a long-distance relationship work — from building trust across time zones to using Couplemetric's long-distance scenario mode.",
     date: "2026-03-19",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["long distance relationship tips", "LDR advice", "relationship optimizer"],
     readingTime: "7 min read",
     content: `
@@ -499,7 +499,7 @@ export const blogPosts: BlogPost[] = [
   <li><strong>Voice memos</strong> — Richer than text, lower pressure than a call. Record a two-minute recap of your day while walking home. Your partner listens when they can and responds in kind.</li>
   <li><strong>Shared playlists</strong> — Add a song when you think of them. It is a low-effort bid for connection that accumulates into something meaningful.</li>
   <li><strong>Photo journaling</strong> — Send one photo from your day with a sentence of context. It builds the shared narrative that distance erodes.</li>
-  <li><strong>Written reflections</strong> — OmniLife's daily log doubles as a reflection tool. Sharing your dimension scores (not raw answers) gives your partner insight into your emotional state without requiring a lengthy debrief.</li>
+  <li><strong>Written reflections</strong> — Couplemetric's daily log doubles as a reflection tool. Sharing your dimension scores (not raw answers) gives your partner insight into your emotional state without requiring a lengthy debrief.</li>
 </ul>
 
 <h3>3. Address Jealousy With Transparency, Not Surveillance</h3>
@@ -514,9 +514,9 @@ export const blogPosts: BlogPost[] = [
 
 <p>The most successful LDRs have a shared understanding of when the distance will end. Is it after this semester? After the two-year work contract? Indefinitely? Couples who align on the timeline — or at least discuss it openly — report significantly higher satisfaction than those who avoid the conversation.</p>
 
-<h2>How OmniLife's Long-Distance Mode Helps</h2>
+<h2>How Couplemetric's Long-Distance Mode Helps</h2>
 
-<p>OmniLife's long-distance scenario mode recalibrates the scoring engine for the realities of separation. Here is what changes:</p>
+<p>Couplemetric's long-distance scenario mode recalibrates the scoring engine for the realities of separation. Here is what changes:</p>
 
 <ul>
   <li><strong>Emotional responsiveness weight increases</strong> — because maintaining connection across distance requires more deliberate effort, the engine rewards that effort more heavily.</li>
@@ -549,7 +549,7 @@ export const blogPosts: BlogPost[] = [
     description:
       "Forget 'what is your love language' quizzes. Real compatibility is measured across 9 dimensions — and it is more nuanced than you think.",
     date: "2026-03-17",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["relationship compatibility", "couples compatibility quiz", "relationship quiz"],
     readingTime: "7 min read",
     content: `
@@ -571,7 +571,7 @@ export const blogPosts: BlogPost[] = [
 
 <h2>What Real Compatibility Looks Like</h2>
 
-<p>Research across clinical psychology, attachment theory, and relationship science points to compatibility as alignment across multiple dimensions simultaneously. OmniLife measures nine of them.</p>
+<p>Research across clinical psychology, attachment theory, and relationship science points to compatibility as alignment across multiple dimensions simultaneously. Couplemetric measures nine of them.</p>
 
 <h3>The Four Individual Pillars</h3>
 
@@ -620,7 +620,7 @@ export const blogPosts: BlogPost[] = [
 
 <p>The biggest myth in popular relationship culture is that compatibility is something you either have or do not. In reality, compatibility is <em>constructed</em> through thousands of small interactions, conscious choices, and deliberate practice. Couples who actively work on their lowest-scoring dimensions become more compatible over time. Couples who assume compatibility is fixed and do nothing will watch it erode.</p>
 
-<p>Ready to move beyond surface-level quizzes? <a href="/quiz" class="text-primary underline">Take OmniLife's free relationship assessment</a> to measure your compatibility across all nine dimensions. It takes under five minutes and gives you specific, actionable insights — not a horoscope.</p>
+<p>Ready to move beyond surface-level quizzes? <a href="/quiz" class="text-primary underline">Take Couplemetric's free relationship assessment</a> to measure your compatibility across all nine dimensions. It takes under five minutes and gives you specific, actionable insights — not a horoscope.</p>
 `,
   },
   {
@@ -629,15 +629,15 @@ export const blogPosts: BlogPost[] = [
     description:
       "Habit science meets relationship psychology. Learn why a five-minute daily check-in creates compound improvement and how streaks keep couples on track.",
     date: "2026-03-16",
-    author: "OmniLife Research Team",
+    author: "Couplemetric Research Team",
     tags: ["relationship habits", "daily relationship check-in", "relationship routine"],
     readingTime: "7 min read",
     content: `
-<p>A single therapy session can produce a breakthrough. A single daily check-in cannot. But here is what a daily check-in can do that a therapy session cannot: compound. Five minutes a day, every day, for a year is over 30 hours of focused relationship attention. That is more than most couples invest in a decade of sporadic "we need to talk" conversations. The science of habits explains why consistency beats intensity — and why OmniLife is built around a daily log rather than weekly deep-dives.</p>
+<p>A single therapy session can produce a breakthrough. A single daily check-in cannot. But here is what a daily check-in can do that a therapy session cannot: compound. Five minutes a day, every day, for a year is over 30 hours of focused relationship attention. That is more than most couples invest in a decade of sporadic "we need to talk" conversations. The science of habits explains why consistency beats intensity — and why Couplemetric is built around a daily log rather than weekly deep-dives.</p>
 
 <h2>The Habit Loop in Relationships</h2>
 
-<p>Charles Duhigg's research on habit formation identifies a three-part loop: <strong>cue</strong>, <strong>routine</strong>, <strong>reward</strong>. Every lasting behavior change follows this structure. OmniLife's daily check-in is designed around it:</p>
+<p>Charles Duhigg's research on habit formation identifies a three-part loop: <strong>cue</strong>, <strong>routine</strong>, <strong>reward</strong>. Every lasting behavior change follows this structure. Couplemetric's daily check-in is designed around it:</p>
 
 <ul>
   <li><strong>Cue</strong> — A daily notification at a time you choose. The cue is external and consistent, removing the burden of remembering.</li>
@@ -655,7 +655,7 @@ export const blogPosts: BlogPost[] = [
 
 <h2>The Psychology of Streaks</h2>
 
-<p>OmniLife tracks your daily check-in streak — the number of consecutive days you have logged. This is not gamification for its own sake. Streak psychology is one of the most powerful tools in behavioral science.</p>
+<p>Couplemetric tracks your daily check-in streak — the number of consecutive days you have logged. This is not gamification for its own sake. Streak psychology is one of the most powerful tools in behavioral science.</p>
 
 <h3>Loss Aversion</h3>
 
@@ -667,11 +667,11 @@ export const blogPosts: BlogPost[] = [
 
 <h3>Milestone Celebrations</h3>
 
-<p>OmniLife marks streak milestones — 7 days, 30 days, 90 days, 365 days — with recognition and unlocked insights. The 30-day milestone, for example, reveals your first monthly trend analysis: which dimensions improved, which declined, and what behavioral patterns correlate with your best weeks. These milestones give the streak narrative structure, turning a number into a journey.</p>
+<p>Couplemetric marks streak milestones — 7 days, 30 days, 90 days, 365 days — with recognition and unlocked insights. The 30-day milestone, for example, reveals your first monthly trend analysis: which dimensions improved, which declined, and what behavioral patterns correlate with your best weeks. These milestones give the streak narrative structure, turning a number into a journey.</p>
 
 <h2>Compound Improvement: The Data</h2>
 
-<p>What does compound improvement actually look like in relationship scores? Based on OmniLife's scoring model, here is a realistic trajectory for a couple who checks in daily and follows one recommended exercise per week:</p>
+<p>What does compound improvement actually look like in relationship scores? Based on Couplemetric's scoring model, here is a realistic trajectory for a couple who checks in daily and follows one recommended exercise per week:</p>
 
 <ul>
   <li><strong>Week 1-2</strong> — Scores may actually dip slightly. Increased awareness often surfaces issues that were previously ignored. This is normal and healthy.</li>
@@ -685,7 +685,7 @@ export const blogPosts: BlogPost[] = [
 
 <p>Life happens. You will miss days. The research on habit resilience — from Lally's work and others — shows that a single missed day has virtually no impact on long-term habit strength. What matters is never missing <em>two</em> consecutive days. One skip is a blip; two skips is the start of a new pattern.</p>
 
-<p>OmniLife handles this gracefully. Your streak resets, but your historical data and trend lines remain intact. The app sends a gentle nudge after one missed day and a slightly more direct one after two. The goal is recovery, not shame.</p>
+<p>Couplemetric handles this gracefully. Your streak resets, but your historical data and trend lines remain intact. The app sends a gentle nudge after one missed day and a slightly more direct one after two. The goal is recovery, not shame.</p>
 
 <h2>Building the Habit Together</h2>
 

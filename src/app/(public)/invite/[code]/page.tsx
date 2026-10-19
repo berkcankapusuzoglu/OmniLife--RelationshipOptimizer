@@ -33,11 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${firstName} invited you to OmniLife`,
-    description: `${firstName} invited you to OmniLife — Optimize Your Relationship Together`,
+    title: `${firstName} invited you to Couplemetric`,
+    description: `${firstName} invited you to Couplemetric — Optimize Your Relationship Together`,
     openGraph: {
-      title: `${firstName} invited you to OmniLife`,
-      description: `${firstName} invited you to OmniLife — Optimize Your Relationship Together`,
+      title: `${firstName} invited you to Couplemetric`,
+      description: `${firstName} invited you to Couplemetric — Optimize Your Relationship Together`,
       type: "website",
     },
   };
@@ -85,7 +85,7 @@ export default async function InvitePage({ params, searchParams }: Props) {
       <main className="flex min-h-screen items-center justify-center p-4">
         <div className="mx-auto w-full max-w-md space-y-5">
           <h1 className="text-2xl font-medium">Review partner invitation</h1>
-          <p>{firstName} invited you to link accounts on OmniLife.</p>
+          <p>{firstName} invited you to link accounts on Couplemetric.</p>
           <p id="sharing-details" className="text-sm text-muted-foreground">Linking lets both of you see score and dimension histories, comparisons, and shared household tasks. Journal notes, standalone mood, and energy are not shared. You can unlink in partner settings.</p>
           {error && <p role="alert" className="text-sm text-destructive">{error === "confirmation" ? "Please confirm you want to link accounts." : "The invitation could not be accepted. Please try again or ask for a new invitation."}</p>}
           <form action={acceptPartnerInvite} className="space-y-4">

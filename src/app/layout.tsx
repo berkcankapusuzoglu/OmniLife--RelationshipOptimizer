@@ -23,9 +23,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "OmniLife — Relationship Optimizer",
+  title: "Couplemetric",
   description:
-    "Multi-objective life and relationship optimization through psychology, philosophy, and mathematics",
+    "Your relationship, scored — a 2-minute daily check-in that turns your relationship into a score you can actually improve.",
 };
 
 export default function RootLayout({

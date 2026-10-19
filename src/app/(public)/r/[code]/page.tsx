@@ -30,11 +30,11 @@ export async function generateMetadata({
   const referrerName = referrer?.name ?? "A friend";
 
   return {
-    title: `${referrerName} invited you to OmniLife`,
+    title: `${referrerName} invited you to Couplemetric`,
     description:
       "Optimize your relationship with science-backed insights, daily tracking, and personalized exercises.",
     openGraph: {
-      title: `${referrerName} invited you to OmniLife`,
+      title: `${referrerName} invited you to Couplemetric`,
       description:
         "Optimize your relationship with science-backed insights, daily tracking, and personalized exercises.",
       type: "website",
@@ -68,10 +68,10 @@ export default async function ReferralLandingPage({
             {referrerName} thinks you&apos;d love this
           </p>
           <CardTitle className="text-3xl font-bold tracking-tight">
-            OmniLife
+            Couplemetric
           </CardTitle>
           <p className="text-muted-foreground">
-            Relationship Optimizer
+            Your relationship, scored
           </p>
         </CardHeader>
         <CardContent className="space-y-6">

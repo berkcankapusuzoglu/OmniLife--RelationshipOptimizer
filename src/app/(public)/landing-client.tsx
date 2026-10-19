@@ -173,7 +173,7 @@ const activityMessages = [
   "Mike & Lisa unlocked the Secure Anchor archetype",
   "A couple in Austin improved by 14 points this week",
   "A couple improved their Trust score by 3 points today",
-  "Rachel just invited her partner to OmniLife",
+  "Rachel just invited her partner to Couplemetric",
   "2 new couples joined in the last hour",
   "A couple in Tokyo hit a 60-day logging streak \u{1F3AF}",
   "David & Emma moved from Crisis to Thriving in 8 weeks",
@@ -509,7 +509,7 @@ const testimonials = [
     name: "Sarah & Mark",
     role: "Together 8 years",
     quote:
-      "During exam season, OmniLife helped us prioritize what mattered most. We went from constant miscommunication to actually understanding each other's needs. Our score went from 54 to 82 in 6 weeks.",
+      "During exam season, Couplemetric helped us prioritize what mattered most. We went from constant miscommunication to actually understanding each other's needs. Our score went from 54 to 82 in 6 weeks.",
     avatar: "SM",
     score: "54 \u2192 82",
   },
@@ -570,7 +570,7 @@ export default function LandingClient() {
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-blue-500">
             <Heart className="h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-bold tracking-tight">OmniLife</span>
+          <span className="text-lg font-bold tracking-tight">Couplemetric</span>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" render={<Link href="/login" />}>
@@ -960,10 +960,10 @@ export default function LandingClient() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-blue-500">
               <Heart className="h-3.5 w-3.5 text-white" />
             </div>
-            <span className="text-sm font-semibold">OmniLife</span>
+            <span className="text-sm font-semibold">Couplemetric</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} OmniLife. Built with psychology,
+            &copy; {new Date().getFullYear()} Couplemetric. Built with psychology,
             philosophy, and mathematics.
           </p>
         </div>

@@ -28,7 +28,7 @@ export function InviteClient({
                 {firstName} wants to optimize your relationship together
               </h1>
               <p className="text-sm text-muted-foreground">
-                on OmniLife — Relationship Optimizer
+                on Couplemetric
               </p>
             </div>
           </div>

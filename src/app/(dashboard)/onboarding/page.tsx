@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
     <div className="mx-auto max-w-2xl space-y-6 py-4">
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">
-          Welcome to OmniLife
+          Welcome to Couplemetric
         </h1>
         <p className="mt-2 text-muted-foreground">
           Let&apos;s set up your relationship optimizer in just a few steps

@@ -1,6 +1,6 @@
 # Android build and release
 
-The tracked native source uses package `com.omnilife.app`, version code **6**, version name **1.0.3**, minimum API 24, and compile/target API **36**. It uses Capacitor 8.5.3, Android Gradle Plugin 8.13.0, Gradle 8.14.3, and JDK 21. Install the Android SDK platform 36 and the SDK build tools selected by Gradle.
+The tracked native source uses package `app.couplemetric.android`, version code **6**, version name **1.0.3**, minimum API 24, and compile/target API **36**. It uses Capacitor 8.5.3, Android Gradle Plugin 8.13.0, Gradle 8.14.3, and JDK 21. Install the Android SDK platform 36 and the SDK build tools selected by Gradle.
 
 ## Prepare a checkout
 
@@ -74,7 +74,7 @@ Get-Content app/build/intermediates/merged_manifests/release/processReleaseManif
 .\gradlew.bat :app:assembleDebug --console=plain
 adb devices -l
 adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n com.omnilife.app/.MainActivity
+adb shell am start -n app.couplemetric.android/.MainActivity
 ```
 
 Only App, Browser, Haptics, SplashScreen, and StatusBar plugins are expected after sync. Confirm the dependency report and merged release manifest contain no Billing, RevenueCat, Firebase messaging, notification permission, push service, or receiver. The Android v1 surface is free-only; web Stripe is outside the native shell.

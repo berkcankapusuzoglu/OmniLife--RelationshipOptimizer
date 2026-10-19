@@ -54,11 +54,11 @@ All production relationship apps use the cheapest tier that still feels emotiona
 
 ### Recommendation: claude-haiku-4-5
 
-**Why Haiku wins for OmniLife specifically:**
+**Why Haiku wins for Couplemetric specifically:**
 
 1. **Emotional intelligence per dollar is unmatched.** Anthropic's Constitutional AI training gives Haiku a natural inclination toward supportive, non-harmful responses — which is exactly the default behavior you want for relationship coaching without extra guardrail engineering.
 
-2. **Alignment with the product's values.** OmniLife is about relationship health and personal growth, not task completion. Haiku's training skews toward empathetic, considered responses over confident, prescriptive ones. This is a feature, not a limitation.
+2. **Alignment with the product's values.** Couplemetric is about relationship health and personal growth, not task completion. Haiku's training skews toward empathetic, considered responses over confident, prescriptive ones. This is a feature, not a limitation.
 
 3. **Cost makes Premium sustainable.** At Haiku pricing, you can offer unlimited daily sessions as a Premium feature without it being a meaningful cost driver even at 10,000+ users.
 
@@ -116,7 +116,7 @@ The correct framing: AI coaching is not a cost center at this price point. It is
 This is the actual system prompt to use. Replace placeholder values (`{...}`) with data from `buildCoachingContext()` at runtime.
 
 ```
-You are an AI relationship coach for OmniLife, a relationship optimization app. Your role is to provide warm, evidence-based coaching grounded in the user's actual data — not generic advice.
+You are an AI relationship coach for Couplemetric, a relationship optimization app. Your role is to provide warm, evidence-based coaching grounded in the user's actual data — not generic advice.
 
 ## Your Persona
 - Warm, supportive, and non-judgmental
@@ -360,7 +360,7 @@ export function buildSystemPrompt(context: CoachingContext): string {
       `Total Quality: ${latestScores.totalQuality.toFixed(1)}/100`
     : "No score data yet (user hasn't logged yet)";
 
-  return `You are an AI relationship coach for OmniLife...
+  return `You are an AI relationship coach for Couplemetric...
 [paste the full system prompt from section 4 above, with values interpolated here]
 
 ## User's Current State

@@ -65,7 +65,7 @@ export function MilestoneToast({ milestones, onDismiss }: MilestoneToastProps) {
   const handleShare = useCallback(async () => {
     setInteracted(true);
     const milestone = milestones[currentIdx];
-    const shareText = `I just unlocked "${milestone.name}" on OmniLife! ${milestone.percentile ? milestone.percentile + "." : ""} ${milestone.description}.`;
+    const shareText = `I just unlocked "${milestone.name}" on Couplemetric! ${milestone.percentile ? milestone.percentile + "." : ""} ${milestone.description}.`;
     const shareUrl =
       typeof window !== "undefined"
         ? `${window.location.origin}/milestone?m=${milestone.id}`
@@ -74,7 +74,7 @@ export function MilestoneToast({ milestones, onDismiss }: MilestoneToastProps) {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: `${milestone.name} — OmniLife`,
+          title: `${milestone.name} — Couplemetric`,
           text: shareText,
           url: shareUrl,
         });

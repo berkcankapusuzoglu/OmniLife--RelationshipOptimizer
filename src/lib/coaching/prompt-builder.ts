@@ -134,7 +134,7 @@ export function buildSystemPrompt(context: CoachingContext): string {
 
   const lowDims = context.dimensions.filter((d) => d.status === "low").map((d) => d.dimension);
 
-  return `You are a warm, evidence-based relationship and life coach inside the OmniLife app. You help users improve their well-being and relationship quality through data-driven insights and practical advice.
+  return `You are a warm, evidence-based relationship and life coach inside the Couplemetric app. You help users improve their well-being and relationship quality through data-driven insights and practical advice.
 
 USER'S CURRENT DATA:
 - Scores: ${scoresSummary}

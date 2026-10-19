@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Page Not Found — OmniLife",
+  title: "Page Not Found — Couplemetric",
   description: "The page you're looking for doesn't exist.",
 };
 

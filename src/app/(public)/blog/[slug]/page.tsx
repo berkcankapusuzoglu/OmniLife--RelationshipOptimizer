@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!post) return {};
 
   return {
-    title: `${post.title} — OmniLife Blog`,
+    title: `${post.title} — Couplemetric Blog`,
     description: post.description,
     openGraph: {
       title: post.title,
@@ -55,7 +55,7 @@ export default async function BlogPostPage({ params }: Props) {
     },
     publisher: {
       "@type": "Organization",
-      name: "OmniLife",
+      name: "Couplemetric",
       url: "https://omnilife.app",
     },
     mainEntityOfPage: {

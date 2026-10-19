@@ -93,7 +93,7 @@ const SECTIONS = [
     color: "text-rose-400",
     bg: "bg-rose-500/10",
     title: "Partner Features",
-    description: "OmniLife works best as a couple.",
+    description: "Couplemetric works best as a couple.",
     details: [
       "Invite your partner to create linked accounts",
       "Compare your scores side-by-side to find blind spots",
@@ -141,7 +141,7 @@ const FAQ = [
   },
   {
     q: "Do both partners need an account?",
-    a: "No — OmniLife works great solo. But if your partner joins, you unlock comparison features and can see where your perspectives align or differ.",
+    a: "No — Couplemetric works great solo. But if your partner joins, you unlock comparison features and can see where your perspectives align or differ.",
   },
   {
     q: "Is my data private?",
@@ -159,7 +159,7 @@ export function GuideClient() {
       <div>
         <h1 className="text-2xl font-medium tracking-tight">How It Works</h1>
         <p className="text-sm text-muted-foreground">
-          Everything you need to know about using OmniLife
+          Everything you need to know about using Couplemetric
         </p>
       </div>
 

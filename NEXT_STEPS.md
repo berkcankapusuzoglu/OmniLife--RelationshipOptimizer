@@ -1,10 +1,10 @@
-# Next Steps: OmniLife Relationship Optimizer
+# Next Steps: Couplemetric
 
 Updated 2026-10-16. The [1.0.3 closed-test checklist](docs/release/1.0.3-closed-test-checklist.md) is the authoritative operational handoff. Use it for evidence, current blockers and owner decisions. This roadmap does not authorize deployment or Play submission.
 
 ## Approved launch
 
-Keep OmniLife, package `com.omnilife.app` and the existing hosted origin. Android is free with access-only existing paid entitlements. Native purchase controls, external payment links, Billing/RevenueCat SDKs and push startup/permissions are absent. Web Stripe remains available subject to private configuration and migration checks.
+Keep Couplemetric, package `app.couplemetric.android` and the existing hosted origin. Android is free with access-only existing paid entitlements. Native purchase controls, external payment links, Billing/RevenueCat SDKs and push startup/permissions are absent. Web Stripe remains available subject to private configuration and migration checks.
 
 Source declares Android versionCode 6 / versionName 1.0.3. Local tests use Vitest; Playwright and smoke scripts support optional authenticated coverage through privately supplied `E2E_EMAIL` and `E2E_PASSWORD`. Source and local checks do not prove live database health, deployment state, signing identity, device acceptance or Play eligibility.
 

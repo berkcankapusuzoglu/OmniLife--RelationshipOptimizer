@@ -59,8 +59,8 @@ export function PartnerClient({
     if (!inviteUrl) return;
 
     const shareData = {
-      title: "Join me on OmniLife",
-      text: `${userName ?? "I"} wants to optimize your relationship together on OmniLife!`,
+      title: "Join me on Couplemetric",
+      text: `${userName ?? "I"} wants to optimize your relationship together on Couplemetric!`,
       url: inviteUrl,
     };
 
@@ -80,12 +80,12 @@ export function PartnerClient({
 
   async function handleShareChallenge() {
     const scoreText = userScore !== null ? Math.round(userScore) : "??";
-    const challengeText = `I scored ${scoreText}/100 on OmniLife. Think we can do better together? Join me: ${inviteUrl}`;
+    const challengeText = `I scored ${scoreText}/100 on Couplemetric. Think we can do better together? Join me: ${inviteUrl}`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "OmniLife Challenge",
+          title: "Couplemetric Challenge",
           text: challengeText,
           url: inviteUrl,
         });

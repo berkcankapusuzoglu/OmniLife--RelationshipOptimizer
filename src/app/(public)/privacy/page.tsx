@@ -3,9 +3,9 @@ import Link from "next/link";
 import { z } from "zod";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — OmniLife",
+  title: "Privacy Policy — Couplemetric",
   description:
-    "How OmniLife Relationship Optimizer collects, uses, stores, and deletes account and relationship data.",
+    "How Couplemetric collects, uses, stores, and deletes account and relationship data.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -19,8 +19,8 @@ export default function PrivacyPolicyPage() {
       </p>
 
       <p>
-        OmniLife (&quot;we,&quot; &quot;us,&quot; &quot;our&quot;) operates the
-        OmniLife Relationship Optimizer platform. This Privacy Policy explains
+        Couplemetric (&quot;we,&quot; &quot;us,&quot; &quot;our&quot;) operates the
+        Couplemetric platform. This Privacy Policy explains
         what data we collect, why we collect it, how we store it, and what
         rights you have.
       </p>
@@ -241,7 +241,7 @@ export default function PrivacyPolicyPage() {
 
       <h2>8. Children&apos;s Privacy</h2>
       <p>
-        OmniLife is intended for users who are <strong>18 years or older</strong>
+        Couplemetric is intended for users who are <strong>18 years or older</strong>
         . We do not knowingly collect data from anyone under 18. If we learn
         that we have collected personal information from a child under 18, we
         will delete it promptly.

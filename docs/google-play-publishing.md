@@ -8,7 +8,7 @@ The [1.0.3 closed-test checklist](release/1.0.3-closed-test-checklist.md) record
 
 ## Current State
 
-- Capacitor 8 configured: `appId: com.omnilife.app`, `appName: OmniLife`
+- Capacitor 8 configured: `appId: app.couplemetric.android`, `appName: Couplemetric`
 - Android source is tracked: code 6 / 1.0.3, compile/target API 36. A verified **unsigned inspection AAB** exists; no signed upload candidate or authenticated device acceptance is established.
 - Capacitor dependencies: app, haptics, splash-screen, status-bar, browser. No active push-notification or purchase SDK in v1.
 - App loads live Vercel URL in native WebView (`https://omnilife-relationship-optimizer.vercel.app`)
@@ -80,12 +80,12 @@ Test fresh-install and existing-entitlement accounts. Native landing, pricing, l
 ## Phase 6: Play Console Listing
 
 ### App Details
-- **App name**: OmniLife (or chosen app name)
+- **App name**: Couplemetric (or chosen app name)
 - **Short description draft**: Daily relationship check-ins, shared tasks, and personal reflection.
-- **Full description draft**: OmniLife helps adults reflect on relationship and wellbeing patterns through daily check-ins, scores, tasks, and guided exercises. Coaching is available to eligible accounts and may use AI. It is not therapy, diagnosis, or medical advice.
+- **Full description draft**: Couplemetric helps adults reflect on relationship and wellbeing patterns through daily check-ins, scores, tasks, and guided exercises. Coaching is available to eligible accounts and may use AI. It is not therapy, diagnosis, or medical advice.
 - **Category**: OWNER CONFIRMATION: choose the category matching the final listing and health declaration.
 - **Content rating**: Complete the IARC questionnaire. Do not preselect Everyone / PEGI 3 or equate an 18+ target audience with the resulting content rating.
-- **Identity**: OWNER CONFIRMATION: confirm the legal operator, store contact, regions, and the existing OmniLife naming risk before production rollout.
+- **Identity**: OWNER CONFIRMATION: confirm the legal operator, store contact, regions, and the Couplemetric naming before production rollout.
 
 ### Store Assets Required
 - **App icon**: 512x512 PNG (32-bit, no alpha)

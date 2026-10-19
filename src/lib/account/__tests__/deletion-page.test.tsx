@@ -24,7 +24,7 @@ describe("public account deletion contact", () => {
   it("offers an actionable monitored-contact fallback once verified", async () => {
     vi.stubEnv("ACCOUNT_DELETION_CONTACT_EMAIL", "deletion@example.test");
     vi.stubEnv("ACCOUNT_DELETION_CONTACT_VERIFIED", "true");
-    expect(await page()).toContain('href="mailto:deletion@example.test?subject=OmniLife%20account%20deletion"');
+    expect(await page()).toContain('href="mailto:deletion@example.test?subject=Couplemetric%20account%20deletion"');
   });
   it("keeps the fallback gated if the verified address is invalid", async () => {
     vi.stubEnv("ACCOUNT_DELETION_CONTACT_EMAIL", "invalid");

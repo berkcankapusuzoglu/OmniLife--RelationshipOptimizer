@@ -59,7 +59,7 @@ npm install -D @types/uuid dotenv-cli drizzle-kit
 2. Open your organization
 3. Click **New Project**
 4. Fill in:
-   - **Project name**: OmniLife
+   - **Project name**: Couplemetric
    - **Database password**: click "Generate a password" (save this!)
    - **Region**: East US (North Virginia) — pick closest to your users
 5. Click **Create new project**

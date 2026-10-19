@@ -190,7 +190,7 @@ export function ShareableScoreCard({
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
             <span className="text-sm font-bold text-white">O</span>
           </div>
-          <span className="font-semibold tracking-tight text-white/90">OmniLife</span>
+          <span className="font-semibold tracking-tight text-white/90">Couplemetric</span>
         </div>
 
         {/* Score Content */}

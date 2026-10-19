@@ -20,8 +20,8 @@ export async function generateMetadata({ searchParams }: ShareResultPageProps): 
   const date = params.date ?? new Date().toISOString().split("T")[0];
 
   const ogUrl = `/api/og?life=${life}&rel=${rel}&total=${total}&date=${date}`;
-  const title = `My Score: ${total}/100 - OmniLife`;
-  const description = `Life Score: ${life} | Relationship Score: ${rel} | Take the free quiz at OmniLife`;
+  const title = `My Score: ${total}/100 - Couplemetric`;
+  const description = `Life Score: ${life} | Relationship Score: ${rel} | Take the free quiz at Couplemetric`;
 
   return {
     title,
@@ -30,7 +30,7 @@ export async function generateMetadata({ searchParams }: ShareResultPageProps): 
       title,
       description,
       type: "website",
-      images: [{ url: ogUrl, width: 1200, height: 630, alt: `OmniLife Score: ${total}/100` }],
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: `Couplemetric Score: ${total}/100` }],
     },
     twitter: {
       card: "summary_large_image",

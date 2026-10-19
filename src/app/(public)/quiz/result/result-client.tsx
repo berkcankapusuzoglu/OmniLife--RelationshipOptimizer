@@ -287,7 +287,7 @@ export function ResultClient({
       : "";
 
   const shareText = `I\u2019m a ${archetype.name} \u2014 our relationship scored ${pulse}/100, stronger than ${percentile}% of couples. Think you can beat it? \ud83d\udd25`;
-  const partnerShareText = `I just took the OmniLife Relationship Quiz. See if your partner agrees with your score \u2014 take it now!`;
+  const partnerShareText = `I just took the Couplemetric Relationship Quiz. See if your partner agrees with your score \u2014 take it now!`;
 
   const handleShare = useCallback(async () => {
     if (navigator.share) {

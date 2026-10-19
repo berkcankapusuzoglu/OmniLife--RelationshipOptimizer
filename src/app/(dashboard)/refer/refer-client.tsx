@@ -34,7 +34,7 @@ interface ReferClientProps {
 }
 
 const SHARE_TEXT =
-  "I've been using OmniLife to optimize my relationship — check it out! Get started free:";
+  "I've been using Couplemetric to optimize my relationship — check it out! Get started free:";
 
 // Incentive tiers
 const TIERS = [
@@ -62,7 +62,7 @@ export function ReferClient({ referralCode, userName, stats }: ReferClientProps)
 
   async function handleShare() {
     const shareData = {
-      title: "OmniLife — Relationship Optimizer",
+      title: "Couplemetric",
       text: SHARE_TEXT,
       url: referralLink,
     };

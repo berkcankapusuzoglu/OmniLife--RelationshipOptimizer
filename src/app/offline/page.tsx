@@ -11,7 +11,7 @@ export default function OfflinePage() {
           You&apos;re offline
         </h1>
         <p className="mb-6 text-muted-foreground">
-          OmniLife needs an internet connection to sync your data. Check your
+          Couplemetric needs an internet connection to sync your data. Check your
           connection and try again.
         </p>
         <button

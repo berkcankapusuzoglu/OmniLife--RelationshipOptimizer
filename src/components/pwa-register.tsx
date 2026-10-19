@@ -7,7 +7,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-const DISMISS_KEY = "omnilife-pwa-install-dismissed";
+const DISMISS_KEY = "couplemetric-pwa-install-dismissed";
 
 export function PWARegister() {
   const [installPrompt, setInstallPrompt] =
@@ -61,7 +61,7 @@ export function PWARegister() {
         </div>
         <div className="flex-1">
           <p className="text-sm font-medium text-foreground">
-            Install OmniLife
+            Install Couplemetric
           </p>
           <p className="text-xs text-muted-foreground">
             Add to your home screen for quick access

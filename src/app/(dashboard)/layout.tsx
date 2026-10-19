@@ -57,7 +57,7 @@ export default async function DashboardLayout({
       {/* Desktop sidebar */}
       <aside className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">
         <div className="flex h-14 items-center gap-2 px-4">
-          <span className="text-lg font-bold tracking-tight">OmniLife</span>
+          <span className="text-lg font-bold tracking-tight">Couplemetric</span>
         </div>
         <Separator />
         <div className="flex-1 overflow-y-auto px-3 py-4">
@@ -81,7 +81,7 @@ export default async function DashboardLayout({
             <MobileNav />
 
             <span className="text-lg font-bold tracking-tight md:hidden">
-              OmniLife
+              Couplemetric
             </span>
 
             <div className="ml-auto flex items-center gap-3">

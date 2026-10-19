@@ -15,7 +15,7 @@ export default function PublicLayout({
             href="/"
             className="text-lg font-semibold tracking-tight text-foreground"
           >
-            OmniLife
+            Couplemetric
           </Link>
         </div>
       </header>
@@ -28,7 +28,7 @@ export default function PublicLayout({
           <Link href="/terms" className="hover:text-foreground transition-colors">
             Terms of Service
           </Link>
-          <span className="ml-auto">&copy; {new Date().getFullYear()} OmniLife</span>
+          <span className="ml-auto">&copy; {new Date().getFullYear()} Couplemetric</span>
         </div>
       </footer>
     </div>

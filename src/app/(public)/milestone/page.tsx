@@ -25,8 +25,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const streak = typeof sp.streak === "string" ? sp.streak : "";
   const name = typeof sp.name === "string" ? sp.name : "";
 
-  const info = MILESTONE_NAMES[milestoneId] ?? { name: "Achievement Unlocked", description: "Unlocked a milestone on OmniLife" };
-  const title = name ? `${name} unlocked ${info.name}!` : `${info.name} — OmniLife`;
+  const info = MILESTONE_NAMES[milestoneId] ?? { name: "Achievement Unlocked", description: "Unlocked a milestone on Couplemetric" };
+  const title = name ? `${name} unlocked ${info.name}!` : `${info.name} — Couplemetric`;
   const description = `${info.description}. ${MILESTONE_PERCENTILES[milestoneId] ?? ""}`;
 
   const ogParams = new URLSearchParams({ milestone: milestoneId });
@@ -64,7 +64,7 @@ export default async function MilestonePage({ searchParams }: Props) {
 
   const info = MILESTONE_NAMES[milestoneId] ?? {
     name: "Achievement Unlocked",
-    description: "Unlocked a milestone on OmniLife",
+    description: "Unlocked a milestone on Couplemetric",
     icon: "\uD83C\uDFC6",
   };
   const percentile = MILESTONE_PERCENTILES[milestoneId] ?? "";

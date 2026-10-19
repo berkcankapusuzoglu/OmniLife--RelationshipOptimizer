@@ -4,7 +4,7 @@ Prepared 2026-10-14 against Tasks 2–5 through `dc4df8e`. This is a draft for o
 
 ## Release scope and evidence
 
-The `com.omnilife.app` Android WebView loads `https://omnilife-relationship-optimizer.vercel.app`. Android v1 has no purchases, external upgrade directions, push SDK, or active native RevenueCat SDK. Existing server entitlements are honored, so eligible accounts can still reach Gemini coaching. Web Stripe billing remains active. Dormant RevenueCat server/webhook code is not evidence of a shipped purchase SDK.
+The `app.couplemetric.android` Android WebView loads `https://omnilife-relationship-optimizer.vercel.app`. Android v1 has no purchases, external upgrade directions, push SDK, or active native RevenueCat SDK. Existing server entitlements are honored, so eligible accounts can still reach Gemini coaching. Web Stripe billing remains active. Dormant RevenueCat server/webhook code is not evidence of a shipped purchase SDK.
 
 | Evidence key | Repository paths and facts |
 | --- | --- |
@@ -59,7 +59,7 @@ Every selected type needs collection, sharing, ephemeral processing, required/op
 
 No specific input, SDK or permission was observed for precise/approximate location, race/ethnicity, political/religious beliefs, sexual orientation, credit score, other financial info, SMS/MMS, photos/videos, audio, file uploads, device calendars, installed-app inventory, in-app search history or general web browsing history. **OWNER CONFIRMATION**: inspect final manifest, network behavior, logs and unrestricted text content before marking any type absent. IP processing is not automatically location collection; determine whether location is derived. Reset email delivery does not read the user's inbox; confirm whether processor-held outgoing email content needs the Emails type. A JSON export download does not prove file upload collection.
 
-Do not mark “no sharing” until provider and partner reviews are signed off. Gemini paid-service mode matters: Google states that unpaid service inputs/outputs may be used for product improvement and human review, and sensitive/personal information must not be submitted to unpaid services. Paid-service prompts are not used for product improvement but can be logged for safety. **OWNER CONFIRMATION**: verify active Cloud Billing, applicable DPA, regions, abuse-retention terms, and any first-use disclosure/consent requirement for the existing coaching flow. See [Gemini API terms](https://ai.google.dev/gemini-api/terms). A premium OmniLife entitlement does not prove the API project is a paid service.
+Do not mark “no sharing” until provider and partner reviews are signed off. Gemini paid-service mode matters: Google states that unpaid service inputs/outputs may be used for product improvement and human review, and sensitive/personal information must not be submitted to unpaid services. Paid-service prompts are not used for product improvement but can be logged for safety. **OWNER CONFIRMATION**: verify active Cloud Billing, applicable DPA, regions, abuse-retention terms, and any first-use disclosure/consent requirement for the existing coaching flow. See [Gemini API terms](https://ai.google.dev/gemini-api/terms). A premium Couplemetric entitlement does not prove the API project is a paid service.
 
 ## Health Apps declaration
 
@@ -93,7 +93,7 @@ These are separate declarations. IARC assigns ratings from answers; do not promi
 | Target age groups | Draft **18 and over only**: privacy/terms state 18+; no age verification established (J) | Approve adult audience, listing art/copy and age-access handling. Gemini terms also restrict under-18-accessible API clients; terms alone do not prove compliance. |
 | Appeals to children / Families programs | No child-directed intent evidenced | Review actual imagery, marketing and distribution; adult target is a business decision. |
 | Restricted access | **All or some functionality restricted**: login, partner linking and entitlement gates (A, C, H) | Provide working reviewer access to every gated feature without asking reviewer to buy. |
-| Access instruction name, username/password, other instructions | Suggested name: “OmniLife reviewer access”. Email/password login via `/login`, complete onboarding, open dashboard/daily/weekly/tasks/partner/coaching/settings | Create owner-authorized synthetic test accounts, pre-link a partner, grant appropriate test entitlements and seed synthetic examples. Enter credentials privately in Console, never in git. |
+| Access instruction name, username/password, other instructions | Suggested name: “Couplemetric reviewer access”. Email/password login via `/login`, complete onboarding, open dashboard/daily/weekly/tasks/partner/coaching/settings | Create owner-authorized synthetic test accounts, pre-link a partner, grant appropriate test entitlements and seed synthetic examples. Enter credentials privately in Console, never in git. |
 | Access reliability / region / MFA / deletion test | No MFA path observed; deletion asks current password and confirmation (I) | Keep accounts available for review, explain restrictions, provide a separate disposable deletion test account and password; verify password reset delivery and supply any regional instructions. |
 
 ## Privacy, retention and deletion checklist

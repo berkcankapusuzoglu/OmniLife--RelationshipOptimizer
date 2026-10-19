@@ -1,4 +1,4 @@
-const CACHE_NAME = "omnilife-v1";
+const CACHE_NAME = "couplemetric-v1";
 const OFFLINE_URL = "/offline";
 
 const PRECACHE_URLS = [OFFLINE_URL];

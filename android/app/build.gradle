@@ -10,7 +10,7 @@ def hasReleaseSigning = releaseSigning.values().every { it != null && !it.isEmpt
 def allowUnsignedRelease = providers.gradleProperty('allowUnsignedRelease').orNull == 'true'
 
 android {
-    namespace = "com.omnilife.app"
+    namespace = "app.couplemetric.android"
     compileSdk = rootProject.ext.compileSdkVersion
 
     signingConfigs {
@@ -25,7 +25,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.omnilife.app"
+        applicationId "app.couplemetric.android"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 6

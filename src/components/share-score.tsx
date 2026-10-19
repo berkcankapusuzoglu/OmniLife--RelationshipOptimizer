@@ -59,12 +59,12 @@ export function ShareScore(props: ShareScoreProps) {
   const handleShare = useCallback(async () => {
     const url = buildShareUrl(props);
     const streakText = props.streak && props.streak > 0 ? ` (\u{1F525} ${props.streak}-day streak)` : "";
-    const shareText = `My relationship scored ${props.totalQuality.toFixed(0)}/100${streakText} on OmniLife! Take the free quiz:`;
+    const shareText = `My relationship scored ${props.totalQuality.toFixed(0)}/100${streakText} on Couplemetric! Take the free quiz:`;
 
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: "My OmniLife Score",
+          title: "My Couplemetric Score",
           text: shareText,
           url,
         });

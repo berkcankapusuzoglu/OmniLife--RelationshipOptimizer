@@ -36,18 +36,18 @@ export async function generateMetadata({
     : null;
 
   const title = pulse
-    ? `My relationship scored ${pulse}/100 on OmniLife!`
-    : "Relationship Quiz Result — OmniLife";
+    ? `My relationship scored ${pulse}/100 on Couplemetric!`
+    : "Relationship Quiz Result — Couplemetric";
 
   return {
     title,
     description: pulse
-      ? `I scored ${pulse}/100 on the OmniLife Relationship Pulse quiz. Take the free quiz and see how your relationship compares!`
-      : "See your Relationship Pulse score. Take the free quiz at OmniLife.",
+      ? `I scored ${pulse}/100 on the Couplemetric Relationship Pulse quiz. Take the free quiz and see how your relationship compares!`
+      : "See your Relationship Pulse score. Take the free quiz at Couplemetric.",
     openGraph: {
       title: pulse
-        ? `My relationship scored ${pulse}/100 on OmniLife! Take the free quiz.`
-        : "Relationship Quiz Result — OmniLife",
+        ? `My relationship scored ${pulse}/100 on Couplemetric! Take the free quiz.`
+        : "Relationship Quiz Result — Couplemetric",
       description:
         "How strong is your relationship? Find out in 60 seconds with our free quiz.",
       ...(pulse
@@ -57,7 +57,7 @@ export async function generateMetadata({
                 url: `/api/og?total=${pulse}&rel=${pulse}&life=${pulse}&date=${new Date().toISOString().split("T")[0]}`,
                 width: 1200,
                 height: 630,
-                alt: `OmniLife Relationship Pulse: ${pulse}/100`,
+                alt: `Couplemetric Relationship Pulse: ${pulse}/100`,
               },
             ],
           }
@@ -67,7 +67,7 @@ export async function generateMetadata({
       ? {
           twitter: {
             card: "summary_large_image" as const,
-            title: `My relationship scored ${pulse}/100 on OmniLife!`,
+            title: `My relationship scored ${pulse}/100 on Couplemetric!`,
             images: [
               `/api/og?total=${pulse}&rel=${pulse}&life=${pulse}&date=${new Date().toISOString().split("T")[0]}`,
             ],

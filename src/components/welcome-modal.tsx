@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Users, Share2, X, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-const STORAGE_KEY = "omnilife_welcome_dismissed";
+const STORAGE_KEY = "couplemetric_welcome_dismissed";
 
 interface WelcomeModalProps {
   hasLogs: boolean;
@@ -49,7 +49,7 @@ export function WelcomeModal({ hasLogs }: WelcomeModalProps) {
           </div>
 
           <h2 className="text-2xl font-bold tracking-tight">
-            Welcome to OmniLife!
+            Welcome to Couplemetric!
           </h2>
           <p className="mt-2 text-muted-foreground">
             Here&apos;s how to get the most out of it:

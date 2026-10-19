@@ -1,6 +1,6 @@
-# OmniLife Native App (Capacitor)
+# Couplemetric Native App (Capacitor)
 
-OmniLife uses Capacitor to wrap the live Vercel deployment as native iOS and Android apps. The app loads `https://omnilife-relationship-optimizer.vercel.app` in a native WebView with native plugins layered on top.
+Couplemetric uses Capacitor to wrap the live Vercel deployment as native iOS and Android apps. The app loads `https://omnilife-relationship-optimizer.vercel.app` in a native WebView with native plugins layered on top.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ npm run cap:ios
 
 # In Xcode:
 # 1. Select your team under Signing & Capabilities
-# 2. Set the bundle identifier to com.omnilife.app
+# 2. Set the bundle identifier to app.couplemetric.android
 # 3. Select a simulator or device, then Build & Run
 ```
 
@@ -54,7 +54,7 @@ npm run cap:android
 
 ### Android (FCM)
 1. Create a Firebase project at https://console.firebase.google.com
-2. Add an Android app with package name `com.omnilife.app`
+2. Add an Android app with package name `app.couplemetric.android`
 3. Download `google-services.json` and place it in `android/app/`
 4. The Capacitor push plugin handles FCM integration automatically
 
@@ -68,7 +68,7 @@ npm run cap:android
 - [ ] Review notes explaining the app loads a web URL
 - [ ] Enable App Transport Security exception if needed
 - [ ] Test on physical device before submission
-- [ ] Set up App Store Connect with bundle ID com.omnilife.app
+- [ ] Set up App Store Connect with bundle ID app.couplemetric.android
 
 ## Google Play Submission Checklist
 
@@ -80,7 +80,7 @@ npm run cap:android
 - [ ] Content rating questionnaire
 - [ ] Target audience and content declarations
 - [ ] Signed release APK/AAB
-- [ ] Set up Google Play Console with package name com.omnilife.app
+- [ ] Set up Google Play Console with package name app.couplemetric.android
 
 ## App Icon Generation
 

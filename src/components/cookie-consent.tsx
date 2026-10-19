@@ -2,8 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 
-const STORAGE_KEY = "omnilife-cookie-consent";
-const CONSENT_EVENT = "omnilife-cookie-consent-change";
+const STORAGE_KEY = "couplemetric-cookie-consent";
+const CONSENT_EVENT = "couplemetric-cookie-consent-change";
 
 function subscribe(onChange: () => void) {
   window.addEventListener("storage", onChange);

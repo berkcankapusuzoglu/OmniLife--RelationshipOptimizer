@@ -27,7 +27,7 @@ export async function sendPasswordResetEmail(
     const result = await getResend().emails.send({
     from,
     to,
-    subject: "Reset your OmniLife password",
+    subject: "Reset your Couplemetric password",
     html: `
 <!DOCTYPE html>
 <html>
@@ -44,7 +44,7 @@ export async function sendPasswordResetEmail(
           <tr>
             <td style="padding:32px 32px 24px;text-align:center;background:linear-gradient(135deg,#7c3aed,#0d9488);">
               <div style="font-size:28px;margin-bottom:8px;">💜</div>
-              <div style="color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">OmniLife</div>
+              <div style="color:#fff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">Couplemetric</div>
               <div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px;">Relationship Optimizer</div>
             </td>
           </tr>
@@ -53,7 +53,7 @@ export async function sendPasswordResetEmail(
             <td style="padding:32px;">
               <h1 style="color:#f4f4f5;font-size:20px;font-weight:600;margin:0 0 12px;">Reset your password</h1>
               <p style="color:#a1a1aa;font-size:15px;line-height:1.6;margin:0 0 24px;">
-                We received a request to reset the password for your OmniLife account. Click the button below to choose a new password.
+                We received a request to reset the password for your Couplemetric account. Click the button below to choose a new password.
               </p>
               <div style="text-align:center;margin-bottom:24px;">
               <a href="${escapeHtml(resetUrl)}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#0d9488);color:#fff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;">
@@ -72,7 +72,7 @@ export async function sendPasswordResetEmail(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid #27272a;text-align:center;">
               <p style="color:#52525b;font-size:12px;margin:0;">
-                © ${new Date().getFullYear()} OmniLife · Built with 💜 for better relationships
+                © ${new Date().getFullYear()} Couplemetric · Built with 💜 for better relationships
               </p>
             </td>
           </tr>

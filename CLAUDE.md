@@ -197,7 +197,7 @@ Capacitor config at `capacitor.config.ts` loads the hosted Vercel origin in a na
 
 ### Current release
 
-Use [the release checklist](docs/release/1.0.3-closed-test-checklist.md) as the operational handoff. Keep the OmniLife name, package `com.omnilife.app` and existing deployment URL for this release. The owner must resolve or accept naming risk before production rollout; no rename is authorized here. Follow `NEXT_STEPS.md` for remaining owner gates and the separate post-launch backlog.
+Use [the release checklist](docs/release/1.0.3-closed-test-checklist.md) as the operational handoff. The app is named Couplemetric (package `app.couplemetric.android`, renamed from OmniLife/`com.omnilife.app` before first publish due to a trademark conflict); the deployment URL is unchanged for this release. Follow `NEXT_STEPS.md` for remaining owner gates and the separate post-launch backlog.
 
 ### Keepalive operations
 

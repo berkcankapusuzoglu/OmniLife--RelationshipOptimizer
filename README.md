@@ -1,4 +1,4 @@
-# OmniLife — Relationship Optimizer
+# Couplemetric
 
 A decision-support web app that models your life and relationship as a multi-objective optimization problem. Track 9 dimensions daily, get scored feedback, set constraints, run exercises, and see where you stand on the Pareto frontier.
 

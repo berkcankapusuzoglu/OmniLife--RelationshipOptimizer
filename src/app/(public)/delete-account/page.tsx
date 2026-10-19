@@ -5,8 +5,8 @@ import { getCurrentUser } from "@/lib/auth/guard";
 import { DeleteAccountClient } from "./delete-account-client";
 
 export const metadata: Metadata = {
-  title: "Delete your account — OmniLife",
-  description: "Delete your OmniLife Relationship Optimizer account and associated data, or find help if you cannot sign in.",
+  title: "Delete your account — Couplemetric",
+  description: "Delete your Couplemetric account and associated data, or find help if you cannot sign in.",
 };
 
 export default async function DeleteAccountPage({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
@@ -17,7 +17,7 @@ export default async function DeleteAccountPage({ searchParams }: { searchParams
 
   return (
     <article className="mx-auto max-w-2xl space-y-6 px-6 py-12">
-      <h1 className="text-3xl font-semibold">Delete your OmniLife account</h1>
+      <h1 className="text-3xl font-semibold">Delete your Couplemetric account</h1>
       {!user && deleted === "1" ? (
         <p role="status" className="rounded-lg border p-4">Your account and active app data have been deleted. You have been signed out.</p>
       ) : user ? (
@@ -39,9 +39,9 @@ export default async function DeleteAccountPage({ searchParams }: { searchParams
         <h2 className="text-xl font-medium">Cannot sign in?</h2>
         <p>Try <Link href="/forgot-password" className="underline">resetting your password</Link>. A manual deletion request requires verification that you own the account. Never send your password or payment details.</p>
         {verifiedContact ? (
-          <p>Email the monitored deletion contact at <a className="underline" href={`mailto:${verifiedContact}?subject=OmniLife%20account%20deletion`}>{verifiedContact}</a> from your account email address. Include a request to delete your account and associated data.</p>
+          <p>Email the monitored deletion contact at <a className="underline" href={`mailto:${verifiedContact}?subject=Couplemetric%20account%20deletion`}>{verifiedContact}</a> from your account email address. Include a request to delete your account and associated data.</p>
         ) : (
-          <p role="note">Manual deletion contact pending owner verification. This fallback is not available until the OmniLife owner verifies a monitored contact address. Use the sign-in and password-reset options above in the meantime.</p>
+          <p role="note">Manual deletion contact pending owner verification. This fallback is not available until the Couplemetric owner verifies a monitored contact address. Use the sign-in and password-reset options above in the meantime.</p>
         )}
       </section>
       <Link href="/privacy" className="block underline">Privacy policy</Link>

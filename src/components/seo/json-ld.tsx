@@ -2,7 +2,7 @@ export function OrganizationJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "OmniLife",
+    name: "Couplemetric",
     url: "https://omnilife.app",
     description:
       "Multi-objective life and relationship optimization through psychology, philosophy, and mathematics.",
@@ -22,7 +22,7 @@ export function WebApplicationJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "OmniLife Relationship Optimizer",
+    name: "Couplemetric",
     url: "https://omnilife.app",
     description:
       "A relationship optimizer that uses weighted scoring across 9 dimensions, scenario modes, and evidence-based exercises to help couples build stronger partnerships.",

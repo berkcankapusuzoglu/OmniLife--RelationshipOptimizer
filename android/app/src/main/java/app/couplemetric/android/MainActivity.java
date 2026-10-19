@@ -1,4 +1,4 @@
-package com.omnilife.app;
+package app.couplemetric.android;
 
 import android.os.Bundle;
 import android.webkit.CookieManager;

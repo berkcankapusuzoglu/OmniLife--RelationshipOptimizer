@@ -4,11 +4,11 @@ import { getUserTier } from "@/lib/subscription/access";
 import { PricingClient } from "./pricing-client";
 
 export const metadata: Metadata = {
-  title: "Pricing — OmniLife",
+  title: "Pricing — Couplemetric",
   description:
     "Simple, transparent pricing. Start free, upgrade when you're ready.",
   openGraph: {
-    title: "Pricing — OmniLife",
+    title: "Pricing — Couplemetric",
     description:
       "Simple, transparent pricing. Start free, upgrade when you're ready.",
     images: [

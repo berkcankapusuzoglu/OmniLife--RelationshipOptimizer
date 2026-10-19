@@ -354,7 +354,7 @@ export function SettingsClient({
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `omnilife-export-${new Date().toISOString().split("T")[0]}.json`;
+                a.download = `couplemetric-export-${new Date().toISOString().split("T")[0]}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
               }}

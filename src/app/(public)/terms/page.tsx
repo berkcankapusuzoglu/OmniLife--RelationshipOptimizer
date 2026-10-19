@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — OmniLife",
+  title: "Terms of Service — Couplemetric",
   description:
-    "Terms of Service for OmniLife Relationship Optimizer. Read before using our platform.",
+    "Terms of Service for Couplemetric. Read before using our platform.",
 };
 
 export default function TermsOfServicePage() {
@@ -16,14 +16,14 @@ export default function TermsOfServicePage() {
 
       <p>
         These Terms of Service (&quot;Terms&quot;) govern your use of the
-        OmniLife Relationship Optimizer platform operated by OmniLife
+        Couplemetric platform operated by Couplemetric
         (&quot;we,&quot; &quot;us,&quot; &quot;our&quot;). By creating an
         account or using the service, you agree to these Terms.
       </p>
 
       <h2>1. Acceptance of Terms</h2>
       <p>
-        By accessing or using OmniLife, you confirm that you have read,
+        By accessing or using Couplemetric, you confirm that you have read,
         understood, and agree to be bound by these Terms and our{" "}
         <a href="/privacy">Privacy Policy</a>. If you do not agree, do not use
         the service.
@@ -31,7 +31,7 @@ export default function TermsOfServicePage() {
 
       <h2>2. Eligibility</h2>
       <p>
-        You must be at least <strong>18 years old</strong> to use OmniLife. By
+        You must be at least <strong>18 years old</strong> to use Couplemetric. By
         registering, you represent that you are 18 or older and have the legal
         capacity to enter into these Terms.
       </p>
@@ -47,7 +47,7 @@ export default function TermsOfServicePage() {
       <h2>4. Important Disclaimer — Not Professional Advice</h2>
       <p>
         <strong>
-          OmniLife is not a substitute for professional therapy, counseling, or
+          Couplemetric is not a substitute for professional therapy, counseling, or
           medical advice.
         </strong>{" "}
         The scores, recommendations, and exercises provided by our platform are
@@ -123,7 +123,7 @@ export default function TermsOfServicePage() {
 
       <h2>7. Intellectual Property</h2>
       <p>
-        All content, design, code, algorithms, and branding on OmniLife are
+        All content, design, code, algorithms, and branding on Couplemetric are
         owned by us or our licensors. You may not copy, modify, distribute, or
         create derivative works from our platform without written permission.
       </p>
@@ -135,7 +135,7 @@ export default function TermsOfServicePage() {
 
       <h2>8. Limitation of Liability</h2>
       <p>
-        To the maximum extent permitted by law, OmniLife and its operators shall
+        To the maximum extent permitted by law, Couplemetric and its operators shall
         not be liable for any indirect, incidental, special, consequential, or
         punitive damages arising from your use of the service. Our total
         liability for any claim shall not exceed the amount you paid us in the
@@ -150,7 +150,7 @@ export default function TermsOfServicePage() {
 
       <h2>9. Indemnification</h2>
       <p>
-        You agree to indemnify and hold harmless OmniLife from any claims,
+        You agree to indemnify and hold harmless Couplemetric from any claims,
         damages, or expenses arising from your use of the service or violation
         of these Terms.
       </p>
@@ -160,7 +160,7 @@ export default function TermsOfServicePage() {
         We encourage you to contact us first to resolve any disputes informally.
         If a dispute cannot be resolved within 30 days, either party may pursue
         binding arbitration under the rules of the applicable arbitration
-        association in the jurisdiction where OmniLife operates. You agree to
+        association in the jurisdiction where Couplemetric operates. You agree to
         resolve disputes on an individual basis and waive any right to
         participate in class actions.
       </p>

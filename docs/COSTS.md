@@ -1,4 +1,4 @@
-# OmniLife Cost Reference
+# Couplemetric Cost Reference
 
 **Last updated:** April 2026  
 **Pricing:** Pro $3.99/mo or $29.99/yr · Premium $4.99/mo or $39.99/yr

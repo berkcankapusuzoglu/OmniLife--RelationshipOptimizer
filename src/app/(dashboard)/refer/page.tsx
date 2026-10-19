@@ -14,7 +14,7 @@ export default async function ReferPage() {
       <div>
         <h1 className="text-2xl font-medium tracking-tight">Refer Friends</h1>
         <p className="text-sm text-muted-foreground">
-          Share OmniLife and earn free Premium time
+          Share Couplemetric and earn free Premium time
         </p>
       </div>
       <ReferClient

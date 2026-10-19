@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
             position: "relative",
           }}
         >
-          {/* OmniLife branding */}
+          {/* Couplemetric branding */}
           <div
             style={{
               position: "absolute",
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
                 fontWeight: 600,
               }}
             >
-              OmniLife
+              Couplemetric
             </span>
           </div>
 
@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
                 fontWeight: 600,
               }}
             >
-              Join OmniLife
+              Join Couplemetric
             </div>
             <span
               style={{

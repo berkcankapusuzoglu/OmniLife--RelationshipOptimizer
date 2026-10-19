@@ -100,7 +100,7 @@ export default function RegisterPage() {
             {isPending
               ? "Creating account..."
               : fromName
-                ? `Join ${fromName} on OmniLife`
+                ? `Join ${fromName} on Couplemetric`
                 : "Create account"}
           </Button>
           <p className="text-sm text-muted-foreground">

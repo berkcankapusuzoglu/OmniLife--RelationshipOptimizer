@@ -620,7 +620,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              OmniLife works best when both partners use it together. You can
+              Couplemetric works best when both partners use it together. You can
               always do this later from the Partner page.
             </p>
             <div className="space-y-2">
