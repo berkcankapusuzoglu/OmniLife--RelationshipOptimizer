@@ -1,0 +1,26 @@
+# Supabase keep-alive: pings the app's /api/keepalive endpoint daily so the
+# free-tier database is never idle for 7 days (which pauses it). Offset from
+# the Vercel cron (08:00 UTC in vercel.json) for redundancy.
+#
+# Notes:
+#   - GitHub automatically disables scheduled workflows after 60 days without
+#     repo activity. Re-enable under Actions if the repo goes dormant, or push
+#     a commit to reset the timer.
+#   - The CRON_SECRET secret must be set in repo Settings → Secrets and
+#     variables → Actions with the SAME value as the Vercel CRON_SECRET env
+#     var. If CRON_SECRET is unset in Vercel, the endpoint is public and the
+#     Authorization header is harmless.
+
+name: Keep-alive
+
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping keepalive endpoint
+        run: curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" https://omnilife-relationship-optimizer.vercel.app/api/keepalive
