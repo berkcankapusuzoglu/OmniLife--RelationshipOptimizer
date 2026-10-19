@@ -1,14 +1,20 @@
 "use server";
 
 import { requireAuth } from "@/lib/auth/guard";
-import { hasFeatureAccess } from "@/lib/auth/tier-gate";
+import { getUserTier } from "@/lib/subscription/access";
 import { getDb } from "@/lib/db";
 import { coachingSessions } from "@/lib/db/schema";
 import {
   buildCoachingContext,
-  buildCoachingMessage,
   buildSystemPrompt,
 } from "@/lib/coaching/prompt-builder";
+import {
+  coachingModel,
+  coachingQuotaForTier,
+  consumeCoachingQuota,
+  refundCoachingQuota,
+  todayUtc,
+} from "@/lib/coaching/quota";
 import { and, eq, desc } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { revalidatePath } from "next/cache";
@@ -22,6 +28,13 @@ export interface CoachingMessage {
   timestamp: string;
 }
 
+const MAX_MESSAGE_CHARS = 2000;
+const HISTORY_TURNS = 6;
+const MAX_OUTPUT_TOKENS = 400;
+
+const COACH_UNAVAILABLE =
+  "The coach is unavailable right now. Nothing was charged against your daily limit.";
+
 export async function sendCoachingMessage(
   sessionId: string | null,
   userMessage: string
@@ -32,12 +45,13 @@ export async function sendCoachingMessage(
 }> {
   const user = await requireAuth();
   if (sessionId !== null) sessionId = resourceId.parse(sessionId);
-  userMessage = z.string().trim().min(1).max(10000).parse(userMessage);
+  userMessage = z.string().trim().min(1).max(MAX_MESSAGE_CHARS).parse(userMessage);
 
-  const access = await hasFeatureAccess(user.id, "aiCoaching");
-  if (!access.allowed) {
+  const tier = await getUserTier(user.id);
+  const limit = coachingQuotaForTier(tier);
+  if (limit <= 0) {
     return {
-      error: `AI Coaching requires the ${access.requiredTier} plan. Please upgrade to access this feature.`,
+      error: "AI Coaching requires the premium plan. Please upgrade to access this feature.",
     };
   }
 
@@ -62,40 +76,48 @@ export async function sendCoachingMessage(
     existingMessages = (session.messages as CoachingMessage[]) ?? [];
   }
 
-  // Build coaching response
-  let replyContent: string;
+  // Reserve one message of today's quota before calling the provider.
+  const day = todayUtc();
+  const quota = await consumeCoachingQuota(user.id, limit, day);
+  if (!quota.allowed) {
+    return {
+      error: `You've used today's ${quota.limit} coaching messages. Resets at midnight UTC.`,
+    };
+  }
 
+  // Build coaching response. No static fallback: if the provider cannot
+  // answer, say so and give the reserved message back.
   const geminiApiKey = process.env.GEMINI_API_KEY;
-  if (geminiApiKey) {
-    try {
-      const context = await buildCoachingContext(user.id);
-      const systemPrompt = buildSystemPrompt(context);
+  if (!geminiApiKey) {
+    await refundCoachingQuota(user.id, day);
+    return { error: COACH_UNAVAILABLE };
+  }
 
-      const genAI = new GoogleGenerativeAI(geminiApiKey);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
-        systemInstruction: systemPrompt,
-        generationConfig: { maxOutputTokens: 300 },
-      });
-
-      // Build history (last 10 turns, excluding current message)
-      const history = existingMessages.slice(-10).map((m) => ({
-        role: m.role === "user" ? "user" as const : "model" as const,
-        parts: [{ text: m.content }],
-      }));
-
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(userMessage);
-      replyContent = result.response.text();
-    } catch (err) {
-      console.error("Gemini coaching error:", err);
-      const context = await buildCoachingContext(user.id);
-      replyContent = buildCoachingMessage(context);
-    }
-  } else {
-    // Fallback: context-aware static response
+  let replyContent: string;
+  try {
     const context = await buildCoachingContext(user.id);
-    replyContent = buildCoachingMessage(context);
+    const systemPrompt = buildSystemPrompt(context);
+
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({
+      model: coachingModel(),
+      systemInstruction: systemPrompt,
+      generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
+    });
+
+    // Build history (last 6 turns, excluding current message)
+    const history = existingMessages.slice(-HISTORY_TURNS).map((m) => ({
+      role: m.role === "user" ? ("user" as const) : ("model" as const),
+      parts: [{ text: m.content }],
+    }));
+
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(userMessage);
+    replyContent = result.response.text();
+  } catch (err) {
+    console.error("Gemini coaching error:", err);
+    await refundCoachingQuota(user.id, day);
+    return { error: COACH_UNAVAILABLE };
   }
 
   const replyMsg: CoachingMessage = {

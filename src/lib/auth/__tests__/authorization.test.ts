@@ -44,6 +44,8 @@ vi.mock("@/lib/streaks", () => ({ updateStreak: async () => ({ currentStreak: 1,
 vi.mock("@/lib/analytics/track", () => ({ trackEvent: () => {} }));
 vi.mock("@/lib/auth/tier-gate", () => ({ hasFeatureAccess: async () => ({ allowed: true }) }));
 vi.mock("@/lib/coaching/prompt-builder", () => ({ buildCoachingContext: async () => ({}), buildCoachingMessage: () => "Try a check-in", buildSystemPrompt: () => "test" }));
+vi.mock("@/lib/coaching/quota", () => ({ coachingModel: () => "test-model", coachingQuotaForTier: () => 30, todayUtc: () => "2099-01-01", consumeCoachingQuota: async () => ({ allowed: true, used: 1, limit: 30 }), refundCoachingQuota: async () => {} }));
+vi.mock("@google/generative-ai", () => ({ GoogleGenerativeAI: class { getGenerativeModel() { return { startChat: () => ({ sendMessage: async () => ({ response: { text: () => "Try a check-in" } }) }) }; } } }));
 vi.mock("@/lib/export/therapist-report", () => ({ generateTherapistReport: async (userId: string, name: string, daysBack: number) => ({ userId, name, daysBack }) }));
 
 const A = "00000000-0000-4000-8000-000000000001";
@@ -134,7 +136,7 @@ describe("server action authorization", () => {
     state.rows = { users: [A, B, C].map((id) => ({ id, name: id === A ? "Alice" : "Private Bob", partnerId: null, partnerInviteCode: id === B ? "BOBCOD" : null, subscriptionTier: "free", subscriptionSource: null, alphaWeight: ".5", betaWeight: ".5", pillarVitalityWeight: ".25", pillarGrowthWeight: ".25", pillarSecurityWeight: ".25", pillarConnectionWeight: ".25", relEmotionalWeight: ".2", relTrustWeight: ".2", relFairnessWeight: ".2", relStressWeight: ".2", relAutonomyWeight: ".2" })), tasks: [{ id: resource, createdById: B, assigneeId: B, status: "pending" }], constraints: [{ id: resource, userId: B, isActive: true }], scenario_profiles: [{ id: resource, userId: B, mode: "exam" }], daily_logs: [{ id: resource, userId: B, date: "2099-01-01", notes: "Bob private" }], scores: [{ id: resource, userId: B, date: "2099-01-01", lifeScore: "9", relScore: "9", totalQuality: "9" }], weekly_checkins: [{ id: resource, userId: B, highlight: "Bob private" }] };
     state.db = memoryDb();
     state.rows.coaching_sessions = [{ id: resource, userId: B, messages: [{ role: "user", content: "Bob private", timestamp: "2099-01-01" }] }];
-    vi.stubEnv("GEMINI_API_KEY", "");
+    vi.stubEnv("GEMINI_API_KEY", "test-only-placeholder");
     vi.stubEnv("REVENUECAT_SECRET_KEY", "test-only-placeholder");
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ subscriber: { entitlements: { premium: { expires_date: null, product_identifier: "test" } } } }) })));
   });
