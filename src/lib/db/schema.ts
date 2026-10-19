@@ -10,6 +10,7 @@ import {
   timestamp,
   jsonb,
   check,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -61,6 +62,14 @@ export const users = pgTable("users", {
   // by subscription deletion or webhook replay.
   stripePendingCheckoutToken: text("stripe_pending_checkout_token"),
   stripePendingCheckoutSessionId: text("stripe_pending_checkout_session_id"),
+  // v1.1.0 billing + reminders. billingTrialEndsAt mirrors the store trial
+  // (RevenueCat period_type "trial" / Stripe trial_end); billingProductId is
+  // the store product identifier that currently grants the tier.
+  billingTrialEndsAt: timestamp("billing_trial_ends_at", { withTimezone: true }),
+  billingProductId: text("billing_product_id"),
+  trialReminderSentAt: timestamp("trial_reminder_sent_at", { withTimezone: true }),
+  reminderHourUtc: integer("reminder_hour_utc"),
+  pushOptIn: boolean("push_opt_in").notNull().default(false),
   alphaWeight: numeric("alpha_weight", { precision: 5, scale: 4 }).default(
     "0.5"
   ),
@@ -328,6 +337,49 @@ export const coachingSessions = pgTable("coaching_sessions", {
     .defaultNow(),
 });
 
+// ── Billing Events ────────────────────────────────────────────────────────────
+// Webhook idempotency ledger: `id` is the provider's event id. Insert with
+// ON CONFLICT DO NOTHING; an empty RETURNING means a duplicate delivery.
+
+export const billingEvents = pgTable("billing_events", {
+  id: text("id").primaryKey(),
+  provider: text("provider").notNull(), // "revenuecat" | "stripe"
+  receivedAt: timestamp("received_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Push Tokens ───────────────────────────────────────────────────────────────
+
+export const pushTokens = pgTable("push_tokens", {
+  token: text("token").primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  platform: text("platform").notNull(), // "android" | "ios" | "web"
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Coaching Usage ────────────────────────────────────────────────────────────
+// Per-user daily AI message counter for the premium quota.
+
+export const coachingUsage = pgTable(
+  "coaching_usage",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.day] })]
+);
+
 // ── Relations ──────────────────────────────────────────────────────────────────
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -350,6 +402,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   interventions: many(interventions),
   referrals: many(referrals),
   coachingSessions: many(coachingSessions),
+  pushTokens: many(pushTokens),
+  coachingUsage: many(coachingUsage),
 }));
 
 export const dailyLogsRelations = relations(dailyLogs, ({ one, many }) => ({
@@ -429,6 +483,20 @@ export const partnerSyncEventsRelations = relations(
   partnerSyncEvents,
   () => ({})
 );
+
+export const pushTokensRelations = relations(pushTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [pushTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const coachingUsageRelations = relations(coachingUsage, ({ one }) => ({
+  user: one(users, {
+    fields: [coachingUsage.userId],
+    references: [users.id],
+  }),
+}));
 
 export const coachingSessionsRelations = relations(
   coachingSessions,

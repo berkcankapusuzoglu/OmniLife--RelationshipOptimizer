@@ -19,6 +19,9 @@ const EXPECTED_TABLES = [
   'referrals',
   'subscribers',
   'passwordResets',
+  'billingEvents',
+  'pushTokens',
+  'coachingUsage',
 ] as const;
 
 function isDrizzleTable(value: unknown): boolean {
@@ -62,5 +65,31 @@ describe('schema integrity', () => {
   it('users table has onboardingCompleted column (infinite-redirect guard)', () => {
     const cols = Object.keys(schema.users);
     expect(cols).toContain('onboardingCompleted');
+  });
+
+  it('users table has the v1.1.0 billing/push columns', () => {
+    const cols = Object.keys(schema.users);
+    expect(cols).toContain('billingTrialEndsAt');
+    expect(cols).toContain('reminderHourUtc');
+    expect(cols).toContain('pushOptIn');
+    expect(cols).toContain('billingProductId');
+    expect(cols).toContain('trialReminderSentAt');
+  });
+
+  it('billingEvents has id, provider, receivedAt (webhook idempotency)', () => {
+    const cols = Object.keys(schema.billingEvents);
+    expect(cols).toEqual(expect.arrayContaining(['id', 'provider', 'receivedAt']));
+  });
+
+  it('pushTokens has token, userId, platform, createdAt, lastSeenAt', () => {
+    const cols = Object.keys(schema.pushTokens);
+    expect(cols).toEqual(
+      expect.arrayContaining(['token', 'userId', 'platform', 'createdAt', 'lastSeenAt']),
+    );
+  });
+
+  it('coachingUsage has userId, day, count', () => {
+    const cols = Object.keys(schema.coachingUsage);
+    expect(cols).toEqual(expect.arrayContaining(['userId', 'day', 'count']));
   });
 });
