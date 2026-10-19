@@ -14,12 +14,10 @@ import {
   Unlink,
   Share2,
   Trophy,
-  Sparkles,
   TrendingUp,
   Check,
 } from "lucide-react";
 import { generateInviteCode, linkPartner, unlinkPartner } from "./actions";
-import type { CoupleBonus } from "@/lib/subscription/couple-bonus";
 
 export function PartnerClient({
   userName,
@@ -27,14 +25,12 @@ export function PartnerClient({
   partner,
   partnerScore,
   userScore,
-  coupleBonus,
 }: {
   userName: string | null;
   inviteCode: string | null;
   partner: { id: string; name: string | null; email: string } | null;
   partnerScore: number | null;
   userScore: number | null;
-  coupleBonus: CoupleBonus;
 }) {
   const [code, setCode] = useState("");
   const [copied, setCopied] = useState(false);
@@ -109,24 +105,6 @@ export function PartnerClient({
   if (partner) {
     return (
       <div className="space-y-6">
-        {/* Couple Bonus Banner */}
-        {coupleBonus.isCouple && (
-          <Card className="border-emerald-500/20 bg-emerald-500/5">
-            <CardContent className="flex items-center gap-3 p-4">
-              <Sparkles className="h-5 w-5 text-emerald-400 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-emerald-400">
-                  Couple Bonus Active
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {coupleBonus.exerciseLimit} exercises, {coupleBonus.historyDays}
-                  -day history, couple comparison view
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {justLinked && (
           <Card className="border-rose-500/20 bg-rose-500/5 animate-in fade-in slide-in-from-top-2">
             <CardContent className="flex items-center gap-3 p-4">
@@ -338,25 +316,6 @@ export function PartnerClient({
           </CardContent>
         </Card>
       </div>
-
-      {/* Couple Bonus Teaser */}
-      {!coupleBonus.isCouple && (
-        <Card className="border-purple-500/20 bg-purple-500/5">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-purple-400" />
-              <p className="text-sm font-medium text-purple-400">
-                Link your partner to unlock Couple Bonus
-              </p>
-            </div>
-            <ul className="grid gap-1 text-xs text-muted-foreground pl-6">
-              <li>+3 extra exercises (8 total instead of 5)</li>
-              <li>14-day history (instead of 7)</li>
-              <li>Couple comparison view</li>
-            </ul>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

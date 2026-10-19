@@ -1,8 +1,11 @@
 export interface Features {
   dailyLog: boolean;
   basicScores: boolean;
+  /** Exercises per rolling 7 days (Infinity = unlimited) */
   exerciseLimit: number;
   historyDays: number;
+  /** Days of partner comparison history */
+  compareDays: number;
   insights: boolean;
   weeklyCheckin: boolean;
   scenarios: boolean;
@@ -10,6 +13,8 @@ export interface Features {
   partnerLinking: boolean;
   exportReports: boolean;
   aiCoaching: boolean;
+  /** AI coaching messages per UTC day (0 = no access) */
+  aiDailyMessageQuota: number;
   therapistExport: boolean;
 }
 
@@ -19,17 +24,18 @@ export const TIERS = {
     monthlyPrice: 0,
     yearlyPrice: 0,
     featureList: [
-      "Daily logging",
-      "Basic scoring engine",
+      "Daily check-in & scores",
+      "Streaks",
       "7-day history",
-      "3 exercises per week",
+      "5 exercises per week",
       "Partner linking",
     ],
     features: {
       dailyLog: true,
       basicScores: true,
-      exerciseLimit: 3,
+      exerciseLimit: 5,
       historyDays: 7,
+      compareDays: 7,
       insights: false,
       weeklyCheckin: true,
       scenarios: false,
@@ -37,9 +43,11 @@ export const TIERS = {
       partnerLinking: true,
       exportReports: false,
       aiCoaching: false,
+      aiDailyMessageQuota: 0,
       therapistExport: false,
     } satisfies Features,
   },
+  /** Legacy tier: readable for existing subscribers, no longer sold. */
   pro: {
     name: "Pro",
     monthlyPrice: 3.99,
@@ -59,6 +67,7 @@ export const TIERS = {
       basicScores: true,
       exerciseLimit: Infinity,
       historyDays: Infinity,
+      compareDays: 30,
       insights: true,
       weeklyCheckin: true,
       scenarios: true,
@@ -66,24 +75,30 @@ export const TIERS = {
       partnerLinking: true,
       exportReports: true,
       aiCoaching: false,
+      aiDailyMessageQuota: 0,
       therapistExport: false,
     } satisfies Features,
   },
   premium: {
     name: "Premium",
     monthlyPrice: 4.99,
-    yearlyPrice: 39.99,
+    yearlyPrice: 24.99,
     featureList: [
-      "Everything in Pro",
-      "AI relationship coaching",
-      "Therapist export reports",
-      "Priority support",
+      "Covers both partners",
+      "90-day history & trends",
+      "Optimizer & Pareto insights",
+      "Full exercise library",
+      "Partner divergence breakdown (30 days)",
+      "Scenarios & boundaries",
+      "AI coaching (30 messages/day)",
+      "Export & therapist reports",
     ],
     features: {
       dailyLog: true,
       basicScores: true,
       exerciseLimit: Infinity,
-      historyDays: Infinity,
+      historyDays: 90,
+      compareDays: 30,
       insights: true,
       weeklyCheckin: true,
       scenarios: true,
@@ -91,6 +106,7 @@ export const TIERS = {
       partnerLinking: true,
       exportReports: true,
       aiCoaching: true,
+      aiDailyMessageQuota: 30,
       therapistExport: true,
     } satisfies Features,
   },
@@ -99,11 +115,16 @@ export const TIERS = {
 export type SubscriptionTier = keyof typeof TIERS;
 export type TierKey = SubscriptionTier;
 
+/** Tiers that can be purchased by new users. `pro` is legacy-only. */
+export const SELLABLE_TIERS = ["premium"] as const;
+export type SellableTier = (typeof SELLABLE_TIERS)[number];
+
 export const FEATURE_LABELS: Record<keyof Features, string> = {
   dailyLog: "Daily Logging",
   basicScores: "Score Tracking",
   exerciseLimit: "Exercises",
   historyDays: "History",
+  compareDays: "Partner Comparison History",
   insights: "Advanced Insights",
   weeklyCheckin: "Weekly Check-in",
   scenarios: "Scenario Modes",
@@ -111,6 +132,7 @@ export const FEATURE_LABELS: Record<keyof Features, string> = {
   partnerLinking: "Partner Linking",
   exportReports: "Export Reports",
   aiCoaching: "AI Coaching",
+  aiDailyMessageQuota: "AI Coaching Messages",
   therapistExport: "Therapist Export",
 };
 
@@ -119,6 +141,7 @@ export const FEATURE_DESCRIPTIONS: Record<keyof Features, string> = {
   basicScores: "Track Life Score, Relationship Score, and Overall Score",
   exerciseLimit: "Access psychology-grounded exercises",
   historyDays: "View your score history and trends",
+  compareDays: "Compare scores with your partner over time",
   insights: "Balance analysis and advanced trends",
   weeklyCheckin: "Weekly reflection and goal setting",
   scenarios: "Switch between life scenario modes",
@@ -126,5 +149,6 @@ export const FEATURE_DESCRIPTIONS: Record<keyof Features, string> = {
   partnerLinking: "Link with your partner's account",
   exportReports: "Export monthly PDF reports",
   aiCoaching: "Get personalized AI coaching insights",
+  aiDailyMessageQuota: "Daily AI coaching message allowance",
   therapistExport: "Generate detailed reports for your therapist",
 };

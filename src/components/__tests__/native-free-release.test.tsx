@@ -22,7 +22,7 @@ vi.mock("@/lib/subscription/access", () => ({ getUserTier: async () => "free" })
 vi.mock("@/lib/revenuecat/sync", () => ({ syncRevenueCatEntitlement: vi.fn() }));
 vi.mock("@/app/(dashboard)/exercises/actions", () => ({ completeExercise: vi.fn() }));
 vi.mock("@/lib/recommendations/engine", () => ({
-  getRecommendedExercises: () => Array.from({ length: 4 }, (_, i) => ({
+  getRecommendedExercises: () => Array.from({ length: 6 }, (_, i) => ({
     id: `exercise-${i}`, title: `Exercise ${i}`, description: "Guided practice",
     category: "emotional", durationMinutes: 5, targetDimensions: ["emotional"],
     theoryBasis: "Communication practice", instructions: ["Listen"], difficulty: "easy",
@@ -58,7 +58,7 @@ describe("free native release purchase surfaces", () => {
   });
   it("keeps the actual exercise-limit prompt neutral on native", () => {
     const markup = html(<ExercisesClient currentScores={null} recentExerciseIds={[]} userTier="free" />);
-    expect(markup).toContain("3 of 4 exercises");
+    expect(markup).toContain(`${TIERS.free.features.exerciseLimit} of 6 exercises`);
     expectNoBilling(markup);
   });
   it.each(["free", "pro", "premium"])("makes native direct pricing safe for %s users", async (tier) => {
@@ -90,7 +90,7 @@ describe("free native release purchase surfaces", () => {
     const landing = html(<LandingClient />);
     expect(landing).toContain(`$${TIERS.premium.monthlyPrice}`);
     expect(landing).toContain(TIERS.free.featureList[3]);
-    expect(landing).toContain(TIERS.premium.featureList[1]);
+    expect(landing).toContain(TIERS.premium.featureList[1].replace(/&/g, "&amp;"));
     expect(landing).not.toMatch(/free trial|lock in|before it increases/i);
     const prompt = html(<UpgradePrompt featureDescription="Guided exercises" />);
     expect(prompt).toContain(`$${TIERS.premium.monthlyPrice}/mo`);
