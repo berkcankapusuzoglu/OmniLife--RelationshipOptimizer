@@ -1,0 +1,27 @@
+# Push reminders: Vercel Hobby crons run at most once per day, so the hourly
+# reminder job (daily log nudge + trial day-5 notice) is driven from here by
+# calling /api/push/reminders every hour. Precedent: keepalive.yml.
+#
+# Notes:
+#   - CRON_SECRET must be set in repo Settings → Secrets and variables →
+#     Actions with the SAME value as the Vercel CRON_SECRET env var. The
+#     endpoint answers 503 when it is unset on Vercel and 401 on a mismatch.
+#   - NEXT_PUBLIC_APP_URL may be set as a repo Actions *variable* to point at
+#     another deployment; it defaults to production.
+#   - GitHub disables scheduled workflows after 60 days without repo activity.
+
+name: Push reminders
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run reminder job
+        env:
+          APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'https://omnilife-relationship-optimizer.vercel.app' }}
+        run: curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${APP_URL%/}/api/push/reminders"
