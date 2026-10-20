@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { MilestoneToast } from "@/components/milestone-toast";
+import { NotificationPrePrompt, shouldShowPushPrePrompt } from "@/components/notification-preprompt";
 import { submitDailyLog } from "./actions";
 import type { Milestone } from "@/lib/milestones";
 
@@ -296,6 +297,7 @@ export function DailyLogWizard({
   const [submitting, setSubmitting] = useState(false);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [isFirstLog, setIsFirstLog] = useState(false);
 
   // Adaptive: track whether mood dropped enough to show extra steps
   const [adaptiveTriggered, setAdaptiveTriggered] = useState(false);
@@ -430,8 +432,13 @@ export function DailyLogWizard({
         setMilestones(result.milestones);
       }
 
+      const firstLog = result?.isFirstLog === true;
+      setIsFirstLog(firstLog);
       setSubmitted(true);
-      setTimeout(() => router.push("/overview"), 3000);
+      // The native pre-prompt owns the redirect while it is on screen.
+      if (!shouldShowPushPrePrompt(firstLog)) {
+        setTimeout(() => router.push("/overview"), 3000);
+      }
     } catch {
       setSubmitting(false);
     }
@@ -462,6 +469,7 @@ export function DailyLogWizard({
             onDismiss={() => setMilestones([])}
           />
         )}
+        <NotificationPrePrompt isFirstLog={isFirstLog} onDone={() => router.push("/overview")} />
       </>
     );
   }

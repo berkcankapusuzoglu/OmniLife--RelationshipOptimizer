@@ -17,6 +17,7 @@ vi.mock("@revenuecat/purchases-capacitor", () => ({ Purchases: { configure: nati
 vi.mock("@capacitor/push-notifications", () => ({ PushNotifications: native }));
 vi.mock("@capacitor/status-bar", () => ({ StatusBar: { setStyle: vi.fn(), setBackgroundColor: vi.fn() }, Style: { Dark: "DARK" } }));
 vi.mock("@/lib/capacitor/back-handler", () => ({ initAndroidBackHandler: native.backHandler }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
 beforeEach(() => {
   vi.clearAllMocks(); native.effects = [];
