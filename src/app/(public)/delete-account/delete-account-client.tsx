@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { deleteAccountAction } from "@/app/(dashboard)/settings/actions";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,12 @@ import { Label } from "@/components/ui/label";
 
 export function DeleteAccountClient() {
   const [state, action, pending] = useActionState(deleteAccountAction, {});
+  // Controlled so the typed confirmation survives a failed submit (React resets
+  // uncontrolled form fields after a server action); the password is cleared.
+  const [confirmation, setConfirmation] = useState("");
+  const invalid = state.error ? true : undefined;
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-4" aria-busy={pending}>
       <p className="text-sm text-muted-foreground">
         This permanently deletes your account, daily logs, scores, check-ins, coaching conversations,
         scenarios, constraints, recommendations, tasks you created, and account-associated referral
@@ -32,15 +36,34 @@ export function DeleteAccountClient() {
       </p>
       <div className="space-y-2">
         <Label htmlFor="deletion-password">Current password</Label>
-        <Input id="deletion-password" name="password" type="password" autoComplete="current-password" required maxLength={1024} disabled={pending} />
+        <Input
+          id="deletion-password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          maxLength={1024}
+          disabled={pending}
+          aria-invalid={invalid}
+          aria-describedby={state.error ? "deletion-error" : undefined}
+        />
         <Link className="text-sm underline" href="/forgot-password">Reset your password</Link>
       </div>
       <div className="space-y-2">
         <Label htmlFor="deletion-confirmation">Type DELETE to confirm</Label>
-        <Input id="deletion-confirmation" name="confirmation" autoComplete="off" required pattern="DELETE" disabled={pending} />
+        <Input
+          id="deletion-confirmation"
+          name="confirmation"
+          autoComplete="off"
+          required
+          pattern="DELETE"
+          disabled={pending}
+          value={confirmation}
+          onChange={(e) => setConfirmation(e.target.value)}
+        />
       </div>
-      {state.error && <p role="alert" className="text-sm text-destructive">{state.error}</p>}
-      <Button type="submit" variant="destructive" disabled={pending}>
+      {state.error && <p id="deletion-error" role="alert" className="text-sm text-destructive">{state.error}</p>}
+      <Button type="submit" variant="destructive" disabled={pending} aria-busy={pending}>
         {pending ? "Deleting account…" : "Permanently delete my account"}
       </Button>
       <p className="text-sm"><Link href="/delete-account" className="underline">Deletion help and contact options</Link></p>

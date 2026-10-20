@@ -32,41 +32,61 @@ export async function deleteAccountAction(_state: { error?: string }, formData: 
   redirect("/delete-account?deleted=1");
 }
 
-export async function updateProfile(formData: FormData) {
-  const user = await requireAuth();
-  const db = getDb();
-  const userId = user.id;
-  const name = profileName.parse(formData.get("name"));
+export type SaveResult = { ok: true; error?: undefined } | { ok?: undefined; error: string };
 
-  await db.update(users).set({ name }).where(eq(users.id, userId));
+const profileNameInput = profileName.max(100);
+
+export async function updateProfile(formData: FormData): Promise<SaveResult> {
+  const user = await requireAuth();
+  const parsed = profileNameInput.safeParse(formData.get("name"));
+  if (!parsed.success) {
+    return { error: "Enter a name between 1 and 100 characters." };
+  }
+
+  try {
+    const db = getDb();
+    await db.update(users).set({ name: parsed.data }).where(eq(users.id, user.id));
+  } catch {
+    return { error: "Your name could not be saved. Please try again." };
+  }
 
   revalidatePath("/settings");
+  return { ok: true };
 }
 
-export async function updateWeights(weights: Weights) {
+export async function updateWeights(input: Weights): Promise<SaveResult> {
   const user = await requireAuth();
-  weights = weightsInput.parse(weights);
+  const parsed = weightsInput.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Each weight must be between 0 and 100." };
+  }
+  const weights = parsed.data;
   const userId = user.id;
-  const db = getDb();
 
-  await db
-    .update(users)
-    .set({
-      alphaWeight: weights.alpha.toString(),
-      betaWeight: weights.beta.toString(),
-      pillarVitalityWeight: weights.pillar.vitality.toString(),
-      pillarGrowthWeight: weights.pillar.growth.toString(),
-      pillarSecurityWeight: weights.pillar.security.toString(),
-      pillarConnectionWeight: weights.pillar.connection.toString(),
-      relEmotionalWeight: weights.rel.emotional.toString(),
-      relTrustWeight: weights.rel.trust.toString(),
-      relFairnessWeight: weights.rel.fairness.toString(),
-      relStressWeight: weights.rel.stress.toString(),
-      relAutonomyWeight: weights.rel.autonomy.toString(),
-    })
-    .where(eq(users.id, userId));
+  try {
+    const db = getDb();
+    await db
+      .update(users)
+      .set({
+        alphaWeight: weights.alpha.toString(),
+        betaWeight: weights.beta.toString(),
+        pillarVitalityWeight: weights.pillar.vitality.toString(),
+        pillarGrowthWeight: weights.pillar.growth.toString(),
+        pillarSecurityWeight: weights.pillar.security.toString(),
+        pillarConnectionWeight: weights.pillar.connection.toString(),
+        relEmotionalWeight: weights.rel.emotional.toString(),
+        relTrustWeight: weights.rel.trust.toString(),
+        relFairnessWeight: weights.rel.fairness.toString(),
+        relStressWeight: weights.rel.stress.toString(),
+        relAutonomyWeight: weights.rel.autonomy.toString(),
+      })
+      .where(eq(users.id, userId));
+  } catch {
+    return { error: "Your weights could not be saved. Please try again." };
+  }
 
   revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 export async function exportData() {

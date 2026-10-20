@@ -24,6 +24,7 @@ vi.mock("@capacitor/browser", () => ({ Browser: { open: browserOpen } }));
 vi.mock("react", async importOriginal => ({
   ...await importOriginal<typeof import("react")>(),
   useState: (value: unknown) => [typeof value === "function" ? (value as () => unknown)() : value, () => {}],
+  useRef: (value: unknown) => ({ current: value }),
   useEffect: () => {},
   useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(),
 }));

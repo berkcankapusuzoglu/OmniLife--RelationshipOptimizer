@@ -20,19 +20,31 @@ export interface PricingEntitlement {
   expiresAt: string | null;
 }
 
+/** Whole-percent saving of the yearly plan against twelve monthly payments. */
+export function yearlySavingsPercent(monthlyPrice: number, yearlyPrice: number): number {
+  const annualised = monthlyPrice * 12;
+  if (annualised <= 0) return 0;
+  return Math.max(0, Math.round((1 - yearlyPrice / annualised) * 100));
+}
+
 export function PricingClient({
   currentTier,
   userId,
   nativeBilling = false,
   entitlement = null,
+  preselectPlan = null,
 }: {
   currentTier: string;
   userId?: string;
   /** Server flag `NATIVE_BILLING_ENABLED`. */
   nativeBilling?: boolean;
   entitlement?: PricingEntitlement | null;
+  /** From `/pricing?plan=premium`: highlights and focuses the Premium plan. */
+  preselectPlan?: "premium" | null;
 }) {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const premiumPreselected = preselectPlan === "premium";
+  const savings = yearlySavingsPercent(TIERS.premium.monthlyPrice, TIERS.premium.yearlyPrice);
   const [loading, setLoading] = useState(false);
   const native = useNativePlatform();
 
@@ -100,8 +112,10 @@ export function PricingClient({
         <p className="mt-3 text-lg text-muted-foreground">Start free. Upgrade when you&apos;re ready.</p>
       </div>
       {/* Billing toggle */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-3" role="group" aria-label="Billing interval">
         <button
+          type="button"
+          aria-pressed={billing === "monthly"}
           onClick={() => setBilling("monthly")}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             billing === "monthly"
@@ -112,6 +126,8 @@ export function PricingClient({
           Monthly
         </button>
         <button
+          type="button"
+          aria-pressed={billing === "yearly"}
           onClick={() => setBilling("yearly")}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             billing === "yearly"
@@ -120,8 +136,12 @@ export function PricingClient({
           }`}
         >
           Yearly
-          <span className="ml-1.5 text-xs opacity-80">Save 58%</span>
         </button>
+        {savings > 0 && (
+          <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+            Save {savings}%
+          </span>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -151,9 +171,19 @@ export function PricingClient({
         </Card>
 
         {/* Premium tier */}
-        <Card className="border-primary">
+        <Card
+          className={premiumPreselected ? "border-primary ring-2 ring-primary/60" : "border-primary"}
+          aria-current={premiumPreselected ? "true" : undefined}
+        >
           <CardHeader>
-            <CardTitle className="text-xl">{TIERS.premium.name}</CardTitle>
+            <CardTitle className="flex items-center justify-between text-xl">
+              {TIERS.premium.name}
+              {premiumPreselected && (
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                  Selected
+                </span>
+              )}
+            </CardTitle>
             <p className="text-3xl font-bold">
               ${billing === "monthly" ? TIERS.premium.monthlyPrice : (TIERS.premium.yearlyPrice / 12).toFixed(2)}
               <span className="text-base font-normal text-muted-foreground">/mo</span>
@@ -196,6 +226,7 @@ export function PricingClient({
                 interval={billing}
                 userId={userId}
                 className="w-full"
+                autoFocus={premiumPreselected}
               >
                 Go Premium
               </NativeUpgradeButton>

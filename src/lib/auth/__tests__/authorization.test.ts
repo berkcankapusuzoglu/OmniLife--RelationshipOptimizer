@@ -275,18 +275,18 @@ describe("server action authorization", () => {
     expect(state.rows.users[2].partnerId).toBeNull();
   });
   it("registration preserves the invitation for separate confirmation without linking", async () => {
-    await expect(registerAction(form({ email: "first@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
+    await expect(registerAction(form({ name: "First", email: "first@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
     const first = state.rows.users.find((u) => u.email === "first@example.test")!;
     expect(first.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBeNull();
     expect(state.rows.users[1].partnerInviteCode).toBe("BOBCOD");
-    await expect(registerAction(form({ email: "second@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
+    await expect(registerAction(form({ name: "Second", email: "second@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
     const second = state.rows.users.find((u) => u.email === "second@example.test")!;
     expect(second.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBeNull();
     expect(state.sessions).toEqual([first.id, second.id]);
   });
   it("registration does not overwrite an already-linked inviter even if its code remains", async () => {
     state.rows.users[1].partnerId = C; state.rows.users[2].partnerId = B;
-    await expect(registerAction(form({ email: "new@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
+    await expect(registerAction(form({ name: "New", email: "new@example.test", password: "password123", invite: "BOBCOD" }))).rejects.toThrow(/^Redirect:\/invite\/BOBCOD$/);
     const newcomer = state.rows.users.find((u) => u.email === "new@example.test")!;
     expect(newcomer.partnerId).toBeNull(); expect(state.rows.users[1].partnerId).toBe(C); expect(state.rows.users[2].partnerId).toBe(B);
     expect(state.sessions).toEqual([newcomer.id]);
@@ -436,7 +436,7 @@ describe("server action authorization", () => {
     await expect(createTask({ title: "", effortPoints: 99 })).rejects.toThrow();
     await expect(completeExercise({ exerciseId: "test", title: "test", theoryBasis: "test", targetDimension: "unknown", rating: 6 })).rejects.toThrow();
     await expect(addConstraint(form({ name: "test", type: "unknown", dimension: "trust" }))).rejects.toThrow();
-    await expect(legacy(updateWeights)({ ...weights, alpha: Infinity })).rejects.toThrow();
+    await expect(legacy(updateWeights)({ ...weights, alpha: Infinity })).resolves.toEqual({ error: expect.any(String) }); expect(state.rows.users[0].alphaWeight).toBe(".5");
     expect(state.rows.tasks).toHaveLength(1); expect(state.rows.daily_logs).toHaveLength(1);
   });
   it("cannot read or overwrite another user's coaching conversation", async () => {

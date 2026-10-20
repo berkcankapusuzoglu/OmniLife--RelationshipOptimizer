@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { registerAction } from "@/lib/auth/actions";
+import { PasswordInput } from "../password-input";
+import { FormError } from "../form-error";
 
 export default function RegisterPage() {
   const searchParams = useSearchParams();
@@ -29,6 +31,8 @@ export default function RegisterPage() {
     },
     undefined
   );
+  const invalid = state?.error ? true : undefined;
+  const describedBy = state?.error ? "register-error" : undefined;
 
   return (
     <Card className="w-full">
@@ -42,7 +46,7 @@ export default function RegisterPage() {
               : "Sign up to start optimizing your relationship"}
         </CardDescription>
       </CardHeader>
-      <form action={formAction}>
+      <form action={formAction} aria-busy={isPending}>
         {inviteCode && (
           <input type="hidden" name="invite" value={inviteCode} />
         )}
@@ -57,9 +61,7 @@ export default function RegisterPage() {
               </p>
             </div>
           )}
-          {state?.error && (
-            <p className="text-sm text-destructive">{state.error}</p>
-          )}
+          <FormError id="register-error" error={state?.error} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="name">Name</Label>
             <Input
@@ -68,6 +70,11 @@ export default function RegisterPage() {
               type="text"
               placeholder="Your name"
               autoComplete="given-name"
+              required
+              minLength={1}
+              maxLength={100}
+              aria-invalid={invalid}
+              aria-describedby={describedBy}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -79,20 +86,27 @@ export default function RegisterPage() {
               inputMode="email"
               placeholder="you@example.com"
               required
+              maxLength={254}
               autoComplete="email"
+              aria-invalid={invalid}
+              aria-describedby={describedBy}
             />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               placeholder="••••••••"
               required
               autoComplete="new-password"
               minLength={8}
+              aria-invalid={invalid}
+              aria-describedby={state?.error ? "register-error password-rules" : "password-rules"}
             />
+            <p id="password-rules" className="text-xs text-muted-foreground">
+              At least 8 characters.
+            </p>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
@@ -105,7 +119,7 @@ export default function RegisterPage() {
           </Button>
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href={inviteCode ? `/login?invite=${encodeURIComponent(inviteCode)}` : "/login"} className="text-primary hover:underline">
+            <Link href={inviteCode ? `/login?invite=${encodeURIComponent(inviteCode)}` : "/login"} className="font-medium text-primary underline underline-offset-2">
               Sign in
             </Link>
           </p>

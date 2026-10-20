@@ -35,13 +35,13 @@ export function UpgradePrompt({
           <Button
             variant="outline"
             size="sm"
-            render={<Link href="/pricing" />}
+            render={<Link href="/pricing?plan=premium" />}
           >
             Compare Plans
           </Button>
           <Button
             size="sm"
-            render={<Link href="/pricing" />}
+            render={<Link href="/pricing?plan=premium" />}
             className="bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-500 hover:to-violet-500"
           >
             Upgrade — ${TIERS.premium.monthlyPrice}/mo
