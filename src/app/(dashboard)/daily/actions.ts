@@ -34,7 +34,7 @@ export async function submitDailyLog(data: {
   mood: number;
   energyLevel: number;
   notes: string;
-}): Promise<{ milestones: Milestone[]; optimizerResult?: OptimizerResult }> {
+}): Promise<{ milestones: Milestone[]; optimizerResult?: OptimizerResult; isFirstLog: boolean }> {
   const user = await requireAuth();
   data = dailyInput.parse(data);
   const userId = user.id;
@@ -240,10 +240,14 @@ export async function submitDailyLog(data: {
     .from(weeklyCheckins)
     .where(eq(weeklyCheckins.userId, userId));
 
+  const totalLogs = logCountResult?.count ?? 0;
+  // The client shows the one-time notification pre-prompt only after the first log.
+  const isFirstLog = totalLogs === 1;
+
   const newMilestones = checkMilestones({
     currentStreak: streakResult.currentStreak,
     longestStreak: streakResult.longestStreak,
-    totalLogs: logCountResult?.count ?? 0,
+    totalLogs,
     exercisesCompleted: exerciseCountResult?.count ?? 0,
     partnerLinked: !!user.partnerId,
     latestTotalQuality: computed.totalQuality,
@@ -278,5 +282,5 @@ export async function submitDailyLog(data: {
 
   revalidatePath("/", "layout");
 
-  return { milestones: newMilestones, optimizerResult };
+  return { milestones: newMilestones, optimizerResult, isFirstLog };
 }

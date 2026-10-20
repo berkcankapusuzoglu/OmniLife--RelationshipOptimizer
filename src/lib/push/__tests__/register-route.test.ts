@@ -81,8 +81,18 @@ describe("DELETE /api/push/register", () => {
     expect(state.updates[0].values).toEqual({ pushOptIn: false });
     expect(state.updates[0].params).toEqual(["user-test"]);
   });
-  it("rejects a missing token", async () => {
-    expect((await del({})).status).toBe(400);
+  it("opts out without deleting a token row when no token is supplied", async () => {
+    const res = await del({});
+    expect(res.status).toBe(200);
     expect(state.deletes).toHaveLength(0);
+    expect(state.updates).toHaveLength(1);
+    expect(state.updates[0].values).toEqual({ pushOptIn: false });
+    expect(state.updates[0].params).toEqual(["user-test"]);
+  });
+  it("rejects a malformed token", async () => {
+    expect((await del({ token: "" })).status).toBe(400);
+    expect((await del({ token: 42 })).status).toBe(400);
+    expect(state.deletes).toHaveLength(0);
+    expect(state.updates).toHaveLength(0);
   });
 });
