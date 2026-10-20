@@ -1,120 +1,24 @@
 /**
- * Server-side RevenueCat sync utilities.
- * Calls the RevenueCat REST API to get subscriber info and updates the DB.
+ * Server action: reconcile the signed-in user's RevenueCat entitlement.
  *
- * Environment variable required:
- *   REVENUECAT_SECRET_KEY   — secret key from RevenueCat dashboard (Projects → API Keys)
+ * The native paywall calls this after a purchase/restore so access updates
+ * without waiting for the webhook. State comes from RevenueCat's REST record
+ * (see reconcile.ts); the client supplies nothing but its session.
  */
 
 "use server";
 
-import { and, eq, lte } from "drizzle-orm";
-import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import type { SubscriptionTier } from "@/lib/subscription/tiers";
 import { requireAuth } from "@/lib/auth/guard";
-import { canAdvanceRevenueCat } from "@/lib/subscription/ownership";
+import { reconcileRevenueCatUser, type ReconcileResult } from "@/lib/revenuecat/reconcile";
 
-// Map RevenueCat entitlement IDs → app tier names.
-// Configure matching entitlement IDs in the RevenueCat dashboard.
-const ENTITLEMENT_TO_TIER: Record<string, SubscriptionTier> = {
-  premium: "premium",
-  pro: "pro",
-};
-
-interface RCEntitlement {
-  expires_date: string | null;
-  product_identifier: string;
-}
-
-interface RCSubscriberResponse {
-  subscriber: {
-    entitlements: Record<string, RCEntitlement>;
-  };
-}
-
-/**
- * Fetches the subscriber record from RevenueCat and updates the user's
- * subscriptionTier and subscriptionExpiresAt in the database.
- *
- * Reconciles historical server-side entitlements. Native purchases are disabled
- * in the free release; this action cannot take ownership from another provider.
- */
-export async function syncRevenueCatEntitlement(): Promise<void> {
+export async function syncRevenueCatEntitlement(): Promise<ReconcileResult> {
   const user = await requireAuth();
-  const userId = user.id;
-  const secretKey = process.env.REVENUECAT_SECRET_KEY;
-  const snapshotStartedAt = new Date();
-  if (!secretKey) {
-    console.warn("[RevenueCat] REVENUECAT_SECRET_KEY not set — skipping sync");
-    return;
+  try {
+    return await reconcileRevenueCatUser(user.id);
+  } catch (err) {
+    // Misconfiguration or a RevenueCat outage must not break the page; the
+    // webhook retries independently, and the user can restore again later.
+    console.error("[RevenueCat] sync failed:", err);
+    return "unchanged";
   }
-
-  const res = await fetch(
-    `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-        "Content-Type": "application/json",
-      },
-      // No caching — always fetch fresh entitlement state
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    console.error(`[RevenueCat] subscriber fetch failed: ${res.status}`);
-    return;
-  }
-
-  const data: RCSubscriberResponse = await res.json();
-  const activeEntitlements = data.subscriber.entitlements;
-
-  // Determine the highest active tier
-  let resolvedTier: SubscriptionTier = "free";
-  let expiresAt: Date | null = null;
-
-  for (const [entitlementId, entitlement] of Object.entries(activeEntitlements)) {
-    const tier = ENTITLEMENT_TO_TIER[entitlementId];
-    if (!tier) continue;
-
-    const expiry = entitlement.expires_date
-      ? new Date(entitlement.expires_date)
-      : null;
-
-    // Treat null expiry as active (lifetime / no expiry set)
-    const isActive = !expiry || expiry > new Date();
-    if (!isActive) continue;
-
-    // Prefer premium over pro
-    if (tier === "premium") {
-      resolvedTier = "premium";
-      expiresAt = expiry;
-      break;
-    }
-    if (tier === "pro" && (resolvedTier as SubscriptionTier) !== "premium") {
-      resolvedTier = "pro";
-      expiresAt = expiry;
-    }
-  }
-
-  const db = getDb();
-
-  // A lifetime/unknown period cannot establish monotonic lifecycle ordering.
-  // Preserve existing grants and require operator evidence for such changes.
-  if (resolvedTier !== "free" && !expiresAt) return;
-
-  await db
-    .update(users)
-    .set({
-      subscriptionTier: resolvedTier,
-      subscriptionSource: resolvedTier === "free" ? null : "revenuecat",
-      subscriptionExpiresAt: expiresAt,
-    })
-    .where(and(
-      eq(users.id, userId),
-      resolvedTier === "free"
-        ? and(eq(users.subscriptionSource, "revenuecat"), lte(users.subscriptionExpiresAt, snapshotStartedAt))
-        : canAdvanceRevenueCat(expiresAt!),
-    ));
 }
