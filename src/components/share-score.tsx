@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Share2, Check } from "lucide-react";
+import { shareCard } from "@/lib/capacitor/share";
 
 interface ShareScoreProps {
   totalQuality: number;
@@ -61,26 +62,15 @@ export function ShareScore(props: ShareScoreProps) {
     const streakText = props.streak && props.streak > 0 ? ` (\u{1F525} ${props.streak}-day streak)` : "";
     const shareText = `My relationship scored ${props.totalQuality.toFixed(0)}/100${streakText} on Couplemetric! Take the free quiz:`;
 
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({
-          title: "My Couplemetric Score",
-          text: shareText,
-          url,
-        });
-        return;
-      } catch {
-        // User cancelled or share failed, fall through to copy
-      }
-    }
-
-    // Fallback: copy link
-    try {
-      await navigator.clipboard.writeText(`${shareText} ${url}`);
+    // Native share sheet on Android; navigator.share then clipboard on the web.
+    const result = await shareCard({
+      title: "My Couplemetric Score",
+      text: shareText,
+      url,
+    });
+    if (result === "copied") {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard failed silently
     }
   }, [props]);
 
