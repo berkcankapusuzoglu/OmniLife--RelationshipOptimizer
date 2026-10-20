@@ -231,6 +231,17 @@ describe("ManageSubscriptionButton", () => {
     expect(window.location.href).toBe("https://billing.example.test/portal");
     expect(rc.browserOpen).not.toHaveBeenCalled();
   });
+  it("never opens the Stripe portal on native: a web subscription gets a neutral note", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ url: "https://billing.example.test/portal" }) })));
+    vi.resetModules();
+    const { ManageSubscriptionButton } = await import("@/components/manage-subscription-button");
+    const { markup, element } = await mount(async () => <ManageSubscriptionButton source="stripe" productId={null} />);
+    expect(markup).toContain("Manage your subscription on the web");
+    expect(markup).not.toMatch(/Manage Subscription|href=|stripe/i);
+    expect(elements(element).find((e) => e.props.onClick)).toBeUndefined();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(rc.browserOpen).not.toHaveBeenCalled();
+  });
   it("labels complimentary access without a control", async () => {
     vi.resetModules();
     const { ManageSubscriptionButton } = await import("@/components/manage-subscription-button");

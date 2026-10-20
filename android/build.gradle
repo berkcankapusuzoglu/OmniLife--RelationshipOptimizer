@@ -5,6 +5,9 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.13.0'
+        // Firebase Cloud Messaging (daily reminder push). The plugin itself is
+        // applied in app/build.gradle only when google-services.json is present.
+        classpath 'com.google.gms:google-services:4.4.3'
     }
 }
 

@@ -127,6 +127,10 @@ export default async function SettingsPage() {
           partnerName,
           nativeBilling: nativeBillingEnabled(),
         }}
+        device={{
+          pushOptIn: user.pushOptIn ?? false,
+          reminderHourUtc: user.reminderHourUtc ?? null,
+        }}
         weights={weights}
         calibration={calibrationData}
         logCount={logCount}

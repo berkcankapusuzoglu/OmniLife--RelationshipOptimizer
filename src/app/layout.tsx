@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieConsent } from "@/components/cookie-consent";
 import { CapacitorInit } from "@/components/capacitor-init";
+import { BiometricLock } from "@/components/biometric-lock";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -43,6 +44,8 @@ export default function RootLayout({
           <CapacitorInit />
           {children}
           <CookieConsent />
+          {/* Native-only app lock; renders nothing on the web and in server HTML. */}
+          <BiometricLock />
         </TooltipProvider>
       </body>
     </html>

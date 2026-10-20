@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { isNativePlatform } from "@/lib/capacitor/platform";
+import { isNativePlatform, useNativePlatform } from "@/lib/capacitor/platform";
 import { managementUrl } from "@/lib/revenuecat/client";
 
 export const ANDROID_PACKAGE = "app.couplemetric.android";
@@ -35,15 +35,26 @@ async function openExternal(url: string) {
 /**
  * Source-aware subscription management: store purchases go to Google Play,
  * Stripe purchases to the billing portal, complimentary access has no control.
+ *
+ * Play policy: the Android app never opens the Stripe portal. A web-purchased
+ * subscription viewed on native gets a neutral pointer to the web instead.
  */
 export function ManageSubscriptionButton({ source, productId, className }: ManageSubscriptionButtonProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const native = useNativePlatform();
 
   if (source === "manual") {
     return <p className="text-sm text-muted-foreground">Complimentary access</p>;
   }
   if (source !== "revenuecat" && source !== "stripe") return null;
+  if (source === "stripe" && native === true) {
+    return (
+      <div className={className}>
+        <p className="text-sm text-muted-foreground">Manage your subscription on the web.</p>
+      </div>
+    );
+  }
 
   async function handleManage() {
     if (busy) return;
@@ -55,6 +66,8 @@ export function ManageSubscriptionButton({ source, productId, className }: Manag
         await openExternal(url);
         return;
       }
+      // Re-check the bridge: a stale web control must never reach the portal on native.
+      if (isNativePlatform()) return;
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.url) {

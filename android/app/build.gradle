@@ -28,8 +28,8 @@ android {
         applicationId "app.couplemetric.android"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 6
-        versionName "1.0.3"
+        versionCode 7
+        versionName "1.1.0"
         aaptOptions {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
@@ -81,3 +81,9 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
+
+// Firebase Cloud Messaging config is owner-supplied and gitignored. Without it
+// the app still builds; push registration simply fails closed on the device.
+if (file("google-services.json").exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}
