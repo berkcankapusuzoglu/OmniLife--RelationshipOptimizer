@@ -1,5 +1,7 @@
 "use client";
 
+import { getSiteHost } from "@/lib/site-url";
+
 interface ScoreCardProps {
   totalQuality: number;
   lifeScore: number;
@@ -64,7 +66,9 @@ function MiniRadar({
 
   const cx = size / 2;
   const cy = size / 2;
-  const maxR = size * 0.38;
+  // Leave room inside the viewBox for the axis labels (radius + label offset + glyph width).
+  const maxR = size * 0.34;
+  const labelR = maxR + 14;
   const angleStep = (2 * Math.PI) / dimensions.length;
 
   const points = dimensions.map((d, i) => {
@@ -86,7 +90,14 @@ function MiniRadar({
   });
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      overflow="visible"
+      className="block shrink-0"
+      aria-hidden="true"
+    >
       {/* Grid */}
       {rings.map((pts, i) => (
         <polygon
@@ -126,7 +137,6 @@ function MiniRadar({
       {/* Labels */}
       {dimensions.map((d, i) => {
         const angle = i * angleStep - Math.PI / 2;
-        const labelR = maxR + 16;
         return (
           <text
             key={i}
@@ -165,36 +175,40 @@ export function ShareableScoreCard({
   const scoreColor = getScoreColor(totalQuality);
   const scoreLabel = getScoreLabel(totalQuality);
   const isOG = variant === "og";
+  const siteHost = getSiteHost();
 
   return (
+    // The card grows with its content (no fixed aspect ratio) so the radar,
+    // date and footer are never clipped on narrow screens.
     <div
-      className={`relative overflow-hidden ${isOG ? "aspect-[1200/630]" : "aspect-square"} w-full max-w-[540px]`}
+      className="relative w-full max-w-[540px] overflow-hidden"
       style={{
         background: "linear-gradient(135deg, #1e1040 0%, #0f172a 50%, #0c2d3f 100%)",
         borderRadius: "16px",
       }}
+      data-variant={variant}
     >
       {/* Decorative circles */}
       <div
-        className="absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-10"
+        className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-10"
         style={{ background: "radial-gradient(circle, #7C3AED, transparent)" }}
       />
       <div
-        className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full opacity-10"
+        className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full opacity-10"
         style={{ background: "radial-gradient(circle, #0D9488, transparent)" }}
       />
 
-      <div className={`relative flex h-full flex-col justify-between ${isOG ? "p-8" : "p-8"}`}>
+      <div className="relative flex flex-col gap-6 p-6 sm:p-8">
         {/* Header */}
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-blue-500">
-            <span className="text-sm font-bold text-white">O</span>
+            <span className="text-sm font-bold text-white">C</span>
           </div>
           <span className="font-semibold tracking-tight text-white/90">Couplemetric</span>
         </div>
 
         {/* Score Content */}
-        <div className={`flex flex-1 ${isOG ? "flex-row items-center gap-12 py-4" : "flex-col items-center justify-center gap-4"}`}>
+        <div className={`flex ${isOG ? "flex-row items-center justify-center gap-12" : "flex-col items-center gap-4"}`}>
           {/* Main Score */}
           <div className="flex flex-col items-center">
             <p className="mb-1 text-xs font-medium uppercase tracking-widest text-white/40">
@@ -233,23 +247,23 @@ export function ShareableScoreCard({
 
           {/* Radar */}
           {pillars && relDims && (
-            <div className={isOG ? "" : "mt-4"}>
+            <div className="flex justify-center">
               <MiniRadar pillars={pillars} relDims={relDims} size={isOG ? 180 : 200} />
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-end justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <p className="font-mono text-xs text-white/30">{date}</p>
-            {streak && streak > 0 && (
+            {streak && streak > 0 ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/15 px-2 py-0.5 text-xs font-medium text-orange-400">
                 <span>&#128293;</span> {streak}-day streak
               </span>
-            )}
+            ) : null}
           </div>
-          <p className="text-xs font-medium text-white/30">omnilife.app</p>
+          <p className="text-xs font-medium text-white/30">{siteHost}</p>
         </div>
       </div>
     </div>

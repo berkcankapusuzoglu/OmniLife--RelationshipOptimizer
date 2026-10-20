@@ -10,6 +10,10 @@ export interface ShareCardInput {
  *  "copied": the web fallback put the text on the clipboard; "failed": nothing worked. */
 export type ShareCardResult = "shared" | "cancelled" | "copied" | "failed";
 
+function isAbortError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { name?: unknown }).name === "AbortError";
+}
+
 /** Share a score card. Native uses the OS share sheet (plugin loaded lazily so web
  *  bundles never include it); the web tries `navigator.share` then the clipboard. */
 export async function shareCard(input: ShareCardInput): Promise<ShareCardResult> {
@@ -28,8 +32,10 @@ export async function shareCard(input: ShareCardInput): Promise<ShareCardResult>
     try {
       await nav.share({ title: input.title, text: input.text, url: input.url });
       return "shared";
-    } catch {
-      // Dismissed or unsupported payload: fall through to the clipboard.
+    } catch (error) {
+      // The viewer closed the share sheet: respect that, do not copy behind their back.
+      if (isAbortError(error)) return "cancelled";
+      // Unsupported payload or blocked API: fall through to the clipboard.
     }
   }
 

@@ -26,7 +26,7 @@ interface ShareResultClientProps {
 
 export function ShareResultClient(props: ShareResultClientProps) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-[540px]">
         <ShareableScoreCard
           totalQuality={props.totalQuality}
@@ -43,7 +43,7 @@ export function ShareResultClient(props: ShareResultClientProps) {
           </p>
           <Button
             className="w-full max-w-xs bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
-            render={<Link href="/register" />}
+            render={<Link href="/quiz" />}
           >
             Take the Free Quiz
           </Button>

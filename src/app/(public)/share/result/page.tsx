@@ -12,14 +12,27 @@ interface ShareResultPageProps {
   }>;
 }
 
+function clampScore(raw: string | undefined, fallback = 50): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(100, Math.max(0, Math.round(n)));
+}
+
+/** The date is the sharer's local YYYY-MM-DD, supplied by their browser; never recomputed in UTC here. */
+function safeDate(raw: string | undefined): string {
+  return raw && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
+}
+
 export async function generateMetadata({ searchParams }: ShareResultPageProps): Promise<Metadata> {
   const params = await searchParams;
-  const total = params.total ?? "50";
-  const life = params.life ?? "50";
-  const rel = params.rel ?? "50";
-  const date = params.date ?? new Date().toISOString().split("T")[0];
+  const total = clampScore(params.total);
+  const life = clampScore(params.life);
+  const rel = clampScore(params.rel);
+  const date = safeDate(params.date);
 
-  const ogUrl = `/api/og?life=${life}&rel=${rel}&total=${total}&date=${date}`;
+  const og = new URLSearchParams({ life: String(life), rel: String(rel), total: String(total) });
+  if (date) og.set("date", date);
+  const ogUrl = `/api/og?${og.toString()}`;
   const title = `My Score: ${total}/100 - Couplemetric`;
   const description = `Life Score: ${life} | Relationship Score: ${rel} | Take the free quiz at Couplemetric`;
 
@@ -43,23 +56,23 @@ export async function generateMetadata({ searchParams }: ShareResultPageProps): 
 
 export default async function ShareResultPage({ searchParams }: ShareResultPageProps) {
   const params = await searchParams;
-  const total = Number(params.total ?? "50");
-  const life = Number(params.life ?? "50");
-  const rel = Number(params.rel ?? "50");
-  const date = params.date ?? new Date().toISOString().split("T")[0];
+  const total = clampScore(params.total);
+  const life = clampScore(params.life);
+  const rel = clampScore(params.rel);
+  const date = safeDate(params.date);
 
   let pillars: { vitality: number; growth: number; security: number; connection: number } | undefined;
   let relDims: { emotional: number; trust: number; fairness: number; stress: number; autonomy: number } | undefined;
 
   if (params.p) {
     const parts = params.p.split(",").map(Number);
-    if (parts.length === 4) {
+    if (parts.length === 4 && parts.every(Number.isFinite)) {
       pillars = { vitality: parts[0], growth: parts[1], security: parts[2], connection: parts[3] };
     }
   }
   if (params.r) {
     const parts = params.r.split(",").map(Number);
-    if (parts.length === 5) {
+    if (parts.length === 5 && parts.every(Number.isFinite)) {
       relDims = { emotional: parts[0], trust: parts[1], fairness: parts[2], stress: parts[3], autonomy: parts[4] };
     }
   }
@@ -70,8 +83,8 @@ export default async function ShareResultPage({ searchParams }: ShareResultPageP
       lifeScore={life}
       relScore={rel}
       date={date}
-      pillars={pillars ?? undefined}
-      relDims={relDims ?? undefined}
+      pillars={pillars}
+      relDims={relDims}
     />
   );
 }

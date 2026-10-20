@@ -184,7 +184,6 @@ export function DashboardClient({
               totalQuality={latestScore.totalQuality}
               lifeScore={latestScore.lifeScore}
               relScore={latestScore.relScore}
-              date={new Date().toISOString().split("T")[0]}
               streak={currentStreak}
               pillars={currentScores.pillars}
               relDims={currentScores.relDims}
@@ -491,7 +490,6 @@ export function DashboardClient({
               totalQuality={latestScore.totalQuality}
               lifeScore={latestScore.lifeScore}
               relScore={latestScore.relScore}
-              date={new Date().toISOString().split("T")[0]}
               streak={currentStreak}
               pillars={currentScores.pillars}
               relDims={currentScores.relDims}

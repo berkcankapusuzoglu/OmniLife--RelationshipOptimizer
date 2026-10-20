@@ -105,9 +105,17 @@ describe("shareCard", () => {
     expect(writeText).toHaveBeenCalledWith(`${payload.text} ${payload.url}`);
   });
 
-  it("falls back to the clipboard when the web share sheet is dismissed", async () => {
+  it("reports a dismissed web share sheet without copying to the clipboard", async () => {
     const writeText = vi.fn(async () => undefined);
-    vi.stubGlobal("navigator", { share: vi.fn(async () => { throw new Error("AbortError"); }), clipboard: { writeText } });
+    const abort = Object.assign(new Error("Share canceled"), { name: "AbortError" });
+    vi.stubGlobal("navigator", { share: vi.fn(async () => { throw abort; }), clipboard: { writeText } });
+    expect(await shareCard(payload)).toBe("cancelled");
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the clipboard when the web share API rejects the payload", async () => {
+    const writeText = vi.fn(async () => undefined);
+    vi.stubGlobal("navigator", { share: vi.fn(async () => { throw new TypeError("Invalid share data"); }), clipboard: { writeText } });
     expect(await shareCard(payload)).toBe("copied");
     expect(writeText).toHaveBeenCalledOnce();
   });
@@ -297,7 +305,7 @@ describe("quiz ResultClient", () => {
   const props = {
     pulse: 80,
     interpretation: "Strong",
-    dimensions: [{ label: "Emotional", value: 8 }],
+    dimensions: [{ key: "emotional" as const, label: "Emotional", value: 8 }],
     shareParam: "abc",
   };
 

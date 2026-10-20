@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 import { MILESTONE_PERCENTILES } from "@/lib/milestones";
+import { getSiteHost } from "@/lib/site-url";
 
 export const runtime = "edge";
 
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
   const milestoneId = searchParams.get("milestone") ?? "streak_7";
   const streak = searchParams.get("streak") ?? "";
   const name = searchParams.get("name") ?? "";
+  const siteHost = getSiteHost();
 
   const info = MILESTONE_NAMES[milestoneId] ?? {
     name: "Achievement Unlocked",
@@ -106,7 +108,7 @@ export async function GET(request: NextRequest) {
                 fontSize: "20px",
               }}
             >
-              O
+              C
             </div>
             <span
               style={{
@@ -236,7 +238,7 @@ export async function GET(request: NextRequest) {
                 display: "flex",
               }}
             >
-              omnilife.app
+              {siteHost}
             </span>
           </div>
         </div>

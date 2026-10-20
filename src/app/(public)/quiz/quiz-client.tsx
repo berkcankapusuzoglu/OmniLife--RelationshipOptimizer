@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
+import { encodeQuizScores, saveQuizScores } from "@/lib/quiz";
 
 const QUESTIONS = [
   {
@@ -13,7 +14,7 @@ const QUESTIONS = [
     low: "Disconnected",
     high: "Deeply connected",
     microcopy:
-      "This dimension predicts 70% of long-term satisfaction \u2014 Gottman Institute",
+      "This dimension predicts 70% of long-term satisfaction — Gottman Institute",
   },
   {
     id: "fairness",
@@ -38,7 +39,7 @@ const QUESTIONS = [
     low: "Poorly",
     high: "Excellently",
     microcopy:
-      "Couples who grow together stay together \u2014 89% correlation",
+      "Couples who grow together stay together — 89% correlation",
   },
   {
     id: "stress",
@@ -47,22 +48,19 @@ const QUESTIONS = [
     low: "We struggle",
     high: "We thrive",
     microcopy:
-      "How you handle stress together matters more than how often you\u2019re stressed",
+      "How you handle stress together matters more than how often you’re stressed",
   },
 ] as const;
 
-function encodeScores(scores: number[]): string {
-  return btoa(scores.join(","));
-}
+const DEFAULT_ANSWER = 5;
 
 export function QuizClient() {
   const router = useRouter();
   const [started, setStarted] = useState(false);
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([5, 5, 5, 5, 5]);
+  const [answers, setAnswers] = useState<number[]>(() => QUESTIONS.map(() => DEFAULT_ANSWER));
   const [direction, setDirection] = useState<"next" | "prev">("next");
   const [animating, setAnimating] = useState(false);
-  const [touched, setTouched] = useState<boolean[]>([false, false, false, false, false]);
 
   const currentQ = QUESTIONS[step];
   const isLastQuestion = step === QUESTIONS.length - 1;
@@ -82,24 +80,20 @@ export function QuizClient() {
 
   const handleNext = () => {
     if (isLastQuestion) {
-      const encoded = encodeScores(answers);
-      router.push(`/quiz/result?s=${encoded}`);
+      // Keep the answers on this device so onboarding can prefill them after signup.
+      saveQuizScores(answers);
+      router.push(`/quiz/result?s=${encodeURIComponent(encodeQuizScores(answers))}`);
     } else {
       goTo(step + 1, "next");
     }
   };
 
-  const handleBack = () => {
+  const handlePrevious = () => {
     if (step > 0) goTo(step - 1, "prev");
   };
 
   const updateAnswer = (val: number | readonly number[]) => {
     const v = Array.isArray(val) ? val[0] : val;
-    setTouched((prev) => {
-      const next = [...prev];
-      next[step] = true;
-      return next;
-    });
     setAnswers((prev) => {
       const next = [...prev];
       next[step] = v;
@@ -192,27 +186,31 @@ export function QuizClient() {
                 min={1}
                 max={10}
                 step={1}
+                aria-label={currentQ.label}
               />
               <div className="mt-3 flex justify-between text-xs text-muted-foreground">
                 <span>{currentQ.low}</span>
                 <span>{currentQ.high}</span>
               </div>
             </div>
+            <p className="mt-6 text-center text-xs text-muted-foreground/60">
+              Leave it at {DEFAULT_ANSWER} if that feels right, or drag the slider.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation: the page header already has the site Back control, so the
+          only in-quiz control is "Previous question", shown from question 2 on. */}
       <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-4 px-6 pb-12">
-        <Button
-          variant="ghost"
-          onClick={handleBack}
-          disabled={step === 0}
-          className="min-w-[80px]"
-        >
-          Back
-        </Button>
-        <Button onClick={handleNext} className="min-w-[120px]" disabled={!touched[step]}>
+        {step > 0 ? (
+          <Button variant="ghost" onClick={handlePrevious} className="min-w-[80px]">
+            Previous
+          </Button>
+        ) : (
+          <span className="min-w-[80px]" aria-hidden="true" />
+        )}
+        <Button onClick={handleNext} className="min-w-[120px]">
           {isLastQuestion ? "See My Score" : "Next"}
         </Button>
       </div>

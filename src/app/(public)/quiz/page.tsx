@@ -11,7 +11,8 @@ export const metadata: Metadata = {
       "How strong is your relationship? Find out in 60 seconds with our free quiz.",
     images: [
       {
-        url: "/api/og?life=72&rel=68&total=70&date=2026-03-21",
+        // Generic quiz invitation: no invented scores.
+        url: "/api/og?kind=quiz",
         width: 1200,
         height: 630,
       },
