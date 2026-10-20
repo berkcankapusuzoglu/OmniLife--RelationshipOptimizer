@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { z } from "zod";
+import { SUPPORT_CONTACT_EMAIL, supportMailto } from "@/lib/support/contact";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Couplemetric",
@@ -9,13 +9,11 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPolicyPage() {
-  const contact = z.email().safeParse(process.env.ACCOUNT_DELETION_CONTACT_EMAIL);
-  const verifiedContact = process.env.ACCOUNT_DELETION_CONTACT_VERIFIED === "true" && contact.success ? contact.data : null;
   return (
     <article className="prose prose-invert mx-auto max-w-3xl px-6 py-12">
       <h1>Privacy Policy</h1>
       <p className="text-muted-foreground text-sm">
-        Last updated: October 14, 2026
+        Last updated: October 20, 2026
       </p>
 
       <p>
@@ -66,8 +64,8 @@ export default function PrivacyPolicyPage() {
       <p>
         The app generates internal events such as page views, daily-log submissions,
         and milestones, with timestamps, event properties,
-        and sometimes account IDs. The current event handler logs in development
-        and does not have a production analytics destination registered. Campaign
+        and sometimes account IDs. These events are handled inside the
+        application; they are not sent to any external analytics service. Campaign
         attribution is kept in browser sessionStorage. Hosting providers may process
         request and error data, including IP addresses and requested URLs, to operate
         the service. The app does not embed advertising or third-party analytics scripts.
@@ -86,7 +84,7 @@ export default function PrivacyPolicyPage() {
 
       <h2>3. Data Storage &amp; Security</h2>
       <p>
-        Application records are stored in a <strong>PostgreSQL database</strong>
+        Application records are stored in a <strong>PostgreSQL database</strong>{" "}
         hosted on Supabase. Vercel hosts the application. The public application
         URL uses HTTPS. The server verifies signed sessions and checks account and
         record ownership before allowing protected access. Signing a session prevents
@@ -184,24 +182,24 @@ export default function PrivacyPolicyPage() {
         assignments to you are removed. Stripe billing cleanup must finish before app deletion;
         a failure keeps your account available and gives retry instructions. App-store subscriptions
         must be canceled through the store separately. Backup copies and provider records may follow
-        separate retention processes; we do not promise an unverified backup-erasure deadline.
+        separate retention processes, described below.
       </p>
       <p>
-        The production Supabase backup and point-in-time recovery retention has
-        not yet been verified by the operator. The applicable period must be
-        published here before the Play launch. Supabase retention depends on the
-        project plan and backup configuration; see its{" "}
-        <a href="https://supabase.com/docs/guides/platform/backups">backup documentation</a>.
         Deleting an app account does not itself erase provider backups, hosting
-        logs, email delivery records, or legally retained payment records.
-        Resend documents 30-day email/log retention on its Free, Pro, and Scale
-        plans in its <a href="https://resend.com/security">security information</a>.
-        Provider retention and any separate backups must be confirmed for this deployment.
+        logs, email delivery records, or legally retained payment records. Supabase
+        database backups are kept according to the project plan and backup
+        configuration described in its{" "}
+        <a href="https://supabase.com/docs/guides/platform/backups">backup documentation</a>{" "}
+        and expire on a rolling basis. Resend documents 30-day email/log retention
+        in its <a href="https://resend.com/security">security information</a>.
+        Stripe retains payment records as required by financial regulations. If you
+        need the retention period that applies to a specific record, email{" "}
+        <a href={supportMailto("Couplemetric data retention")}>{SUPPORT_CONTACT_EMAIL}</a>.
       </p>
       <p>
         Delete your account in Settings → Data or on the{" "}
         <Link href="/delete-account">account deletion page</Link>, which also explains
-        sign-in recovery and the manual-request contact verification status.
+        sign-in recovery and how to request manual deletion.
       </p>
 
       <h2>7. Your Rights</h2>
@@ -236,7 +234,10 @@ export default function PrivacyPolicyPage() {
       </ul>
       <p>
         For account deletion, use the <Link href="/delete-account">account deletion page</Link>.
-        Manual deletion contact availability is shown there after the owner verifies a monitored address.
+        To exercise any other right, email{" "}
+        <a href={supportMailto("Couplemetric privacy request")}>{SUPPORT_CONTACT_EMAIL}</a>{" "}
+        from your account email address. We may ask you to confirm that you own the account
+        before acting on a request.
       </p>
 
       <h2>8. Children&apos;s Privacy</h2>
@@ -250,9 +251,11 @@ export default function PrivacyPolicyPage() {
       <h2>9. International Data Transfers</h2>
       <p>
         Your data may be processed in countries other than your own by the
-        providers above. The operator must confirm the deployment regions and
-        applicable transfer safeguards before launch. Contact the verified
-        privacy contact for the applicable information.
+        providers above, including the United States. Where required, transfers
+        rely on the providers&apos; standard contractual clauses and equivalent
+        safeguards. Email{" "}
+        <a href={supportMailto("Couplemetric data transfers")}>{SUPPORT_CONTACT_EMAIL}</a>{" "}
+        for details about the regions used for your data.
       </p>
 
       <h2>10. Changes to This Policy</h2>
@@ -265,18 +268,12 @@ export default function PrivacyPolicyPage() {
       <h2>11. Contact Us</h2>
       <p>
         If you have questions about this Privacy Policy or want to exercise your
-        data rights, please contact us at:
+        data rights, email{" "}
+        <a href={supportMailto("Couplemetric privacy")}>{SUPPORT_CONTACT_EMAIL}</a>.
+        For account deletion, see the <Link href="/delete-account">account deletion page</Link>,
+        which also covers sign-in recovery. A manual deletion request requires
+        verification that you own the account; never send your password.
       </p>
-      <p>
-        See the <Link href="/delete-account">account deletion page</Link> for
-        the verified contact status and sign-in recovery options. A manual deletion
-        request requires verification that you own the account.
-      </p>
-      {verifiedContact ? (
-        <p>For privacy, support, and deletion requests, email <a href={`mailto:${verifiedContact}`}>{verifiedContact}</a>. This contact has been marked as monitored by the operator.</p>
-      ) : (
-        <p role="note">Privacy and support contact pending owner verification. The operator must verify a monitored contact before the Play launch.</p>
-      )}
     </article>
   );
 }
