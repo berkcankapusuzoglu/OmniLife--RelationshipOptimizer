@@ -103,11 +103,33 @@ function trialDaysOf(pkg: PurchasesPackage): number | null {
   }
 }
 
+function asBillingPackageId(value: string | undefined): BillingPackageId | null {
+  if (value === "premium_monthly" || value === "premium_yearly") return value;
+  return null;
+}
+
+/**
+ * Resolves a store package to a billing id so either RevenueCat offering setup works:
+ * 1. a custom package named `premium_monthly` / `premium_yearly` (pkg.identifier),
+ * 2. a product whose identifier starts with `premium_monthly` / `premium_yearly`
+ *    (`<productId>:<basePlan>` on Play),
+ * 3. the standard `$rc_monthly` / `$rc_annual` packages (packageType MONTHLY / ANNUAL),
+ *    which the checklist maps to `premium:premium-monthly` / `premium:premium-yearly`.
+ */
+export function billingPackageIdOf(
+  pkg: Pick<PurchasesPackage, "identifier" | "packageType"> & { product: Pick<PurchasesPackage["product"], "identifier"> },
+): BillingPackageId | null {
+  const byPackage = asBillingPackageId(pkg.identifier);
+  if (byPackage) return byPackage;
+  const byProduct = asBillingPackageId(pkg.product.identifier.split(":")[0]);
+  if (byProduct) return byProduct;
+  if (pkg.packageType === "MONTHLY") return "premium_monthly";
+  if (pkg.packageType === "ANNUAL") return "premium_yearly";
+  return null;
+}
+
 function toBillingPackage(pkg: PurchasesPackage): BillingPackage | null {
-  const productId = pkg.product.identifier.split(":")[0];
-  let id: BillingPackageId | null = null;
-  if (productId === "premium_monthly" || pkg.packageType === "MONTHLY") id = "premium_monthly";
-  else if (productId === "premium_yearly" || pkg.packageType === "ANNUAL") id = "premium_yearly";
+  const id = billingPackageIdOf(pkg);
   if (!id) return null;
   return {
     id,

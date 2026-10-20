@@ -18,9 +18,9 @@ vi.mock("@revenuecat/purchases-capacitor", () => {
   };
 });
 
-function pkg(productId: string, packageType: string, period: string | null, freeDays: { unit: string; value: number } | null) {
+function pkg(productId: string, packageType: string, period: string | null, freeDays: { unit: string; value: number } | null, identifier?: string) {
   return {
-    identifier: packageType === "MONTHLY" ? "$rc_monthly" : "$rc_annual",
+    identifier: identifier ?? (packageType === "MONTHLY" ? "$rc_monthly" : packageType === "ANNUAL" ? "$rc_annual" : productId),
     packageType,
     product: {
       identifier: `${productId}:base`,
@@ -90,6 +90,51 @@ describe("loadOffering", () => {
       { id: "premium_yearly", priceString: "₺749,99", period: "P1Y", trialDays: 7 },
       { id: "premium_monthly", priceString: "₺149,99", period: "P1M", trialDays: null },
     ] });
+  });
+  it("accepts the standard $rc_monthly/$rc_annual packages mapped to the Play product ids", async () => {
+    rc.getOfferings.mockResolvedValueOnce({ current: { availablePackages: [
+      { identifier: "$rc_monthly", packageType: "MONTHLY", product: { identifier: "premium:premium-monthly", priceString: "$4.99", subscriptionPeriod: "P1M", defaultOption: null } },
+      { identifier: "$rc_annual", packageType: "ANNUAL", product: { identifier: "premium:premium-yearly", priceString: "$24.99", subscriptionPeriod: "P1Y", defaultOption: { freePhase: { billingPeriod: { unit: "DAY", value: 7 } } } } },
+    ] } });
+    const { configureRevenueCat, loadOffering } = await client();
+    await configureRevenueCat("user-1");
+    expect(await loadOffering()).toEqual({ packages: [
+      { id: "premium_monthly", priceString: "$4.99", period: "P1M", trialDays: null },
+      { id: "premium_yearly", priceString: "$24.99", period: "P1Y", trialDays: 7 },
+    ] });
+  });
+  it("accepts custom packages named premium_monthly/premium_yearly regardless of packageType", async () => {
+    rc.getOfferings.mockResolvedValueOnce({ current: { availablePackages: [
+      { identifier: "premium_yearly", packageType: "CUSTOM", product: { identifier: "premium:premium-yearly", priceString: "$24.99", subscriptionPeriod: "P1Y", defaultOption: null } },
+      { identifier: "premium_monthly", packageType: "CUSTOM", product: { identifier: "premium:premium-monthly", priceString: "$4.99", subscriptionPeriod: "P1M", defaultOption: null } },
+    ] } });
+    const { configureRevenueCat, loadOffering } = await client();
+    await configureRevenueCat("user-1");
+    expect(await loadOffering()).toEqual({ packages: [
+      { id: "premium_yearly", priceString: "$24.99", period: "P1Y", trialDays: null },
+      { id: "premium_monthly", priceString: "$4.99", period: "P1M", trialDays: null },
+    ] });
+  });
+  it("falls back to the product identifier prefix for custom packages with other names", async () => {
+    rc.getOfferings.mockResolvedValueOnce({ current: { availablePackages: [
+      pkg("premium_monthly", "CUSTOM", "P1M", null, "monthly_plan"),
+      pkg("premium_yearly", "CUSTOM", "P1Y", null, "yearly_plan"),
+      pkg("coins", "CUSTOM", null, null, "coins_pack"),
+    ] } });
+    const { configureRevenueCat, loadOffering } = await client();
+    await configureRevenueCat("user-1");
+    expect(await loadOffering()).toEqual({ packages: [
+      { id: "premium_monthly", priceString: "₺149,99", period: "P1M", trialDays: null },
+      { id: "premium_yearly", priceString: "₺749,99", period: "P1Y", trialDays: null },
+    ] });
+  });
+  it("prefers the package identifier over a conflicting packageType", async () => {
+    rc.getOfferings.mockResolvedValueOnce({ current: { availablePackages: [
+      { identifier: "premium_yearly", packageType: "MONTHLY", product: { identifier: "premium:premium-yearly", priceString: "$24.99", subscriptionPeriod: "P1Y", defaultOption: null } },
+    ] } });
+    const { configureRevenueCat, loadOffering } = await client();
+    await configureRevenueCat("user-1");
+    expect(await loadOffering()).toEqual({ packages: [{ id: "premium_yearly", priceString: "$24.99", period: "P1Y", trialDays: null }] });
   });
   it("reports network when the store is unreachable", async () => {
     rc.getOfferings.mockRejectedValueOnce(Object.assign(new Error("offline"), { code: "10" }));
