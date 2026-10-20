@@ -5,6 +5,7 @@ import LandingClient, { yearlySavingsPercent } from "@/app/(public)/landing-clie
 import PrivacyPolicyPage from "@/app/(public)/privacy/page";
 import TermsOfServicePage from "@/app/(public)/terms/page";
 import PublicLayout from "@/app/(public)/layout";
+import { PublicChrome, CHROME_HIDDEN_PATHS } from "@/components/public-chrome";
 import { BackButton, resolveBackNavigation } from "@/components/back-button";
 import { TIERS } from "@/lib/subscription/tiers";
 import { SUPPORT_CONTACT_EMAIL } from "@/lib/support/contact";
@@ -17,13 +18,9 @@ import { SUPPORT_CONTACT_EMAIL } from "@/lib/support/contact";
  */
 
 const nav = vi.hoisted(() => ({ pathname: "/terms", back: vi.fn(), push: vi.fn() }));
-const req = vi.hoisted(() => ({ pathname: "/terms" }));
 vi.mock("next/navigation", () => ({
   usePathname: () => nav.pathname,
   useRouter: () => ({ back: nav.back, push: nav.push, refresh: vi.fn() }),
-}));
-vi.mock("next/headers", () => ({
-  headers: async () => new Headers({ "x-pathname": req.pathname }),
 }));
 vi.mock("@capacitor/core", () => ({ Capacitor: { isNativePlatform: () => false, getPlatform: () => "web" } }));
 vi.mock("react", async (importOriginal) => {
@@ -35,7 +32,7 @@ vi.mock("react", async (importOriginal) => {
 const html = (el: React.ReactElement) => renderToStaticMarkup(el);
 const PLACEHOLDER = /pending owner verification|operator must|not yet been verified|before the Play launch|verified contact status|databasehosted/i;
 
-beforeEach(() => { vi.stubGlobal("React", React); nav.pathname = "/terms"; req.pathname = "/terms"; nav.back.mockReset(); nav.push.mockReset(); });
+beforeEach(() => { vi.stubGlobal("React", React); nav.pathname = "/terms"; nav.back.mockReset(); nav.push.mockReset(); });
 
 describe("landing page honesty (D-13, D-33, D-60)", () => {
   const landing = () => html(<LandingClient />);
@@ -89,18 +86,36 @@ describe("legal pages (D-12, D-57)", () => {
 });
 
 describe("public layout chrome (D-58, D-59)", () => {
-  it("renders the shared header and footer with a blog link on legal pages", async () => {
-    const markup = html(await PublicLayout({ children: <p>body</p> }));
+  // The chrome decision lives in a client component driven by usePathname(),
+  // never in the shared server layout: a layout shared by sibling routes is
+  // not re-rendered on soft navigation, so a request-header branch there
+  // would leave / with duplicate chrome or /privacy with none.
+  it("renders the shared header and footer with a blog link on legal pages", () => {
+    const markup = html(<PublicChrome><p>body</p></PublicChrome>);
     expect(markup).toContain("<header");
+    expect(markup).toContain("<footer");
     expect(markup).toContain('href="/blog"');
     expect(markup).toContain("body");
   });
-  it("skips the shared header and footer on the landing page", async () => {
-    req.pathname = "/";
-    const markup = html(await PublicLayout({ children: <p>landing</p> }));
+  it.each(["/privacy", "/blog", "/pricing", "/quiz", "/blog/some-post"])("renders chrome on %s", (pathname) => {
+    nav.pathname = pathname;
+    const markup = html(<PublicChrome><p>body</p></PublicChrome>);
+    expect(markup).toContain("<header");
+    expect(markup).toContain("<footer");
+  });
+  it("skips the shared header and footer on the landing page", () => {
+    nav.pathname = "/";
+    const markup = html(<PublicChrome><p>landing</p></PublicChrome>);
     expect(markup).not.toContain("<header");
     expect(markup).not.toContain("<footer");
     expect(markup).toContain("landing");
+    expect(CHROME_HIDDEN_PATHS.has("/")).toBe(true);
+  });
+  it("layout delegates to the client chrome instead of reading request headers", () => {
+    nav.pathname = "/";
+    expect(html(PublicLayout({ children: <p>landing</p> }))).not.toContain("<header");
+    nav.pathname = "/terms";
+    expect(html(PublicLayout({ children: <p>legal</p> }))).toContain("<header");
   });
 });
 
