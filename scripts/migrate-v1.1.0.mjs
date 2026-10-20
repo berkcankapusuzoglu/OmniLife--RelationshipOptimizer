@@ -29,12 +29,26 @@ export const MIGRATION_STATEMENTS = [
   "count" integer DEFAULT 0 NOT NULL,
   CONSTRAINT "coaching_usage_user_id_day_pk" PRIMARY KEY ("user_id", "day")
 )`,
+  // Row Level Security, consistent with supabase_rls_fix.sql: the app connects as
+  // `postgres` (bypasses RLS); enabling RLS with no permissive policy denies every
+  // row to the anon/authenticated API roles. The deny-all policies make that
+  // intent explicit and stay idempotent (DROP POLICY IF EXISTS before CREATE).
+  `ALTER TABLE "billing_events" ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE "push_tokens" ENABLE ROW LEVEL SECURITY`,
+  `ALTER TABLE "coaching_usage" ENABLE ROW LEVEL SECURITY`,
+  `DROP POLICY IF EXISTS "Server only: deny all" ON "billing_events"`,
+  `CREATE POLICY "Server only: deny all" ON "billing_events" FOR ALL TO anon, authenticated USING (false) WITH CHECK (false)`,
+  `DROP POLICY IF EXISTS "Server only: deny all" ON "push_tokens"`,
+  `CREATE POLICY "Server only: deny all" ON "push_tokens" FOR ALL TO anon, authenticated USING (false) WITH CHECK (false)`,
+  `DROP POLICY IF EXISTS "Server only: deny all" ON "coaching_usage"`,
+  `CREATE POLICY "Server only: deny all" ON "coaching_usage" FOR ALL TO anon, authenticated USING (false) WITH CHECK (false)`,
 ];
 
 const help = `Usage: node scripts/migrate-v1.1.0.mjs [--dry-run | --apply]
 Defaults to --dry-run, which prints the SQL and touches nothing.
 --apply runs the statements in one transaction against DATABASE_URL from .env.local.
-All statements are idempotent (ADD COLUMN IF NOT EXISTS / CREATE TABLE IF NOT EXISTS),
+All statements are idempotent (ADD COLUMN IF NOT EXISTS / CREATE TABLE IF NOT EXISTS /
+ENABLE ROW LEVEL SECURITY / DROP POLICY IF EXISTS before CREATE POLICY),
 so re-running --apply is safe.`;
 
 export function renderSql(statements = MIGRATION_STATEMENTS) {

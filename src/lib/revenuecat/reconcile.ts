@@ -23,8 +23,17 @@ import {
 
 export const ENTITLEMENT_ID = "premium";
 
-/** Store product identifier → app tier (reference for clients and operators;
- * `pro_*` are legacy, no longer sold). Grants are decided by entitlement id. */
+/**
+ * Client billing package id → app tier. Reference only for clients and operators;
+ * `pro_*` are legacy and no longer sold.
+ *
+ * These keys are NOT the Play product identifiers. On Google Play the live
+ * subscription is `premium` with base plans `premium-monthly` / `premium-yearly`,
+ * which RevenueCat reports as `premium:premium-monthly` / `premium:premium-yearly`
+ * (`<subscription>:<base plan>`), and `users.billing_product_id` stores that form.
+ * Grants are decided by the entitlement id (`premium`, see ENTITLEMENT_TIERS),
+ * never by matching a product identifier against this map.
+ */
 export const PRODUCT_IDS = {
   premium_monthly: "premium",
   premium_yearly: "premium",
