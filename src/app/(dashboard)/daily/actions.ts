@@ -41,11 +41,16 @@ export async function submitDailyLog(data: {
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];
 
-  const logId = uuid();
-  await db.insert(dailyLogs).values({
-    id: logId,
-    userId,
-    date: today,
+  // One log per day: a second submission today (e.g. refining the
+  // onboarding-sourced entry) replaces the existing row and its score.
+  const [existingLog] = await db
+    .select({ id: dailyLogs.id })
+    .from(dailyLogs)
+    .where(and(eq(dailyLogs.userId, userId), eq(dailyLogs.date, today)))
+    .limit(1);
+  const isEdit = !!existingLog;
+  const logId = existingLog?.id ?? uuid();
+  const logValues = {
     vitalityScore: data.vitality,
     growthScore: data.growth,
     securityScore: data.security,
@@ -58,7 +63,15 @@ export async function submitDailyLog(data: {
     mood: data.mood,
     energyLevel: data.energyLevel,
     notes: data.notes,
-  });
+  };
+  if (isEdit) {
+    await db
+      .update(dailyLogs)
+      .set(logValues)
+      .where(and(eq(dailyLogs.id, logId), eq(dailyLogs.userId, userId)));
+  } else {
+    await db.insert(dailyLogs).values({ id: logId, userId, date: today, ...logValues });
+  }
 
   const pillars: PillarScores = {
     vitality: data.vitality,
@@ -127,17 +140,26 @@ export async function submitDailyLog(data: {
 
   const allViolations = [...penalty.violations, ...trendViolations];
 
-  await db.insert(scores).values({
-    id: uuid(),
-    dailyLogId: logId,
-    userId,
-    date: today,
+  const scoreValues = {
     lifeScore: computed.lifeScore.toString(),
     relScore: computed.relScore.toString(),
     totalQuality: computed.totalQuality.toString(),
     penaltyApplied: penalty.totalPenalty.toString(),
     constraintViolations: allViolations,
     weightsSnapshot: weights,
+  };
+  if (isEdit) {
+    // Replace today's score row so history never carries two entries for one day.
+    await db
+      .delete(scores)
+      .where(and(eq(scores.userId, userId), eq(scores.date, today)));
+  }
+  await db.insert(scores).values({
+    id: uuid(),
+    dailyLogId: logId,
+    userId,
+    date: today,
+    ...scoreValues,
   });
 
   // Check divergence with partner (if linked)
@@ -241,10 +263,12 @@ export async function submitDailyLog(data: {
     .where(eq(weeklyCheckins.userId, userId));
 
   const totalLogs = logCountResult?.count ?? 0;
-  // The client shows the one-time notification pre-prompt only after the first log.
-  const isFirstLog = totalLogs === 1;
+  // The client shows the one-time notification pre-prompt only after the first log,
+  // never after editing an existing entry.
+  const isFirstLog = totalLogs === 1 && !isEdit;
 
-  const newMilestones = checkMilestones({
+  // Editing never re-awards milestones already earned by the original entry.
+  const newMilestones = isEdit ? [] : checkMilestones({
     currentStreak: streakResult.currentStreak,
     longestStreak: streakResult.longestStreak,
     totalLogs,

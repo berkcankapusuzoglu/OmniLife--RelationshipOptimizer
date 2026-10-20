@@ -125,21 +125,29 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-// Map a flat array of 9 values back to PillarScores and RelDimScores
-function arrayToScores(x: number[]): { pillars: PillarScores; relDims: RelDimScores } {
+// Per-dimension [min, max] bounds the optimizer is allowed to explore
+type Bounds = [number, number][];
+
+// Map a flat array of 9 values back to PillarScores and RelDimScores,
+// clamping every dimension into its allowed bounds (always within 0-10)
+function arrayToScores(x: number[], bounds?: Bounds): { pillars: PillarScores; relDims: RelDimScores } {
+  const at = (i: number) => {
+    const [lo, hi] = bounds?.[i] ?? [0, 10];
+    return clamp(x[i], lo, hi);
+  };
   return {
     pillars: {
-      vitality: clamp(x[0], 0, 10),
-      growth: clamp(x[1], 0, 10),
-      security: clamp(x[2], 0, 10),
-      connection: clamp(x[3], 0, 10),
+      vitality: at(0),
+      growth: at(1),
+      security: at(2),
+      connection: at(3),
     },
     relDims: {
-      emotional: clamp(x[4], 0, 10),
-      trust: clamp(x[5], 0, 10),
-      fairness: clamp(x[6], 0, 10),
-      stress: clamp(x[7], 0, 10),
-      autonomy: clamp(x[8], 0, 10),
+      emotional: at(4),
+      trust: at(5),
+      fairness: at(6),
+      stress: at(7),
+      autonomy: at(8),
     },
   };
 }
@@ -153,20 +161,36 @@ function scoresToArray(pillars: PillarScores, relDims: RelDimScores): number[] {
 }
 
 // Optimize allocations using Nelder-Mead to maximize totalQuality
+export interface OptimizeOptions {
+  /**
+   * Largest change per dimension the optimizer may suggest in one step.
+   * Keeps the plan reachable (no "raise everything to 10") and the predicted
+   * score honest. Defaults to 2 points.
+   */
+  maxStep?: number;
+}
+
+export const DEFAULT_MAX_STEP = 2;
+
 export function optimizeAllocations(
   currentScores: { pillars: PillarScores; relDims: RelDimScores },
   weights: Weights,
-  constraints: Constraint[]
+  constraints: Constraint[],
+  options?: OptimizeOptions
 ): {
   recommendedAllocations: Record<string, number>;
   predictedScores: { lifeScore: number; relScore: number; totalQuality: number };
   tradeoffs: string[];
 } {
-  const initial = scoresToArray(currentScores.pillars, currentScores.relDims);
+  const initial = scoresToArray(currentScores.pillars, currentScores.relDims).map((v) =>
+    clamp(Number.isFinite(v) ? v : 0, 0, 10)
+  );
+  const maxStep = Math.max(0, options?.maxStep ?? DEFAULT_MAX_STEP);
+  const bounds: Bounds = initial.map((v) => [clamp(v - maxStep, 0, 10), clamp(v + maxStep, 0, 10)]);
 
   // Objective: minimize negative totalQuality (i.e., maximize totalQuality)
   const objectiveFn = (x: number[]): number => {
-    const { pillars, relDims } = arrayToScores(x);
+    const { pillars, relDims } = arrayToScores(x, bounds);
     const penaltyResult = computeAllPenalties(pillars, relDims, constraints);
     const scores = computeAllScores(pillars, relDims, weights, penaltyResult.totalPenalty);
     return -scores.totalQuality; // negate for minimization
@@ -174,7 +198,10 @@ export function optimizeAllocations(
 
   const result = nelderMead(objectiveFn, initial, { maxIterations: 2000, tolerance: 1e-6 });
 
-  const { pillars: optPillars, relDims: optRelDims } = arrayToScores(result.solution);
+  const { pillars: optPillars, relDims: optRelDims } = arrayToScores(result.solution, bounds);
+  // Every downstream number (allocations, predictions, tradeoffs) derives from
+  // the clamped solution, never from the raw simplex vertex.
+  const clampedSolution = scoresToArray(optPillars, optRelDims);
   const optPenalty = computeAllPenalties(optPillars, optRelDims, constraints);
   const predictedScores = computeAllScores(optPillars, optRelDims, weights, optPenalty.totalPenalty);
 
@@ -190,17 +217,22 @@ export function optimizeAllocations(
     autonomy: Math.round(optRelDims.autonomy * 100) / 100,
   };
 
-  // Identify tradeoffs: dimensions that decreased from current
+  // Identify tradeoffs: dimensions the plan gives up (stress is inverted, so
+  // a stress *increase* is the tradeoff and a decrease is an improvement).
   const tradeoffs: string[] = [];
   const dimensionNames = [
     'vitality', 'growth', 'security', 'connection',
     'emotional', 'trust', 'fairness', 'stress', 'autonomy',
   ];
   for (let i = 0; i < dimensionNames.length; i++) {
-    const diff = result.solution[i] - initial[i];
-    if (diff < -0.5) {
+    const name = dimensionNames[i];
+    const diff = clampedSolution[i] - initial[i];
+    const worsened = name === 'stress' ? diff > 0.5 : diff < -0.5;
+    if (worsened) {
+      const amount = Math.abs(Math.round(diff * 10) / 10);
+      const direction = name === 'stress' ? 'increase' : 'decrease';
       tradeoffs.push(
-        `${dimensionNames[i]} may decrease by ~${Math.abs(Math.round(diff * 10) / 10)} points to improve overall quality`
+        `${name} may ${direction} by ~${amount} points to improve overall quality`
       );
     }
   }
