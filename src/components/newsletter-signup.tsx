@@ -57,6 +57,9 @@ export function NewsletterSignup({
           name="email"
           placeholder="you@example.com"
           required
+          maxLength={254}
+          aria-label="Email address"
+          aria-invalid={state?.error ? true : undefined}
           className="flex-1 min-w-0"
         />
         <Button
@@ -68,7 +71,7 @@ export function NewsletterSignup({
         </Button>
       </form>
       {state?.error && (
-        <p className="mt-1.5 text-xs text-red-400">{state.error}</p>
+        <p role="alert" className="mt-1.5 text-xs text-red-400">{state.error}</p>
       )}
     </div>
   );

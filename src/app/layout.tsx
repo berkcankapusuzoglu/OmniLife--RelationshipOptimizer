@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // No maximumScale: pinch zoom must stay available (WCAG 1.4.4).
   viewportFit: "cover",
 };
 

@@ -37,6 +37,12 @@ function toNumberArray(value: number | readonly number[]): number[] {
   return Array.isArray(value) ? value : [value as number];
 }
 
+/** Typed values outside 0–100 would push sibling weights negative; clamp them. */
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, value));
+}
+
 function normalizeWeights<T extends Record<string, number>>(
   weights: T,
   changedKey: keyof T,
@@ -173,7 +179,7 @@ export function WeightSliders({
                     max={100}
                     step={1}
                     value={Math.round(weights.pillar[key] * 100)}
-                    onChange={(e) => handlePillarChange(key, [Number(e.target.value)])}
+                    onChange={(e) => handlePillarChange(key, [clampPercent(Number(e.target.value))])}
                     className="w-14 rounded border border-input bg-background px-2 py-0.5 text-right font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
@@ -225,7 +231,7 @@ export function WeightSliders({
                   max={100}
                   step={1}
                   value={Math.round(weights.rel[key] * 100)}
-                  onChange={(e) => handleRelChange(key, [Number(e.target.value)])}
+                  onChange={(e) => handleRelChange(key, [clampPercent(Number(e.target.value))])}
                   className="w-14 rounded border border-input bg-background px-2 py-0.5 text-right font-mono text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>

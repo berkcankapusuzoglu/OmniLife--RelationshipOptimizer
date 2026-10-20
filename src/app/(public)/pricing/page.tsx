@@ -22,7 +22,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function PricingPage() {
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
+  const params = (await searchParams) ?? {};
+  // Upgrade CTAs deep-link here with `?plan=premium` so the plan is preselected.
+  const preselectPlan = params.plan === "premium" ? "premium" : null;
   const user = await getCurrentUser();
   // Plain data only: the client receives the entitlement as serializable fields.
   let entitlement: PricingEntitlement | null = null;
@@ -45,6 +52,7 @@ export default async function PricingPage() {
         userId={user?.id}
         nativeBilling={nativeBillingEnabled()}
         entitlement={entitlement}
+        preselectPlan={preselectPlan}
       />
     </div>
   );

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { requestPasswordResetAction } from "@/lib/auth/reset-actions";
+import { FormError } from "../form-error";
 
 export default function ForgotPasswordPage() {
   const [state, formAction, isPending] = useActionState(
@@ -55,11 +56,9 @@ export default function ForgotPasswordPage() {
           Enter your email and we&apos;ll send you a reset link.
         </CardDescription>
       </CardHeader>
-      <form action={formAction}>
+      <form action={formAction} aria-busy={isPending}>
         <CardContent className="flex flex-col gap-4">
-          {state?.error && (
-            <p className="text-sm text-destructive">{state.error}</p>
-          )}
+          <FormError id="forgot-error" error={state?.error} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -69,7 +68,10 @@ export default function ForgotPasswordPage() {
               inputMode="email"
               placeholder="you@example.com"
               required
+              maxLength={254}
               autoComplete="email"
+              aria-invalid={state?.error ? true : undefined}
+              aria-describedby={state?.error ? "forgot-error" : undefined}
             />
           </div>
         </CardContent>
@@ -79,7 +81,7 @@ export default function ForgotPasswordPage() {
           </Button>
           <p className="text-sm text-muted-foreground">
             Remember it?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/login" className="font-medium text-primary underline underline-offset-2">
               Sign in
             </Link>
           </p>

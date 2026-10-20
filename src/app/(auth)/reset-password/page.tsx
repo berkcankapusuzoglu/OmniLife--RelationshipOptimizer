@@ -11,10 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { resetPasswordAction } from "@/lib/auth/reset-actions";
+import { PasswordInput } from "../password-input";
+import { FormError } from "../form-error";
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -56,34 +57,34 @@ export default function ResetPasswordPage() {
         <CardTitle className="text-xl">Choose a new password</CardTitle>
         <CardDescription>Must be at least 8 characters.</CardDescription>
       </CardHeader>
-      <form action={formAction}>
+      <form action={formAction} aria-busy={isPending}>
         <input type="hidden" name="token" value={token} />
         <CardContent className="flex flex-col gap-4">
-          {state?.error && (
-            <p className="text-sm text-destructive">{state.error}</p>
-          )}
+          <FormError id="reset-error" error={state?.error} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">New password</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               placeholder="••••••••"
               required
               autoComplete="new-password"
               minLength={8}
+              aria-invalid={state?.error ? true : undefined}
+              aria-describedby={state?.error ? "reset-error" : undefined}
             />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="confirm">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="confirm"
               name="confirm"
-              type="password"
               placeholder="••••••••"
               required
               autoComplete="new-password"
               minLength={8}
+              aria-invalid={state?.error ? true : undefined}
+              aria-describedby={state?.error ? "reset-error" : undefined}
             />
           </div>
         </CardContent>

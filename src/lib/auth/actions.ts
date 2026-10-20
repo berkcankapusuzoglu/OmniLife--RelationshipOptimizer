@@ -16,20 +16,28 @@ const authSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+const registerSchema = authSchema.extend({
+  name: z
+    .string({ error: "Enter your name" })
+    .trim()
+    .min(1, "Enter your name")
+    .max(100, "Name must be 100 characters or fewer"),
+});
+
 export async function registerAction(formData: FormData) {
   const raw = {
     email: formData.get("email"),
     password: formData.get("password"),
+    name: formData.get("name"),
   };
-  const name = (formData.get("name") as string | null)?.trim() || null;
   const ref = formData.get("ref") as string | null;
 
-  const parsed = authSchema.safeParse(raw);
+  const parsed = registerSchema.safeParse(raw);
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { email, password } = parsed.data;
+  const { email, password, name } = parsed.data;
   const db = getDb();
 
   const existing = await db

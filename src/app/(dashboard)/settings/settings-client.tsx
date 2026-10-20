@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { updateProfile, updateWeights, exportData } from "./actions";
 import { logoutAction } from "@/lib/auth/actions";
 import { DeleteAccountClient } from "@/app/(public)/delete-account/delete-account-client";
 import type { Weights } from "@/lib/engine/types";
+import { validateWeights } from "./weights-validation";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { isNativePlatform, useNativePlatform } from "@/lib/capacitor/platform";
@@ -86,13 +87,48 @@ export function SettingsClient({
 }) {
   const [weights, setWeights] = useState<Weights>(initialWeights);
   const [saving, setSaving] = useState(false);
+  const [weightsSaved, setWeightsSaved] = useState(false);
+  const [weightsError, setWeightsError] = useState<string | null>(null);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const exportInFlight = useRef(false);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
   const native = useNativePlatform();
 
   const isPremium = user.subscriptionTier === "premium";
+  const weightsInvalid = validateWeights(weights);
+
+  async function handleExport() {
+    // Synchronous guard: a double tap must not start two downloads.
+    if (exportInFlight.current) return;
+    exportInFlight.current = true;
+    setExporting(true);
+    setExportMessage(null);
+    try {
+      const data = await exportData();
+      if ("error" in data) {
+        setExportMessage({ kind: "error", text: data.error ?? "Export failed. Please try again." });
+        return;
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `couplemetric-export-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportMessage({ kind: "ok", text: "Your export has been downloaded." });
+    } catch {
+      setExportMessage({ kind: "error", text: "Export failed. Please try again." });
+    } finally {
+      exportInFlight.current = false;
+      setExporting(false);
+    }
+  }
 
   async function handleManageSubscription() {
     if (isNativePlatform()) return;
@@ -133,12 +169,24 @@ export function SettingsClient({
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
+                if (profileSaving) return;
                 setProfileSaving(true);
+                setProfileError(null);
+                setProfileSaved(false);
                 const formData = new FormData(e.currentTarget);
-                await updateProfile(formData);
-                setProfileSaving(false);
-                setProfileSaved(true);
-                setTimeout(() => setProfileSaved(false), 3000);
+                try {
+                  const result = await updateProfile(formData);
+                  if (result.error) {
+                    setProfileError(result.error);
+                  } else {
+                    setProfileSaved(true);
+                    setTimeout(() => setProfileSaved(false), 3000);
+                  }
+                } catch {
+                  setProfileError("Your name could not be saved. Please try again.");
+                } finally {
+                  setProfileSaving(false);
+                }
               }}
               className="space-y-4"
             >
@@ -148,8 +196,22 @@ export function SettingsClient({
                   id="name"
                   name="name"
                   defaultValue={user.name}
+                  required
+                  maxLength={100}
+                  aria-invalid={profileError ? true : undefined}
+                  aria-describedby={profileError ? "profile-error" : undefined}
                 />
               </div>
+              {profileError && (
+                <p id="profile-error" role="alert" className="text-sm text-destructive">
+                  {profileError}
+                </p>
+              )}
+              {profileSaved && (
+                <p role="status" className="text-sm text-emerald-500">
+                  Profile saved.
+                </p>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -198,17 +260,53 @@ export function SettingsClient({
                 Adjusting one dimension redistributes the remaining weight proportionally across the others. Use the number input for precise control or &ldquo;Reset equal&rdquo; to start over.
               </p>
             </div>
-            <WeightSliders weights={weights} onChange={setWeights} />
+            <WeightSliders
+              weights={weights}
+              onChange={(next) => {
+                setWeights(next);
+                setWeightsSaved(false);
+                setWeightsError(null);
+              }}
+            />
+            {weightsInvalid && (
+              <p id="weights-invalid" role="alert" className="text-sm text-destructive">
+                {weightsInvalid}
+              </p>
+            )}
+            {weightsError && (
+              <p role="alert" className="text-sm text-destructive">
+                {weightsError}
+              </p>
+            )}
+            {weightsSaved && (
+              <p role="status" className="text-sm text-emerald-500">
+                Weights saved.
+              </p>
+            )}
             <Button
-              disabled={saving}
+              disabled={saving || weightsInvalid !== null}
+              aria-describedby={weightsInvalid ? "weights-invalid" : undefined}
               onClick={async () => {
+                if (saving || weightsInvalid) return;
                 setSaving(true);
-                await updateWeights(weights);
-                setSaving(false);
+                setWeightsError(null);
+                setWeightsSaved(false);
+                try {
+                  const result = await updateWeights(weights);
+                  if (result.error) {
+                    setWeightsError(result.error);
+                  } else {
+                    setWeightsSaved(true);
+                  }
+                } catch {
+                  setWeightsError("Your weights could not be saved. Please try again.");
+                } finally {
+                  setSaving(false);
+                }
               }}
             >
               <Save className="mr-2 h-4 w-4" />
-              {saving ? "Saving..." : "Save Weights"}
+              {saving ? "Saving..." : weightsSaved ? "Saved ✓" : "Save Weights"}
             </Button>
           </CardContent>
         </Card>
@@ -383,25 +481,18 @@ export function SettingsClient({
             <p className="text-sm text-muted-foreground">
               Export all your data as a JSON file.
             </p>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                const data = await exportData();
-                if ("error" in data) { window.alert(data.error); return; }
-                const blob = new Blob([JSON.stringify(data, null, 2)], {
-                  type: "application/json",
-                });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `couplemetric-export-${new Date().toISOString().split("T")[0]}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Export Data
+            <Button variant="outline" disabled={exporting} aria-busy={exporting} onClick={handleExport}>
+              {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              {exporting ? "Preparing export..." : "Export Data"}
             </Button>
+            {exportMessage && (
+              <p
+                role={exportMessage.kind === "error" ? "alert" : "status"}
+                className={`text-sm ${exportMessage.kind === "error" ? "text-destructive" : "text-emerald-500"}`}
+              >
+                {exportMessage.text}
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card className="border-destructive/40">

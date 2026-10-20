@@ -15,13 +15,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { loginAction } from "@/lib/auth/actions";
+import { PasswordInput } from "../password-input";
+import { FormError } from "../form-error";
 
 function ResetSuccessBanner() {
   const searchParams = useSearchParams();
   const resetSuccess = searchParams.get("reset") === "success";
   if (!resetSuccess) return null;
   return (
-    <p className="text-sm text-emerald-500">
+    <p role="status" className="text-sm text-emerald-500">
       Password reset successfully. Sign in with your new password.
     </p>
   );
@@ -37,6 +39,8 @@ function LoginForm() {
     },
     undefined
   );
+  const invalid = state?.error ? true : undefined;
+  const describedBy = state?.error ? "login-error" : undefined;
 
   return (
     <Card className="w-full">
@@ -46,15 +50,13 @@ function LoginForm() {
           Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
-      <form action={formAction}>
+      <form action={formAction} aria-busy={isPending}>
         {invite && <input type="hidden" name="invite" value={invite} />}
         <CardContent className="flex flex-col gap-4">
           <Suspense fallback={null}>
             <ResetSuccessBanner />
           </Suspense>
-          {state?.error && (
-            <p className="text-sm text-destructive">{state.error}</p>
-          )}
+          <FormError id="login-error" error={state?.error} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -64,7 +66,10 @@ function LoginForm() {
               inputMode="email"
               placeholder="you@example.com"
               required
+              maxLength={254}
               autoComplete="email"
+              aria-invalid={invalid}
+              aria-describedby={describedBy}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -72,19 +77,20 @@ function LoginForm() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-xs text-muted-foreground hover:text-primary"
+                className="text-xs text-muted-foreground underline underline-offset-2 hover:text-primary"
               >
                 Forgot password?
               </Link>
             </div>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               placeholder="••••••••"
               required
               autoComplete="current-password"
               minLength={8}
+              aria-invalid={invalid}
+              aria-describedby={describedBy}
             />
           </div>
         </CardContent>
@@ -94,7 +100,7 @@ function LoginForm() {
           </Button>
           <p className="text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href={invite ? `/register?invite=${invite}` : "/register"} className="text-primary hover:underline">
+            <Link href={invite ? `/register?invite=${invite}` : "/register"} className="font-medium text-primary underline underline-offset-2">
               Create one
             </Link>
           </p>
