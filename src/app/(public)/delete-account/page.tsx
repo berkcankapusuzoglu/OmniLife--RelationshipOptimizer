@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/guard";
+import { SUPPORT_CONTACT_EMAIL, supportMailto } from "@/lib/support/contact";
 import { DeleteAccountClient } from "./delete-account-client";
 
 export const metadata: Metadata = {
@@ -12,8 +12,6 @@ export const metadata: Metadata = {
 export default async function DeleteAccountPage({ searchParams }: { searchParams: Promise<{ deleted?: string }> }) {
   const user = await getCurrentUser();
   const { deleted } = await searchParams;
-  const contact = z.email().safeParse(process.env.ACCOUNT_DELETION_CONTACT_EMAIL);
-  const verifiedContact = process.env.ACCOUNT_DELETION_CONTACT_VERIFIED === "true" && contact.success ? contact.data : null;
 
   return (
     <article className="mx-auto max-w-2xl space-y-6 px-6 py-12">
@@ -33,16 +31,12 @@ export default async function DeleteAccountPage({ searchParams }: { searchParams
         <p>Your account and active app data are removed immediately after successful deletion, including logs, computed scores, check-ins, coaching conversations, profiles, constraints, recommendations, password-reset tokens, tasks you created, referrals, and associated mailing-list records.</p>
         <p>Your partner keeps their account, logs, and tasks they created. Their link to you and task assignments to you are cleared. Shared couple sync records are deleted.</p>
         <p>Stripe subscriptions and the associated Stripe customer are removed when identifiers exist. If billing cleanup fails, your app account is kept and the form gives retry instructions. Store subscriptions must be canceled in the store separately.</p>
-        <p>This removes active application records. Backup copies and payment-provider records may follow separate retention processes; contact support for an applicable retention explanation.</p>
+        <p>This removes active application records. Backup copies and payment-provider records may follow separate retention processes; see the <Link href="/privacy" className="underline">privacy policy</Link> or email <a className="underline" href={supportMailto("Couplemetric data retention")}>{SUPPORT_CONTACT_EMAIL}</a> for the retention that applies.</p>
       </section>
       <section className="space-y-3 rounded-lg border p-6">
         <h2 className="text-xl font-medium">Cannot sign in?</h2>
         <p>Try <Link href="/forgot-password" className="underline">resetting your password</Link>. A manual deletion request requires verification that you own the account. Never send your password or payment details.</p>
-        {verifiedContact ? (
-          <p>Email the monitored deletion contact at <a className="underline" href={`mailto:${verifiedContact}?subject=Couplemetric%20account%20deletion`}>{verifiedContact}</a> from your account email address. Include a request to delete your account and associated data.</p>
-        ) : (
-          <p role="note">Manual deletion contact pending owner verification. This fallback is not available until the Couplemetric owner verifies a monitored contact address. Use the sign-in and password-reset options above in the meantime.</p>
-        )}
+        <p>Email <a className="underline" href={supportMailto("Couplemetric account deletion")}>{SUPPORT_CONTACT_EMAIL}</a> from your account email address and ask us to delete your account and associated data. We reply from that address to confirm ownership before deleting.</p>
       </section>
       <Link href="/privacy" className="block underline">Privacy policy</Link>
     </article>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Heart,
@@ -13,14 +13,11 @@ import {
   TrendingUp,
   Sparkles,
   Check,
-  Star,
   ArrowRight,
   ChevronRight,
   Zap,
-  Shield,
   Activity,
   X,
-  BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NewsletterSignup } from "@/components/newsletter-signup";
@@ -140,113 +137,6 @@ function FadeIn({
       } ${className}`}
     >
       {children}
-    </div>
-  );
-}
-
-// ─── Live Social Proof Counter (ticks up) ────────────────────────────
-function LiveCounter() {
-  const [count, setCount] = useState(12847);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCount((c) => c + Math.floor(Math.random() * 3) + 1);
-    }, 4000 + Math.random() * 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-      Join{" "}
-      <span className="inline-flex items-baseline font-semibold text-foreground animate-pulse">
-        {count.toLocaleString()}+
-      </span>{" "}
-      couples optimizing their relationships
-    </span>
-  );
-}
-
-// ─── Activity Ticker ─────────────────────────────────────────────────
-const activityMessages = [
-  "Sarah & James just completed their 30-day streak \u{1F525}",
-  "A couple in London scored 92/100 on their first assessment",
-  "Mike & Lisa unlocked the Secure Anchor archetype",
-  "A couple in Austin improved by 14 points this week",
-  "A couple improved their Trust score by 3 points today",
-  "Rachel just invited her partner to Couplemetric",
-  "2 new couples joined in the last hour",
-  "A couple in Tokyo hit a 60-day logging streak \u{1F3AF}",
-  "David & Emma moved from Crisis to Thriving in 8 weeks",
-  "A couple in Berlin unlocked all 37 exercises",
-];
-
-function subscribeTickerDismissal(onChange: () => void) {
-  window.addEventListener("ticker-dismissed", onChange);
-  return () => window.removeEventListener("ticker-dismissed", onChange);
-}
-
-function ActivityTicker() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [visible, setVisible] = useState(false);
-  const dismissed = useSyncExternalStore(
-    subscribeTickerDismissal,
-    () => typeof sessionStorage !== "undefined" && Boolean(sessionStorage.getItem("ticker-dismissed")),
-    () => false
-  );
-
-  useEffect(() => {
-    if (dismissed) return;
-    // Show first notification after 3 seconds
-    const showTimeout = setTimeout(() => setVisible(true), 3000);
-    return () => clearTimeout(showTimeout);
-  }, [dismissed]);
-
-  useEffect(() => {
-    if (dismissed || !visible) return;
-    const interval = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setCurrentIndex((i) => (i + 1) % activityMessages.length);
-        setVisible(true);
-      }, 500);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [dismissed, visible]);
-
-  const handleDismiss = useCallback(() => {
-    setVisible(false);
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("ticker-dismissed", "1");
-      window.dispatchEvent(new Event("ticker-dismissed"));
-    }
-  }, []);
-
-  if (dismissed) return null;
-
-  return (
-    <div
-      className={`fixed bottom-4 left-4 z-50 max-w-sm transition-all duration-500 ${
-        visible
-          ? "translate-y-0 opacity-100"
-          : "translate-y-4 opacity-0 pointer-events-none"
-      }`}
-    >
-      <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-card/95 p-4 shadow-xl backdrop-blur-md">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-blue-500">
-          <Activity className="h-4 w-4 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm leading-snug">{activityMessages[currentIndex]}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Just now</p>
-        </div>
-        <button
-          onClick={handleDismiss}
-          className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Dismiss notifications"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
     </div>
   );
 }
@@ -504,30 +394,32 @@ const features = [
   },
 ];
 
-const testimonials = [
+// Illustrative scenarios, not customer reviews. Rendered with an explicit
+// "example" label; never present these as verified testimonials.
+const exampleScenarios = [
   {
-    name: "Sarah & Mark",
-    role: "Together 8 years",
+    name: "Exam season",
+    role: "Scenario mode: Exam",
     quote:
-      "During exam season, Couplemetric helped us prioritize what mattered most. We went from constant miscommunication to actually understanding each other's needs. Our score went from 54 to 82 in 6 weeks.",
-    avatar: "SM",
-    score: "54 \u2192 82",
+      "A couple switches on Exam mode so stress and security carry more weight for a few weeks. Recommendations shift toward short, low-effort check-ins instead of long exercises.",
+    avatar: "EX",
+    score: "Rebalanced weights",
   },
   {
-    name: "Alex & Jordan",
-    role: "Together 3 years",
+    name: "Trust dip",
+    role: "Redline rule",
     quote:
-      "The scenario mode saved us during a job crisis. Instead of drifting apart, we actually grew closer by adjusting expectations. Our Trust score jumped 18 points in one month.",
-    avatar: "AJ",
-    score: "61 \u2192 79",
+      "Trust drops below a limit one partner set. The engine flags the redline, lowers the overall score and moves trust-building exercises to the top of the list until it recovers.",
+    avatar: "TR",
+    score: "Redline flagged",
   },
   {
-    name: "Priya & Daniel",
-    role: "Together 12 years",
+    name: "Hidden imbalance",
+    role: "Balance insight",
     quote:
-      "After over a decade together we thought we knew everything. The balance insights showed us blind spots we never noticed. Our Connection score went from 58 to 91.",
-    avatar: "PD",
-    score: "58 \u2192 91",
+      "Scores look fine on average, but fairness lags far behind the other dimensions. The imbalance penalty surfaces it, and household-task tracking shows where the load is uneven.",
+    avatar: "HI",
+    score: "Imbalance surfaced",
   },
 ];
 
@@ -546,6 +438,13 @@ const researchSources = [
   "Emotion-Focused Therapy",
 ];
 
+// ─── Pricing (single source: TIERS) ─────────────────────────────────
+/** Percent saved on the yearly plan versus 12 monthly payments, e.g. 58. */
+export function yearlySavingsPercent(tier: { monthlyPrice: number; yearlyPrice: number }): number {
+  if (tier.monthlyPrice <= 0) return 0;
+  return Math.round((1 - tier.yearlyPrice / (tier.monthlyPrice * 12)) * 100);
+}
+
 // ─── Main Landing Page ──────────────────────────────────────────────
 export default function LandingClient() {
   const native = useNativePlatform();
@@ -557,9 +456,6 @@ export default function LandingClient() {
         <div className="absolute -right-[20%] top-[20%] h-[60%] w-[50%] rounded-full bg-blue-600/8 blur-[120px]" />
         <div className="absolute -bottom-[20%] left-[30%] h-[50%] w-[40%] rounded-full bg-teal-600/6 blur-[120px]" />
       </div>
-
-      {/* Activity Ticker (bottom-left floating) */}
-      <ActivityTicker />
 
       {/* Sticky CTA Bar */}
       <StickyCTABar />
@@ -626,10 +522,9 @@ export default function LandingClient() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          {/* Live Social Proof Counter */}
-          <div className="mt-6">
-            <LiveCounter />
-          </div>
+          <p className="mt-6 text-sm text-muted-foreground">
+            Free to start. No credit card required.
+          </p>
         </FadeIn>
 
         {/* Hero visual: animated score preview with before/after */}
@@ -755,37 +650,33 @@ export default function LandingClient() {
         <FadeIn>
           <div className="text-center">
             <Badge variant="outline" className="mb-4">
-              Testimonials
+              Examples
             </Badge>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Loved by couples worldwide
+              What it looks like in practice
             </h2>
+            <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+              Illustrative scenarios showing how the scoring engine responds.
+              These are examples, not customer reviews.
+            </p>
           </div>
         </FadeIn>
         <div className="mt-16 grid gap-6 sm:grid-cols-3">
-          {testimonials.map((t, i) => (
+          {exampleScenarios.map((t, i) => (
             <FadeIn key={t.name} delay={i * 150}>
               <Card className="border-white/5 bg-card/50 backdrop-blur-sm">
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-amber-400">
-                      {Array.from({ length: 5 }).map((_, j) => (
-                        <Star key={j} className="h-3.5 w-3.5 fill-current" />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-emerald-400">
-                      <BadgeCheck className="h-3.5 w-3.5" />
-                      Verified
-                    </div>
+                  <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Example scenario
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    &ldquo;{t.quote}&rdquo;
+                    {t.quote}
                   </p>
                   <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
                     <TrendingUp className="h-3 w-3" />
-                    Score: {t.score}
+                    {t.score}
                   </div>
                 </CardContent>
                 <CardFooter className="border-t border-white/5 pt-4">
@@ -827,7 +718,7 @@ export default function LandingClient() {
           <FadeIn delay={0}>
             <Card className="border-white/5 bg-card/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-xl">Free</CardTitle>
+                <CardTitle className="text-xl">{TIERS.free.name}</CardTitle>
                 <CardDescription>
                   Everything to get started
                 </CardDescription>
@@ -867,7 +758,7 @@ export default function LandingClient() {
                 </Badge>
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">Premium</CardTitle>
+                <CardTitle className="text-xl">{TIERS.premium.name}</CardTitle>
                 <CardDescription>
                   For couples who are serious about growth
                 </CardDescription>
@@ -876,6 +767,12 @@ export default function LandingClient() {
                     ${TIERS.premium.monthlyPrice}
                   </span>
                   <span className="text-muted-foreground">/month</span>
+                </p>
+                <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                  or ${TIERS.premium.yearlyPrice}/year
+                  <Badge variant="secondary" className="text-xs">
+                    Save {yearlySavingsPercent(TIERS.premium)}%
+                  </Badge>
                 </p>
               </CardHeader>
               <CardContent>
@@ -928,8 +825,8 @@ export default function LandingClient() {
               Start Your Relationship Journey
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
-              Join thousands of couples using science to build stronger, more
-              fulfilling relationships. Free to start, no credit card required.
+              Use a science-backed scoring model to build a stronger, more
+              fulfilling relationship. Free to start, no credit card required.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button
@@ -962,6 +859,22 @@ export default function LandingClient() {
             </div>
             <span className="text-sm font-semibold">Couplemetric</span>
           </div>
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+            <Link href="/blog" className="transition-colors hover:text-foreground">
+              Blog
+            </Link>
+            {native === false && (
+              <Link href="/pricing" className="transition-colors hover:text-foreground">
+                Pricing
+              </Link>
+            )}
+            <Link href="/privacy" className="transition-colors hover:text-foreground">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="transition-colors hover:text-foreground">
+              Terms of Service
+            </Link>
+          </nav>
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} Couplemetric. Built with psychology,
             philosophy, and mathematics.

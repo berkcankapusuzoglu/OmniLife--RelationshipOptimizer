@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SUPPORT_CONTACT_EMAIL, supportMailto } from "@/lib/support/contact";
 
 export const metadata: Metadata = {
   title: "Terms of Service — Couplemetric",
@@ -11,7 +12,7 @@ export default function TermsOfServicePage() {
     <article className="prose prose-invert mx-auto max-w-3xl px-6 py-12">
       <h1>Terms of Service</h1>
       <p className="text-muted-foreground text-sm">
-        Last updated: October 14, 2026
+        Last updated: October 20, 2026
       </p>
 
       <p>
@@ -189,11 +190,9 @@ export default function TermsOfServicePage() {
 
       <h2>14. Contact</h2>
       <p>
-        Questions about these Terms? See the verified support contact status on
-        the <a href="/delete-account">account deletion page</a>.
-      </p>
-      <p>
-        A monitored contact must be verified by the operator before the Play launch.
+        Questions about these Terms? Email{" "}
+        <a href={supportMailto("Couplemetric terms")}>{SUPPORT_CONTACT_EMAIL}</a>.
+        For account deletion, see the <a href="/delete-account">account deletion page</a>.
       </p>
     </article>
   );
