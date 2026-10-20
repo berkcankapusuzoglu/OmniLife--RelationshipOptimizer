@@ -4,7 +4,7 @@
  *   POST   { token, platform }  upsert the device token, opt in, and set
  *                               reminderHourUtc to the modal UTC hour of the
  *                               last 14 daily logs (default 20:00 UTC).
- *   DELETE { token }            remove the device token and opt out.
+ *   DELETE { token? }           opt out; also remove the device token when one is supplied.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -24,7 +24,7 @@ const registerInput = z.object({
   token: z.string().trim().min(1).max(4096),
   platform: z.enum(["android", "ios", "web"]),
 });
-const unregisterInput = z.object({ token: z.string().trim().min(1).max(4096) });
+const unregisterInput = z.object({ token: z.string().trim().min(1).max(4096).optional() });
 
 async function parseBody<T>(req: NextRequest, schema: z.ZodType<T>): Promise<T | null> {
   try {
@@ -79,10 +79,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
   const user = await requireAuth();
   const input = await parseBody(req, unregisterInput);
-  if (!input) return NextResponse.json({ error: "Expected { token }." }, { status: 400 });
+  if (!input) return NextResponse.json({ error: "Expected { token? }." }, { status: 400 });
 
   const db = getDb();
-  await db.delete(pushTokens).where(and(eq(pushTokens.token, input.token), eq(pushTokens.userId, user.id)));
+  if (input.token) {
+    await db.delete(pushTokens).where(and(eq(pushTokens.token, input.token), eq(pushTokens.userId, user.id)));
+  }
   await db.update(users).set({ pushOptIn: false }).where(eq(users.id, user.id));
 
   return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });

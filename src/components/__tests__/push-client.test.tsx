@@ -28,7 +28,7 @@ const native = vi.hoisted(() => ({
     return { remove: async () => {} };
   }),
   push: vi.fn(),
-  fetch: vi.fn(async (_url: string, _init?: { method?: string; body?: string }) => ({ ok: true, json: async () => ({ ok: true }) })),
+  fetch: vi.fn(async (...[]: [string, { method?: string; body?: string }?]) => ({ ok: true, json: async () => ({ ok: true }) })),
   store: new Map<string, string>(),
   logCount: 1,
 }));
@@ -123,6 +123,12 @@ describe("disablePushNotifications", () => {
     await disablePushNotifications();
     expect(native.fetch).toHaveBeenCalledWith("/api/push/register", expect.objectContaining({ method: "DELETE" }));
     expect(JSON.parse(native.fetch.mock.calls[0][1]?.body ?? "{}")).toEqual({ token: "device-token-1" });
+    expect(native.unregister).toHaveBeenCalledOnce();
+  });
+  it("still opts out on the server when no token is stored locally", async () => {
+    await disablePushNotifications();
+    expect(native.fetch).toHaveBeenCalledWith("/api/push/register", expect.objectContaining({ method: "DELETE" }));
+    expect(JSON.parse(native.fetch.mock.calls[0][1]?.body ?? "{}")).toEqual({});
     expect(native.unregister).toHaveBeenCalledOnce();
   });
   it("is a no-op on the web", async () => {

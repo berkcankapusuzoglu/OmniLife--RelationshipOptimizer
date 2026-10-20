@@ -103,13 +103,14 @@ export async function disablePushNotifications(): Promise<void> {
   if (!isNativePlatform()) return;
   const token = readStoredToken();
   try {
-    if (token) {
-      await fetch("/api/push/register", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-    }
+    // Always opt out server-side: the stored token may be missing on a second
+    // device, after a reinstall or when WebView storage was cleared, and the
+    // server-side opt-out is what stops reminders.
+    await fetch("/api/push/register", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token ?? undefined }),
+    });
     const push = await loadPlugin();
     await push.unregister();
   } catch {
