@@ -5,6 +5,8 @@ export const dimension = z.enum(["vitality", "growth", "security", "connection",
 export const scenarioMode = z.enum(["default", "exam", "chill", "newborn", "crisis", "long_distance", "custom"]);
 const text = z.string().max(10000);
 const name = z.string().trim().min(1).max(200);
+export const CONSTRAINT_NAME_MAX = 60;
+const constraintName = z.string().trim().min(1, "Constraint name is required").max(CONSTRAINT_NAME_MAX, "Constraint name must be at most 60 characters");
 const score = z.number().int().min(0).max(10);
 export const assessmentInput = z.object({ vitality: score, growth: score, security: score, connection: score, emotional: score, trust: score, fairness: score, stress: score, autonomy: score });
 export const dailyInput = assessmentInput.extend({ mood: score, energyLevel: score, notes: text });
@@ -12,7 +14,7 @@ export const weeklyInput = z.object({ highlight: text, challenge: text, gratitud
 export const taskInput = z.object({ title: name, description: text.optional(), assigneeId: resourceId.optional(), effortPoints: z.number().int().min(1).max(13), dueDate: z.iso.date().optional(), recurrence: z.enum(["daily", "weekly", "monthly"]).optional() });
 export const taskStatus = z.enum(["pending", "in_progress", "done"]);
 export const exerciseInput = z.object({ exerciseId: name, title: name, theoryBasis: text, targetDimension: dimension, rating: z.number().int().min(1).max(5) });
-export const constraintInput = z.object({ name, type: z.enum(["time_budget", "energy_budget", "redline"]), dimension, minValue: z.number().finite().min(0).max(10).optional(), maxValue: z.number().finite().min(0).max(10).optional(), budgetHours: z.number().finite().min(0).max(24).optional() }).refine((c) => c.minValue === undefined || c.maxValue === undefined || c.minValue <= c.maxValue, "Minimum must not exceed maximum");
+export const constraintInput = z.object({ name: constraintName, type: z.enum(["time_budget", "energy_budget", "redline"]), dimension, minValue: z.number().finite().min(0).max(10).optional(), maxValue: z.number().finite().min(0).max(10).optional(), budgetHours: z.number().finite().min(0).max(24).optional() }).refine((c) => c.minValue === undefined || c.maxValue === undefined || c.minValue <= c.maxValue, "Minimum must not exceed maximum");
 const weight = z.number().finite().min(0).max(1);
 export const weightsInput = z.object({ alpha: weight, beta: weight, pillar: z.object({ vitality: weight, growth: weight, security: weight, connection: weight }), rel: z.object({ emotional: weight, trust: weight, fairness: weight, stress: weight, autonomy: weight }) });
 export const profileName = name;
