@@ -43,13 +43,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function UnavailableInvite() {
+type UnavailableReason = "generic" | "own" | "linked";
+
+const UNAVAILABLE_COPY: Record<UnavailableReason, { body: string; cta: string }> = {
+  generic: {
+    body: "This invitation cannot be accepted. Check your partner settings or ask for a new invitation.",
+    cta: "Go to partner settings",
+  },
+  own: {
+    body: "This is your own invite link. Share it with your partner so they can accept it — you cannot link to yourself.",
+    cta: "Share your invite from partner settings",
+  },
+  linked: {
+    body: "You are already linked with a partner, so this invitation cannot be accepted. Unlink in partner settings first if you want to link a different account.",
+    cta: "Go to partner settings",
+  },
+};
+
+function UnavailableInvite({ reason = "generic" }: { reason?: UnavailableReason }) {
+  const copy = UNAVAILABLE_COPY[reason];
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="mx-auto max-w-md space-y-4 text-center">
         <h1 className="text-2xl font-medium">Invitation unavailable</h1>
-        <p className="text-muted-foreground">This invitation cannot be accepted. Check your partner settings or ask for a new invitation.</p>
-        <Link href="/partner" className="text-primary underline">Go to partner settings</Link>
+        <p data-reason={reason} className="text-muted-foreground">{copy.body}</p>
+        <Link href="/partner" className="text-primary underline">{copy.cta}</Link>
       </div>
     </div>
   );
@@ -75,7 +93,10 @@ export default async function InvitePage({ params, searchParams }: Props) {
     return <UnavailableInvite />;
   }
 
-  if (!inviter || (currentUser && (currentUser.partnerId || currentUser.id === inviter.id))) return <UnavailableInvite />;
+  // Already-linked users never see the invite step, whatever the code.
+  if (currentUser?.partnerId) return <UnavailableInvite reason="linked" />;
+  if (!inviter) return <UnavailableInvite />;
+  if (currentUser && currentUser.id === inviter.id) return <UnavailableInvite reason="own" />;
 
   const firstName = inviter.name?.split(" ")[0] ?? "Someone";
 
