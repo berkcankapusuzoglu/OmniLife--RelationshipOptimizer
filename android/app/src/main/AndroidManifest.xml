@@ -29,6 +29,26 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- FCM defaults used by @capacitor/push-notifications for the daily reminder -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/default_notification_channel_id" />
     </application>
+
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Google Play Billing via RevenueCat (purchase UI gated by NATIVE_BILLING_ENABLED) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+    <!-- Daily reminder push (Android 13+ runtime permission, requested only after user opt-in) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Biometric app lock -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Haptic score reveal -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

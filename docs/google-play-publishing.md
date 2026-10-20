@@ -75,7 +75,7 @@ AAB format is required by Google Play (APKs no longer accepted for new apps).
 
 No Firebase/FCM setup is required for v1. Do not add a push or purchase SDK during release preparation. Inspect the generated Android manifest, dependency tree, and bundled plugin list after sync. Record the actual permissions and SDKs in the release evidence.
 
-Test fresh-install and existing-entitlement accounts. Native landing, pricing, locks, prompts, and billing settings must not advertise, link to, or initiate external digital purchases. Existing server entitlements remain honored. Evidence: `src/lib/capacitor/platform.ts`, `src/components/__tests__/native-free-release.test.tsx`, and `src/components/__tests__/billing-platform-actions.test.tsx`.
+Test fresh-install and existing-entitlement accounts. Native landing, pricing, locks, prompts, and billing settings must not advertise, link to, or initiate external digital purchases. Existing server entitlements remain honored. Evidence: `src/lib/capacitor/platform.ts`, `src/components/__tests__/native-billing-policy.test.tsx`, and `src/components/__tests__/billing-platform-actions.test.tsx`.
 
 ## Phase 6: Play Console Listing
 

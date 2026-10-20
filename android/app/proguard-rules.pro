@@ -7,6 +7,11 @@
 -keep class com.capacitorjs.** { *; }
 -keepclassmembers class com.getcapacitor.** { *; }
 
+# Third-party Capacitor plugins (RevenueCat ships its own consumer rules for
+# com.revenuecat.purchases; the plugin bridge classes are kept explicitly).
+-keep class com.revenuecat.purchases.** { *; }
+-keep class ee.forgr.biometric.** { *; }
+
 # Keep WebView JavaScript interface
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;

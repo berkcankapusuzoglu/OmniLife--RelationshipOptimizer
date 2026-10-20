@@ -76,12 +76,12 @@ Cookie-based sessions use a versioned HMAC-SHA-256 signed payload and a required
 
 ### Subscription System
 
-Three-tier freemium model in `src/lib/subscription/tiers.ts`:
-- **Free**: exercise limit 3, 7-day history, basic scores and partner linking
-- **Pro** ($3.99/mo, $29.99/yr): full exercises, history, advanced insights and export
-- **Premium** ($4.99/mo, $39.99/yr): everything in Pro + AI coaching, therapist export, partner features
+Free + Premium for new users in `src/lib/subscription/tiers.ts` (`SELLABLE_TIERS = ["premium"]`):
+- **Free**: 5 exercises per week, 7-day history, basic scores, streaks and partner linking
+- **Premium** ($4.99/mo, $24.99/yr, 7-day free trial): 90-day history, optimizer/Pareto insights, full exercise library, scenarios and constraints, AI coaching (30 messages/day), export and therapist reports
+- **Pro** (legacy, $3.99/mo, $29.99/yr): kept readable for existing subscribers, never sold or downgraded
 
-`TIERS` defines current limits and web prices. `getUserTier()` accounts for expiry and active referral trials. Gates must also enforce access server-side. Stripe integration at `src/lib/stripe/` and `src/app/api/stripe/` is for web browsers. Android is free with access-only existing entitlements: no prices, purchase links, checkout, subscription-management controls or upgrade instructions.
+**Couple plan**: one Premium subscription covers both reciprocally linked partners. `getEntitlement()` in `src/lib/subscription/access.ts` derives it (`via: "own" | "partner" | "trial" | "none"`) from the linked partner row with no stored state; unlink revokes it and ownership never transfers. Gates must enforce access server-side. Stripe (`src/lib/stripe/`, `src/app/api/stripe/`) serves web browsers; Android purchases go through RevenueCat/Google Play and render only when the server flag `NATIVE_BILLING_ENABLED=true` AND the client runs in the native bridge. Native prices always come from the store offering, never from `TIERS`. With the flag off, Android shows no prices, purchase links, checkout, management controls or upgrade instructions (`src/components/__tests__/native-billing-policy.test.tsx`).
 
 ### Viral Mechanics
 
@@ -107,7 +107,7 @@ Lightweight `trackEvent(name, properties, userId)` for key user actions (daily l
 
 ### Push Notifications (`src/lib/push/`)
 
-Push support is dormant. The free Android release removes the push SDK, registration startup and notification permissions. Reintroducing push requires a separate implementation and privacy review.
+Daily reminder push via FCM (`@capacitor/push-notifications`, server send in `src/lib/push/fcm.ts`, reminder selection in `src/lib/push/reminders.ts`). Permission is only requested from `enablePushNotifications()` (post-first-log pre-prompt and Settings → Device), never at launch; `CapacitorInit` only wires notification taps to in-app paths. Tokens live in `pushTokens`; opt-in and timing in `users.pushOptIn` / `users.reminderHourUtc`. `/api/push/reminders` is called hourly by `.github/workflows/push-reminders.yml` with `CRON_SECRET`. Server env: `FIREBASE_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT_JSON_B64`. Android needs an owner-supplied `android/app/google-services.json` (gitignored); without it the build still succeeds and registration fails closed.
 
 ### Data Export (`src/lib/export/`)
 
@@ -129,7 +129,7 @@ Mode persists in localStorage. Default is quick.
 
 ### Native App (Capacitor)
 
-Capacitor config at `capacitor.config.ts` loads the hosted Vercel origin in a native WebView, with a bundled offline fallback. Android source is tracked. See `docs/ANDROID_BUILD_CONFIG.md` for sync/build instructions and the release checklist for acceptance gates. Native Billing/RevenueCat/push SDKs and permissions are absent from this free release.
+Capacitor config at `capacitor.config.ts` loads the hosted Vercel origin in a native WebView, with a bundled offline fallback. Android source is tracked. See `docs/ANDROID_BUILD_CONFIG.md` for sync/build instructions and the release checklist for acceptance gates. Plugins after `npx cap sync android`: App, Browser, Haptics, Push Notifications, Share, Splash Screen, Status Bar, `@capgo/capacitor-native-biometric`, `@revenuecat/purchases-capacitor`. The manifest declares `INTERNET`, `com.android.vending.BILLING`, `POST_NOTIFICATIONS`, `USE_BIOMETRIC` and `VIBRATE`, keeps backups/cleartext disabled, and sets FCM default icon/channel meta-data. Native-only client helpers live in `src/lib/capacitor/` (share, haptics, biometric); `BiometricLock` is mounted in the root layout and renders nothing on the web.
 
 ## Key Conventions
 
@@ -159,7 +159,7 @@ Capacitor config at `capacitor.config.ts` loads the hosted Vercel origin in a na
 
 - **Environment**: Supply `DATABASE_URL` and a strong `SESSION_SECRET` privately. `.env.local` is gitignored; never print or commit its values. Stripe configuration is required for web purchases. `drizzle-kit` does not auto-load `.env.local`; npm database scripts use `dotenv-cli`. Configuration and live health remain owner gates.
 
-- **Stripe env var names**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_PRO_YEARLY_PRICE_ID`, `STRIPE_MONTHLY_PRICE_ID`, `STRIPE_YEARLY_PRICE_ID`, `NEXT_PUBLIC_APP_URL`. The un-prefixed prices are Premium; Pro requires distinct Pro price IDs. Missing or ambiguous configuration fails closed without a fallback to another tier. Never return provider/driver error details to clients. Read `docs/billing-ownership-migration.md` before deploying the billing schema changes.
+- **Stripe env var names**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PREMIUM_MONTHLY_PRICE_ID`, `STRIPE_PREMIUM_YEARLY_PRICE_ID`, `NEXT_PUBLIC_APP_URL` (see `src/lib/stripe/config.ts`). The un-prefixed `STRIPE_MONTHLY_PRICE_ID` / `STRIPE_YEARLY_PRICE_ID` are accepted as pre-1.1.0 Premium aliases for one release; `STRIPE_LEGACY_PRO_PRICE_IDS` / `STRIPE_LEGACY_PREMIUM_PRICE_IDS` (and the old `STRIPE_PRO_*` names) only recognise existing subscriptions in the webhook, never new checkouts. Missing or ambiguous configuration fails closed without a fallback to another tier. Never return provider/driver error details to clients. Read `docs/billing-ownership-migration.md` before deploying the billing schema changes.
 
 - **DB migrations**: Review committed migration SQL and its operator procedure; validate backups and reconciliation before applying production changes. Do not use a blanket schema push as release verification or improvise live database scripts.
 
@@ -181,9 +181,9 @@ Capacitor config at `capacitor.config.ts` loads the hosted Vercel origin in a na
 
 - **Stripe webhook events needed**: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. The webhook handler is at `src/app/api/stripe/webhook/route.ts`. Do NOT enable IP restrictions on the Stripe API key — Vercel uses dynamic IPs.
 
-- **RevenueCat**: Client compatibility stubs are dormant; do not mount initialization or reinstall a purchase SDK. The retained server webhook/sync supports legacy access and deletion workflows with authentication and atomic provider-ownership checks. Historical provider secrets, if needed, remain server-only. Native purchase setup is a separate post-launch project.
+- **RevenueCat**: Live client in `src/lib/revenuecat/client.ts` (dynamic import; fails closed on web or without `NEXT_PUBLIC_REVENUECAT_ANDROID_KEY`). `RevenueCatInit` in the dashboard layout configures the SDK once per page load only when native + `NATIVE_BILLING_ENABLED` + signed-in user. `NativePaywall`, `ManageSubscriptionButton` (store → Play via Browser plugin; Stripe-owned subscriptions on native get a "manage on the web" note, never the portal) and `RestorePurchasesButton` are the only purchase surfaces. The server remains the authority: call `syncRevenueCatEntitlement()` after purchase/restore; the webhook at `/api/revenuecat/webhook` (`REVENUECAT_WEBHOOK_SECRET`, idempotent via `billingEvents`) and `REVENUECAT_SECRET_KEY` stay server-only. Legacy no-op exports in `src/lib/revenuecat/index.ts` remain inert.
 
-- **Android release build**: Source declares versionCode 6 / versionName 1.0.3; verify availability in Play before signing. Use the existing authorized upload key through `KEYSTORE_PATH`, `KEYSTORE_ALIAS`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`, supplied privately. Never regenerate a key as a routine build step. Signing, device acceptance and artifact identity are separate owner gates. See `docs/ANDROID_BUILD_CONFIG.md` and the release checklist.
+- **Android release build**: Source declares versionCode 7 / versionName 1.1.0; verify availability in Play before signing. `android/build.gradle` carries the `google-services` classpath and `app/build.gradle` applies the plugin only when `android/app/google-services.json` exists. Use the existing authorized upload key through `KEYSTORE_PATH`, `KEYSTORE_ALIAS`, `KEYSTORE_PASSWORD`, `KEY_PASSWORD`, supplied privately. Never regenerate a key as a routine build step. Signing, device acceptance and artifact identity are separate owner gates. See `docs/ANDROID_BUILD_CONFIG.md` and the release checklist.
 
 - **Android `onStop()` access modifier**: `BridgeActivity.onStop()` is `public` — override must also be `public`, not `protected`. Java compilation fails otherwise.
 

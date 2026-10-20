@@ -18,6 +18,8 @@ import { isNativePlatform, useNativePlatform } from "@/lib/capacitor/platform";
 import { NativePaywall } from "@/components/native-paywall";
 import { ManageSubscriptionButton } from "@/components/manage-subscription-button";
 import { RestorePurchasesButton } from "@/components/restore-purchases-button";
+import { NotificationSettings } from "@/components/notification-settings";
+import { BiometricSettings } from "@/components/biometric-settings";
 import {
   LogOut,
   Download,
@@ -29,6 +31,7 @@ import {
   ArrowUp,
   ArrowDown,
   Heart,
+  Smartphone,
 } from "lucide-react";
 
 interface WeightSuggestionData {
@@ -50,6 +53,7 @@ interface CalibrationData {
 export function SettingsClient({
   user,
   billing = null,
+  device = null,
   weights: initialWeights,
   calibration,
   logCount,
@@ -70,6 +74,11 @@ export function SettingsClient({
     partnerName: string | null;
     /** Server flag `NATIVE_BILLING_ENABLED`. */
     nativeBilling: boolean;
+  } | null;
+  /** Native device preferences (plain data). Absent for legacy callers. */
+  device?: {
+    pushOptIn: boolean;
+    reminderHourUtc: number | null;
   } | null;
   weights: Weights;
   calibration?: CalibrationData | null;
@@ -112,6 +121,7 @@ export function SettingsClient({
         <TabsTrigger value="billing">{native === false ? "Billing" : "Account access"}</TabsTrigger>
         <TabsTrigger value="partner">Partner</TabsTrigger>
         <TabsTrigger value="data">Data</TabsTrigger>
+        {native === true && <TabsTrigger value="device">Device</TabsTrigger>}
       </TabsList>
 
       <TabsContent value="profile">
@@ -422,6 +432,28 @@ export function SettingsClient({
           </CardContent>
         </Card>
       </TabsContent>
+
+      {/* Device: native-only reminders and app lock. Absent from web and server HTML. */}
+      {native === true && (
+        <TabsContent value="device">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5" />
+                Device
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <NotificationSettings
+                pushOptIn={device?.pushOptIn ?? false}
+                reminderHourUtc={device?.reminderHourUtc ?? null}
+              />
+              <Separator />
+              <BiometricSettings />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
