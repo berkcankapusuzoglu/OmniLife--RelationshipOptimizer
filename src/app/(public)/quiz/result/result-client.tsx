@@ -4,6 +4,8 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { NewsletterSignup } from "@/components/newsletter-signup";
+import { shareCard } from "@/lib/capacitor/share";
+import { hapticScoreReveal } from "@/lib/capacitor/haptics";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -236,8 +238,16 @@ export function ResultClient({
   const [showContent, setShowContent] = useState(false);
   const [flash, setFlash] = useState(false);
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hapticFired = useRef(false);
 
   const archetype = getArchetype(dimensions);
+
+  // Native-only score-reveal haptic, once per mount; silent no-op on the web.
+  useEffect(() => {
+    if (hapticFired.current) return;
+    hapticFired.current = true;
+    void hapticScoreReveal();
+  }, []);
   const percentile = getPercentile(pulse);
 
   // Phase 1: count up to score
@@ -289,33 +299,20 @@ export function ResultClient({
   const shareText = `I\u2019m a ${archetype.name} \u2014 our relationship scored ${pulse}/100, stronger than ${percentile}% of couples. Think you can beat it? \ud83d\udd25`;
   const partnerShareText = `I just took the Couplemetric Relationship Quiz. See if your partner agrees with your score \u2014 take it now!`;
 
-  const handleShare = useCallback(async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: shareText, url: shareUrl });
-        return;
-      } catch {
-        // fallback
+  // Native share sheet on Android; navigator.share then clipboard on the web.
+  const share = useCallback(
+    async (text: string) => {
+      const result = await shareCard({ title: "Couplemetric Relationship Quiz", text, url: shareUrl });
+      if (result === "copied") {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
       }
-    }
-    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [shareText, shareUrl]);
+    },
+    [shareUrl],
+  );
 
-  const handlePartnerShare = useCallback(async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: partnerShareText, url: shareUrl });
-        return;
-      } catch {
-        // fallback
-      }
-    }
-    await navigator.clipboard.writeText(`${partnerShareText}\n${shareUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [partnerShareText, shareUrl]);
+  const handleShare = useCallback(() => share(shareText), [share, shareText]);
+  const handlePartnerShare = useCallback(() => share(partnerShareText), [share, partnerShareText]);
 
   // ── Score counting + final result ──
   return (
