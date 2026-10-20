@@ -7,6 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { canGrantSubscription } from "@/lib/subscription/ownership";
+import { getEntitlement } from "@/lib/subscription/access";
 
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
@@ -14,8 +15,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const paid = user.subscriptionTier === "pro" || user.subscriptionTier === "premium";
-  if ((user.subscriptionSource && user.subscriptionSource !== "stripe") || (paid && user.subscriptionSource !== "stripe")) {
+  // Effective access (own → trial → partner → free), not the raw stored tier: a
+  // partner-covered account must not buy a second subscription for the couple.
+  const entitlement = await getEntitlement(user.id);
+  if (entitlement.via === "partner") {
+    return NextResponse.json({ error: "Premium is already included through your partner's plan." }, { status: 409 });
+  }
+  const paid = entitlement.via === "own";
+  if ((user.subscriptionSource && user.subscriptionSource !== "stripe") || (paid && entitlement.source !== "stripe")) {
     return NextResponse.json({ error: "Account access needs review before checkout." }, { status: 409 });
   }
 

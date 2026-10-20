@@ -1,7 +1,9 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { getDb } from "@/lib/db";
-import { dailyLogs, scores } from "@/lib/db/schema";
+import { dailyLogs, scores, users } from "@/lib/db/schema";
 import { eq, count, asc } from "drizzle-orm";
+import { getEntitlement } from "@/lib/subscription/access";
+import { nativeBillingEnabled } from "@/lib/billing/flags";
 import { SettingsClient } from "./settings-client";
 import { computeWeightSuggestions } from "@/lib/engine/calibration";
 import type { CalibrationResult } from "@/lib/engine/calibration";
@@ -72,6 +74,18 @@ export default async function SettingsPage() {
     );
   }
 
+  // Effective access (own → trial → partner → free) drives the billing tab.
+  const entitlement = await getEntitlement(user.id);
+  let partnerName: string | null = null;
+  if (entitlement.via === "partner") {
+    const [owner] = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, entitlement.ownerId))
+      .limit(1);
+    partnerName = owner?.name ?? null;
+  }
+
   // Serialize calibration as plain data for client
   const calibrationData = calibration
     ? {
@@ -102,9 +116,16 @@ export default async function SettingsPage() {
           id: user.id,
           name: user.name ?? "",
           email: user.email,
-          subscriptionTier: user.subscriptionTier ?? "free",
-          subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() ?? null,
+          subscriptionTier: entitlement.tier,
+          subscriptionExpiresAt: entitlement.expiresAt?.toISOString() ?? null,
           stripeCustomerId: user.stripeCustomerId ?? null,
+        }}
+        billing={{
+          via: entitlement.via,
+          source: entitlement.via === "own" ? entitlement.source : null,
+          productId: entitlement.via === "own" ? (user.billingProductId ?? null) : null,
+          partnerName,
+          nativeBilling: nativeBillingEnabled(),
         }}
         weights={weights}
         calibration={calibrationData}

@@ -26,6 +26,7 @@ vi.mock("@/lib/db", () => ({ getDb: () => ({
   return state.users.filter((user) => user.id === query.params[0]);
 } }) }) }) }) }));
 vi.mock("@/lib/stripe/config", () => ({ getStripePriceId: () => "price-test", getAppUrl: () => "https://example.test" }));
+vi.mock("@/lib/subscription/access", () => ({ getEntitlement: async (id: string) => ({ tier: "free", via: "none", expiresAt: null, source: null, ownerId: id }) }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => {
   state.providerCalls.push("initialize");
   return {

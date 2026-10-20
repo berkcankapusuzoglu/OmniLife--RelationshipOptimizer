@@ -16,6 +16,7 @@ vi.mock("react", async importOriginal => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/app/(dashboard)/settings/actions", () => ({ updateProfile: vi.fn(), updateWeights: vi.fn(), exportData: vi.fn() }));
 vi.mock("@/lib/auth/actions", () => ({ logoutAction: vi.fn() }));
+vi.mock("@/lib/revenuecat/sync", () => ({ syncRevenueCatEntitlement: vi.fn() }));
 vi.mock("@/app/(public)/delete-account/delete-account-client", () => ({ DeleteAccountClient: () => null }));
 
 type ElementProps = { children?: React.ReactNode; onClick?: () => Promise<void> | void };

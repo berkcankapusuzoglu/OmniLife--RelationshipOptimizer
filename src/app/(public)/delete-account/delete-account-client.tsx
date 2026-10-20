@@ -18,8 +18,17 @@ export function DeleteAccountClient() {
         Export any data you want to keep before continuing.
       </p>
       <p className="text-sm text-muted-foreground">
-        Stripe subscriptions are canceled during deletion. If you subscribed through an app store,
-        cancel that subscription in the store separately; deleting an account does not cancel store billing.
+        Stripe subscriptions are canceled during deletion. If you subscribed through Google Play,
+        cancel that subscription in{" "}
+        <a
+          className="underline"
+          href="https://play.google.com/store/account/subscriptions?package=app.couplemetric.android"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Play subscriptions
+        </a>{" "}
+        separately; deleting an account does not cancel store billing.
       </p>
       <div className="space-y-2">
         <Label htmlFor="deletion-password">Current password</Label>

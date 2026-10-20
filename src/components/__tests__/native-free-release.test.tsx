@@ -18,7 +18,10 @@ vi.mock("react", async (importOriginal) => {
 });
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@/lib/auth/guard", () => ({ getCurrentUser: async () => ({ id: "test-user", subscriptionTier: "free" }) }));
-vi.mock("@/lib/subscription/access", () => ({ getUserTier: async () => "free" }));
+vi.mock("@/lib/subscription/access", () => ({
+  getUserTier: async () => "free",
+  getEntitlement: async (id: string) => ({ tier: "free", via: "none", expiresAt: null, source: null, ownerId: id }),
+}));
 vi.mock("@/lib/revenuecat/sync", () => ({ syncRevenueCatEntitlement: vi.fn() }));
 vi.mock("@/app/(dashboard)/exercises/actions", () => ({ completeExercise: vi.fn() }));
 vi.mock("@/lib/recommendations/engine", () => ({
@@ -80,9 +83,14 @@ describe("free native release purchase surfaces", () => {
     platform.native = false;
     const free = html(<PricingClient currentTier="free" />);
     expect(free).toContain("$");
-    expect(free).toContain("Go Pro");
+    expect(free).not.toContain("Go Pro");
     expect(free).toContain("Go Premium");
+    expect(free).toContain("7-day free trial, covers both partners");
     expect(html(<PricingClient currentTier="premium" />)).toContain("Manage Subscription");
+    const legacy = html(<PricingClient currentTier="pro" />);
+    expect(legacy).toContain("Legacy Pro");
+    expect(legacy).toContain("Manage Subscription");
+    expect(legacy).not.toContain("Go Pro");
     expect(html(<PremiumGate userTier="free" feature="insights">Chart</PremiumGate>)).toContain('href="/pricing"');
   });
   it("shows current web offers without unsupported trial or price-lock promises", () => {

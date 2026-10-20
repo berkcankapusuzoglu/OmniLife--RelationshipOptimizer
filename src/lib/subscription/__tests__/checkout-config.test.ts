@@ -6,8 +6,14 @@ import { getStripePriceId, getStripeTierForPriceId } from "@/lib/stripe/config";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
-const state = vi.hoisted(() => ({ loggedIn: true, tier: "free", source: null as string | null, customer: null as string | null, create: vi.fn(), initialize: vi.fn(), expire: vi.fn(), event: {} as Record<string, unknown>, pending: {} as Record<string, unknown>, writes: [] as Array<{ sql: string; params: unknown[] }>, rejectAtWrite: 0 }));
+const state = vi.hoisted(() => ({ loggedIn: true, tier: "free", source: null as string | null, customer: null as string | null, partnerCovered: false, create: vi.fn(), initialize: vi.fn(), expire: vi.fn(), event: {} as Record<string, unknown>, pending: {} as Record<string, unknown>, writes: [] as Array<{ sql: string; params: unknown[] }>, rejectAtWrite: 0 }));
 vi.mock("@/lib/auth/guard", () => ({ getCurrentUser: async () => state.loggedIn ? { id: "test-user", subscriptionTier: state.tier, subscriptionSource: state.source, stripeCustomerId: state.customer } : null }));
+// Effective access as Task 1's getEntitlement would resolve it from the mocked user row.
+vi.mock("@/lib/subscription/access", () => ({ getEntitlement: async (id: string) => {
+  if (state.partnerCovered) return { tier: "premium", via: "partner", expiresAt: null, source: "revenuecat", ownerId: "partner-user" };
+  const paid = state.tier === "pro" || state.tier === "premium";
+  return { tier: paid ? state.tier : "free", via: paid ? "own" : "none", expiresAt: null, source: paid ? state.source : null, ownerId: id };
+} }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => { state.initialize(); return { checkout: { sessions: { create: state.create, expire: state.expire } }, webhooks: { constructEvent: () => state.event } }; } }));
 vi.mock("@/lib/db", () => ({ getDb: () => ({ update: () => ({ set: (values: Record<string, unknown>) => ({ where: (predicate: SQL) => {
   const write = async () => {
@@ -25,7 +31,7 @@ function subscriptionEvent(status: string, priceId = "price_premium_monthly", tr
 }
 const PRICE_VARIABLES = ["STRIPE_PREMIUM_MONTHLY_PRICE_ID", "STRIPE_PREMIUM_YEARLY_PRICE_ID", "STRIPE_LEGACY_PREMIUM_PRICE_IDS", "STRIPE_LEGACY_PRO_PRICE_IDS", "STRIPE_PRO_MONTHLY_PRICE_ID", "STRIPE_PRO_YEARLY_PRICE_ID", "STRIPE_MONTHLY_PRICE_ID", "STRIPE_YEARLY_PRICE_ID"];
 beforeEach(() => {
-  state.loggedIn = true; state.tier = "free"; state.source = null; state.customer = null; state.create.mockReset().mockResolvedValue({ id: "cs_created", url: "https://checkout.example.test" }); state.initialize.mockClear();
+  state.loggedIn = true; state.tier = "free"; state.source = null; state.customer = null; state.partnerCovered = false; state.create.mockReset().mockResolvedValue({ id: "cs_created", url: "https://checkout.example.test" }); state.initialize.mockClear();
   state.expire.mockReset().mockResolvedValue({}); state.event = {}; state.pending = {}; state.writes = []; state.rejectAtWrite = 0;
   for (const name of PRICE_VARIABLES) vi.stubEnv(name, "");
   vi.stubEnv("STRIPE_PREMIUM_MONTHLY_PRICE_ID", "price_premium_monthly"); vi.stubEnv("STRIPE_PREMIUM_YEARLY_PRICE_ID", "price_premium_yearly");
@@ -89,6 +95,12 @@ it("does not expose provider errors or internal configuration", async () => {
 it.each([null, "revenuecat", "manual"])("does not charge a paid account with unresolved or other-provider ownership: %s", async source => {
   state.tier = "premium"; state.source = source;
   expect((await POST(request("premium"))).status).toBe(409); expect(state.create).not.toHaveBeenCalled();
+});
+it("does not let a partner-covered free account start its own checkout", async () => {
+  state.partnerCovered = true;
+  const response = await POST(request("premium"));
+  expect(response.status).toBe(409); expect(await response.json()).toEqual({ error: "Premium is already included through your partner's plan." });
+  expect(state.create).not.toHaveBeenCalled(); expect(state.initialize).not.toHaveBeenCalled();
 });
 it("keeps explicit web checkout available for the current Stripe owner", async () => {
   state.tier = "pro"; state.source = "stripe"; state.customer = "cus_existing";

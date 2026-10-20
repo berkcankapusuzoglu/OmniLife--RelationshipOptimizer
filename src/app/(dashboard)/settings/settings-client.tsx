@@ -15,6 +15,9 @@ import type { Weights } from "@/lib/engine/types";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { isNativePlatform, useNativePlatform } from "@/lib/capacitor/platform";
+import { NativePaywall } from "@/components/native-paywall";
+import { ManageSubscriptionButton } from "@/components/manage-subscription-button";
+import { RestorePurchasesButton } from "@/components/restore-purchases-button";
 import {
   LogOut,
   Download,
@@ -46,6 +49,7 @@ interface CalibrationData {
 
 export function SettingsClient({
   user,
+  billing = null,
   weights: initialWeights,
   calibration,
   logCount,
@@ -58,6 +62,15 @@ export function SettingsClient({
     subscriptionExpiresAt: string | null;
     stripeCustomerId: string | null;
   };
+  /** Effective entitlement details (plain data). Absent for legacy callers. */
+  billing?: {
+    via: "own" | "partner" | "trial" | "none";
+    source: "stripe" | "revenuecat" | "manual" | null;
+    productId: string | null;
+    partnerName: string | null;
+    /** Server flag `NATIVE_BILLING_ENABLED`. */
+    nativeBilling: boolean;
+  } | null;
   weights: Weights;
   calibration?: CalibrationData | null;
   logCount?: number;
@@ -300,6 +313,11 @@ export function SettingsClient({
                   Current Plan:{" "}
                   <span className="capitalize">{user.subscriptionTier}</span>
                 </p>
+                {billing?.via === "partner" && (
+                  <p className="text-sm text-muted-foreground">
+                    Included with {billing.partnerName ? `${billing.partnerName}'s` : "your partner's"} Premium
+                  </p>
+                )}
                 {native === false && isPremium && user.subscriptionExpiresAt && (
                   <p className="text-sm text-muted-foreground">
                     Renews{" "}
@@ -307,7 +325,7 @@ export function SettingsClient({
                   </p>
                 )}
               </div>
-              {native === false && (isPremium ? (
+              {native === false && billing?.via !== "partner" && (isPremium ? (
                 <Button
                   variant="outline"
                   disabled={billingLoading}
@@ -331,6 +349,17 @@ export function SettingsClient({
                 </Button>
               ))}
             </div>
+            {/* Native store billing: only when the server flag and the native bridge agree */}
+            {native === true && billing?.nativeBilling && billing.via !== "partner" && (
+              billing.via === "own" ? (
+                <div className="space-y-3">
+                  <ManageSubscriptionButton source={billing.source} productId={billing.productId} />
+                  <RestorePurchasesButton />
+                </div>
+              ) : (
+                <NativePaywall userId={user.id} enabled={billing.nativeBilling} />
+              )
+            )}
           </CardContent>
         </Card>
       </TabsContent>

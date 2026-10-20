@@ -6,6 +6,8 @@ import { SidebarNav } from "@/components/nav/SidebarNav";
 import { MobileNav } from "@/components/nav/MobileNav";
 import { StreakBadge } from "@/components/streak-badge";
 import { WelcomeModal } from "@/components/welcome-modal";
+import { RevenueCatInit } from "@/components/revenuecat-init";
+import { nativeBillingEnabled } from "@/lib/billing/flags";
 import { getDb } from "@/lib/db";
 import { dailyLogs, scenarioProfiles } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
@@ -100,6 +102,9 @@ export default async function DashboardLayout({
 
       {/* Don't show welcome modal during onboarding — it would cover the onboarding form */}
       {!pathname.startsWith("/onboarding") && <WelcomeModal hasLogs={hasLogs} />}
+
+      {/* Native billing SDK: configured once per page load, only when the server flag is on */}
+      <RevenueCatInit userId={user.id} enabled={nativeBillingEnabled()} />
     </div>
   );
 }

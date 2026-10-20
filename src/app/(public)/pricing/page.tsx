@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/guard";
-import { getUserTier } from "@/lib/subscription/access";
-import { PricingClient } from "./pricing-client";
+import { getEntitlement } from "@/lib/subscription/access";
+import { nativeBillingEnabled } from "@/lib/billing/flags";
+import { PricingClient, type PricingEntitlement } from "./pricing-client";
 
 export const metadata: Metadata = {
   title: "Pricing — Couplemetric",
@@ -23,11 +24,28 @@ export const metadata: Metadata = {
 
 export default async function PricingPage() {
   const user = await getCurrentUser();
-  const currentTier = user ? await getUserTier(user.id) : "free";
+  // Plain data only: the client receives the entitlement as serializable fields.
+  let entitlement: PricingEntitlement | null = null;
+  if (user) {
+    const resolved = await getEntitlement(user.id);
+    entitlement = {
+      tier: resolved.tier,
+      via: resolved.via,
+      source: resolved.source,
+      ownerId: resolved.ownerId,
+      expiresAt: resolved.expiresAt ? new Date(resolved.expiresAt).toISOString() : null,
+    };
+  }
+  const currentTier = entitlement?.tier ?? "free";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-16">
-      <PricingClient currentTier={currentTier} userId={user?.id} />
+      <PricingClient
+        currentTier={currentTier}
+        userId={user?.id}
+        nativeBilling={nativeBillingEnabled()}
+        entitlement={entitlement}
+      />
     </div>
   );
 }
