@@ -1,27 +1,15 @@
 import type { Metadata } from "next";
 import { ResultClient } from "./result-client";
-
-function decodeScores(encoded: string): number[] | null {
-  try {
-    const decoded = atob(encoded);
-    const scores = decoded.split(",").map(Number);
-    if (scores.length !== 5 || scores.some((s) => isNaN(s) || s < 1 || s > 10))
-      return null;
-    return scores;
-  } catch {
-    return null;
-  }
-}
-
-function getInterpretation(score: number) {
-  if (score < 40) return { label: "Critical" };
-  if (score < 50) return { label: "Needs Work" };
-  if (score < 60) return { label: "Developing" };
-  if (score < 70) return { label: "Growing" };
-  if (score < 80) return { label: "Strong" };
-  if (score < 90) return { label: "Thriving" };
-  return { label: "Exceptional" };
-}
+import {
+  QUIZ_DIMENSIONS,
+  QUIZ_DIMENSION_LABELS,
+  buildQuizOgPath,
+  computePulse,
+  decodeQuizScores,
+  getArchetype,
+  getPulseLabel,
+  toQuizScores,
+} from "@/lib/quiz";
 
 export async function generateMetadata({
   searchParams,
@@ -30,19 +18,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const sp = await searchParams;
   const s = typeof sp.s === "string" ? sp.s : "";
-  const scores = decodeScores(s);
-  const pulse = scores
-    ? Math.round(scores.reduce((a, b) => a + b, 0) * 2)
-    : null;
+  const scores = decodeQuizScores(s);
+  const pulse = scores ? computePulse(scores) : null;
+  const archetype = scores ? getArchetype(toQuizScores(scores)) : null;
 
   const title = pulse
     ? `My relationship scored ${pulse}/100 on Couplemetric!`
     : "Relationship Quiz Result — Couplemetric";
 
+  const ogPath = pulse && archetype ? buildQuizOgPath(pulse, archetype.name) : null;
+
   return {
     title,
-    description: pulse
-      ? `I scored ${pulse}/100 on the Couplemetric Relationship Pulse quiz. Take the free quiz and see how your relationship compares!`
+    description: pulse && archetype
+      ? `I’m ${archetype.name}: ${pulse}/100 on the Couplemetric Relationship Pulse quiz. Take the free quiz and see how your relationship compares!`
       : "See your Relationship Pulse score. Take the free quiz at Couplemetric.",
     openGraph: {
       title: pulse
@@ -50,27 +39,25 @@ export async function generateMetadata({
         : "Relationship Quiz Result — Couplemetric",
       description:
         "How strong is your relationship? Find out in 60 seconds with our free quiz.",
-      ...(pulse
+      ...(ogPath
         ? {
             images: [
               {
-                url: `/api/og?total=${pulse}&rel=${pulse}&life=${pulse}&date=${new Date().toISOString().split("T")[0]}`,
+                url: ogPath,
                 width: 1200,
                 height: 630,
-                alt: `Couplemetric Relationship Pulse: ${pulse}/100`,
+                alt: `Couplemetric Relationship Pulse: ${pulse}/100 — ${archetype?.name}`,
               },
             ],
           }
         : {}),
     },
-    ...(pulse
+    ...(ogPath
       ? {
           twitter: {
             card: "summary_large_image" as const,
             title: `My relationship scored ${pulse}/100 on Couplemetric!`,
-            images: [
-              `/api/og?total=${pulse}&rel=${pulse}&life=${pulse}&date=${new Date().toISOString().split("T")[0]}`,
-            ],
+            images: [ogPath],
           },
         }
       : {}),
@@ -84,11 +71,11 @@ export default async function ResultPage({
 }) {
   const sp = await searchParams;
   const s = typeof sp.s === "string" ? sp.s : "";
-  const scores = decodeScores(s);
+  const scores = decodeQuizScores(s);
 
   if (!scores) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
         <div className="text-center">
           <h1 className="mb-4 text-2xl font-semibold">Invalid Quiz Result</h1>
           <p className="mb-6 text-muted-foreground">
@@ -105,24 +92,17 @@ export default async function ResultPage({
     );
   }
 
-  const pulse = Math.round(scores.reduce((a, b) => a + b, 0) * 2);
-  const interpretation = getInterpretation(pulse);
-  const dimensionLabels = [
-    "Emotional",
-    "Fairness",
-    "Trust",
-    "Growth",
-    "Stress",
-  ];
-  const dimensions = dimensionLabels.map((label, i) => ({
-    label,
+  const pulse = computePulse(scores);
+  const dimensions = QUIZ_DIMENSIONS.map((key, i) => ({
+    key,
+    label: QUIZ_DIMENSION_LABELS[key],
     value: scores[i],
   }));
 
   return (
     <ResultClient
       pulse={pulse}
-      interpretation={interpretation.label}
+      interpretation={getPulseLabel(pulse)}
       dimensions={dimensions}
       shareParam={s}
     />

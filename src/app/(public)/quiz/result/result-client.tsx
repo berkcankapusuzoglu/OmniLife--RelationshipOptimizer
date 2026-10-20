@@ -4,130 +4,35 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { NewsletterSignup } from "@/components/newsletter-signup";
-import { shareCard } from "@/lib/capacitor/share";
+import { shareCard, type ShareCardResult } from "@/lib/capacitor/share";
 import { hapticScoreReveal } from "@/lib/capacitor/haptics";
+import {
+  type QuizDimension,
+  buildQuizShareText,
+  getArchetype,
+  getPercentile,
+  quizRegisterHref,
+  saveQuizScores,
+  toQuizScores,
+} from "@/lib/quiz";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
 interface Dimension {
+  key: QuizDimension;
   label: string;
   value: number;
-}
-
-interface Archetype {
-  name: string;
-  description: string;
-  badge: string;
-}
-
-// ─── Archetype logic ─────────────────────────────────────────────────
-
-function getArchetype(dimensions: Dimension[]): Archetype {
-  const scores: Record<string, number> = {};
-  for (const d of dimensions) scores[d.label.toLowerCase()] = d.value;
-
-  const emotional = scores["emotional"] ?? 5;
-  const fairness = scores["fairness"] ?? 5;
-  const trust = scores["trust"] ?? 5;
-  const growth = scores["growth"] ?? 5;
-  const stress = scores["stress"] ?? 5;
-
-  const all = [emotional, fairness, trust, growth, stress];
-  const allHigh = all.every((s) => s >= 8);
-  const mostLow = all.filter((s) => s < 5).length >= 3;
-
-  if (allHigh) {
-    return {
-      name: "The Secure Anchor",
-      description:
-        "Your relationship is a rock. You provide stability and safety.",
-      badge: "\u2693",
-    };
-  }
-  if (mostLow) {
-    return {
-      name: "The Awakening Couple",
-      description:
-        "There\u2019s real potential here. You just need the right tools.",
-      badge: "\ud83c\udf31",
-    };
-  }
-  if (stress >= 8 && emotional < 8 && trust < 8) {
-    return {
-      name: "The Stress Warrior",
-      description:
-        "You handle pressure well together. Crisis mode? You\u2019ve got this.",
-      badge: "\ud83d\udee1\ufe0f",
-    };
-  }
-  if (emotional >= 7 && growth >= 7 && stress < 6) {
-    return {
-      name: "The Passionate Explorer",
-      description:
-        "You thrive on deep connection and growth but sometimes forget to manage stress.",
-      badge: "\ud83d\udd25",
-    };
-  }
-  if (trust >= 7 && fairness >= 7 && emotional < 7) {
-    return {
-      name: "The Loyal Guardian",
-      description:
-        "You build trust through actions, not words. Your partnership is built on reliability.",
-      badge: "\ud83d\udc9a",
-    };
-  }
-  if (emotional >= 7 && stress < 5) {
-    return {
-      name: "The Compassionate Healer",
-      description:
-        "You feel deeply but struggle when things get tough.",
-      badge: "\ud83d\udc9c",
-    };
-  }
-  if (fairness >= 7 && trust >= 5) {
-    return {
-      name: "The Fair Partner",
-      description:
-        "Equity matters to you. You track who does what \u2014 and that\u2019s not a bad thing.",
-      badge: "\u2696\ufe0f",
-    };
-  }
-  if (growth >= 6) {
-    return {
-      name: "The Growth Seeker",
-      description:
-        "You\u2019re always pushing to be better \u2014 individually and together.",
-      badge: "\ud83d\ude80",
-    };
-  }
-
-  // Fallback
-  return {
-    name: "The Growth Seeker",
-    description:
-      "You\u2019re always pushing to be better \u2014 individually and together.",
-    badge: "\ud83d\ude80",
-  };
-}
-
-// ─── Percentile logic ────────────────────────────────────────────────
-
-function getPercentile(score: number): string {
-  if (score >= 96) return "99";
-  if (score >= 86) return "93";
-  if (score >= 76) return "82";
-  if (score >= 66) return "65";
-  if (score >= 51) return "47";
-  if (score >= 31) return "28";
-  return "12";
 }
 
 // ─── Radar chart ─────────────────────────────────────────────────────
 
 function RadarChart({ dimensions }: { dimensions: Dimension[] }) {
-  const size = 260;
+  // The viewBox leaves a margin around the outer ring so the labels
+  // ("Fairness", "Stress") render inside it instead of being clipped.
+  const size = 300;
   const center = size / 2;
-  const radius = 100;
+  const radius = 96;
+  const labelRadius = radius + 24;
   const n = dimensions.length;
 
   function polarToCart(angle: number, r: number) {
@@ -177,7 +82,7 @@ function RadarChart({ dimensions }: { dimensions: Dimension[] }) {
     .join(" ");
 
   const labels = dimensions.map((d, i) => {
-    const p = polarToCart(i * angleStep, radius + 24);
+    const p = polarToCart(i * angleStep, labelRadius);
     return (
       <text
         key={i}
@@ -185,7 +90,7 @@ function RadarChart({ dimensions }: { dimensions: Dimension[] }) {
         y={p.y}
         textAnchor="middle"
         dominantBaseline="middle"
-        className="fill-muted-foreground text-[11px]"
+        className="fill-muted-foreground text-[12px]"
       >
         {d.label}
       </text>
@@ -195,7 +100,10 @@ function RadarChart({ dimensions }: { dimensions: Dimension[] }) {
   return (
     <svg
       viewBox={`0 0 ${size} ${size}`}
-      className="mx-auto w-full max-w-[280px]"
+      overflow="visible"
+      className="mx-auto w-full max-w-[300px] overflow-visible"
+      role="img"
+      aria-label="Your five quiz dimensions"
     >
       {rings}
       {axes}
@@ -219,6 +127,11 @@ function RadarChart({ dimensions }: { dimensions: Dimension[] }) {
 
 type Phase = "counting" | "done";
 
+const NOTICES: Partial<Record<ShareCardResult, string>> = {
+  copied: "Link copied to clipboard",
+  failed: "Couldn’t share — try copying the page link",
+};
+
 // ─── Main component ──────────────────────────────────────────────────
 
 export function ResultClient({
@@ -235,12 +148,17 @@ export function ResultClient({
   const [phase, setPhase] = useState<Phase>("counting");
   const [displayScore, setDisplayScore] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [flash, setFlash] = useState(false);
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hapticFired = useRef(false);
+  const inFlight = useRef(false);
 
-  const archetype = getArchetype(dimensions);
+  const values = dimensions.map((d) => d.value);
+  const archetype = getArchetype(toQuizScores(values));
+  const percentile = getPercentile(pulse);
 
   // Native-only score-reveal haptic, once per mount; silent no-op on the web.
   useEffect(() => {
@@ -248,7 +166,13 @@ export function ResultClient({
     hapticFired.current = true;
     void hapticScoreReveal();
   }, []);
-  const percentile = getPercentile(pulse);
+
+  // Remember the answers on this device (also for shared links opened here) so
+  // signup → onboarding can prefill the self-assessment.
+  useEffect(() => {
+    if (dimensions.length === 5) saveQuizScores(values);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shareParam]);
 
   // Phase 1: count up to score
   useEffect(() => {
@@ -291,24 +215,34 @@ export function ResultClient({
           ? "text-purple-400"
           : "text-emerald-400";
 
-  const shareUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/quiz/result?s=${shareParam}`
-      : "";
-
-  const shareText = `I\u2019m a ${archetype.name} \u2014 our relationship scored ${pulse}/100, stronger than ${percentile}% of couples. Think you can beat it? \ud83d\udd25`;
-  const partnerShareText = `I just took the Couplemetric Relationship Quiz. See if your partner agrees with your score \u2014 take it now!`;
+  const shareText = buildQuizShareText(archetype, pulse, percentile);
+  const partnerShareText = `I just took the Couplemetric Relationship Quiz. See if your partner agrees with your score — take it now!`;
 
   // Native share sheet on Android; navigator.share then clipboard on the web.
+  // One share at a time; a dismissed sheet is respected, not copied over.
   const share = useCallback(
     async (text: string) => {
-      const result = await shareCard({ title: "Couplemetric Relationship Quiz", text, url: shareUrl });
-      if (result === "copied") {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+      if (inFlight.current) return;
+      inFlight.current = true;
+      setBusy(true);
+      try {
+        const shareUrl = `${window.location.origin}/quiz/result?s=${encodeURIComponent(shareParam)}`;
+        const result = await shareCard({ title: "Couplemetric Relationship Quiz", text, url: shareUrl });
+        if (result === "copied") {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }
+        const message = NOTICES[result];
+        if (message) {
+          setNotice(message);
+          setTimeout(() => setNotice(null), 2500);
+        }
+      } finally {
+        inFlight.current = false;
+        setBusy(false);
       }
     },
-    [shareUrl],
+    [shareParam],
   );
 
   const handleShare = useCallback(() => share(shareText), [share, shareText]);
@@ -333,7 +267,7 @@ export function ResultClient({
           <span className={`text-6xl font-bold tabular-nums ${scoreColor}`}>
             {displayScore}
           </span>
-          <span className="text-sm text-muted-foreground">/100</span>
+          <span className="text-sm text-muted-foreground">/100 · {interpretation}</span>
         </div>
       </div>
 
@@ -399,17 +333,18 @@ export function ResultClient({
           showContent ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
         }`}
       >
-        <Button onClick={handleShare} className="w-full">
+        <Button onClick={handleShare} className="w-full" disabled={busy} aria-busy={busy}>
           {copied ? "Link Copied!" : "Challenge Your Partner"}
         </Button>
         <Button
           onClick={handlePartnerShare}
           variant="outline"
           className="w-full"
+          disabled={busy}
         >
           See if your partner agrees
         </Button>
-        <Button render={<Link href="/register" />} className="w-full">
+        <Button render={<Link href={quizRegisterHref(shareParam)} />} className="w-full">
           Get Your Full Assessment — Free
         </Button>
         <Button
@@ -420,6 +355,16 @@ export function ResultClient({
           Retake Quiz
         </Button>
       </div>
+
+      {notice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-foreground px-4 py-2 text-sm text-background shadow-lg"
+        >
+          {notice}
+        </div>
+      )}
 
       {/* Newsletter CTA */}
       <div
