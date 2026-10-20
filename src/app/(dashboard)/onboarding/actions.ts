@@ -24,6 +24,7 @@ import { updateStreak } from "@/lib/streaks";
 import { SCENARIO_PRESETS } from "@/lib/scenarios/presets";
 import { requireAuth } from "@/lib/auth/guard";
 import { onboardingInput } from "@/lib/auth/action-inputs";
+import type { z } from "zod";
 
 export interface OnboardingData {
   // Step 1: Goals / relationship status
@@ -58,11 +59,24 @@ export interface OnboardingData {
   partnerEmail?: string;
 }
 
+function validationMessage(error: z.ZodError): string {
+  const issue = error.issues[0];
+  const field = issue?.path[0];
+  if (field === "partnerEmail") return "Please enter a valid partner email address, or leave it blank.";
+  if (field === "constraints") return issue.message && !/invalid/i.test(issue.message) ? `Constraint: ${issue.message}` : "One of your constraints has an invalid name or value (values must be 0–10).";
+  if (field === "relationshipStatus") return "Please choose your relationship status.";
+  if (field === "goals") return "Please choose goals from the list.";
+  if (field === "scenarioMode") return "Please choose a valid scenario.";
+  return "Some answers are invalid. Please review your responses and try again.";
+}
+
 export async function completeOnboarding(
-  data: OnboardingData
-) {
+  input: OnboardingData
+): Promise<{ error: string }> {
   const user = await requireAuth();
-  data = onboardingInput.parse(data);
+  const parsed = onboardingInput.safeParse(input);
+  if (!parsed.success) return { error: validationMessage(parsed.error) };
+  const data = parsed.data;
   const userId = user.id;
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];

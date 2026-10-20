@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { completeOnboarding } from "./actions";
 import type { OnboardingData } from "./actions";
+import { CONSTRAINT_NAME_MAX } from "@/lib/auth/action-inputs";
 
 interface ScenarioPresetData {
   id: string;
@@ -32,7 +33,35 @@ interface ScenarioPresetData {
 
 interface OnboardingClientProps {
   scenarioPresets: ScenarioPresetData[];
+  /** Initial wizard step (0-based). Used by tests to render a specific step. */
+  initialStep?: number;
+  /** Open the "Add a Constraint" form on first render. Used by tests. */
+  initialShowConstraintForm?: boolean;
 }
+
+type ConstraintType = "time_budget" | "energy_budget" | "redline";
+
+interface DraftConstraint {
+  name: string;
+  type: ConstraintType;
+  dimension: string;
+  minValue?: number;
+  maxValue?: number;
+  budgetHours?: number;
+}
+
+interface OnboardingDraft {
+  step: number;
+  relationshipStatus: string;
+  goals: string[];
+  dimensionScores: Record<string, number>;
+  scenarioMode: string;
+  constraints: DraftConstraint[];
+  partnerEmail: string;
+}
+
+/** localStorage key for the in-progress onboarding wizard (D-17). */
+export const ONBOARDING_DRAFT_KEY = "onboardingDraft";
 
 const RELATIONSHIP_STATUSES = [
   "In a relationship",
@@ -119,6 +148,8 @@ const CONSTRAINT_DIMENSIONS = [
   "autonomy",
 ];
 
+const CONSTRAINT_TYPES: ConstraintType[] = ["redline", "time_budget", "energy_budget"];
+
 const STEPS = [
   { title: "Goals", icon: Target },
   { title: "Self-Assessment", icon: Sliders },
@@ -127,45 +158,167 @@ const STEPS = [
   { title: "Partner", icon: UserPlus },
 ];
 
-export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
-  const [step, setStep] = useState(0);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const EMPTY_CONSTRAINT = {
+  name: "",
+  type: "redline" as ConstraintType,
+  dimension: "vitality",
+  minValue: "",
+  maxValue: "",
+  budgetHours: "",
+};
+
+function defaultScores(): Record<string, number> {
+  return Object.fromEntries(DIMENSION_KEYS.map((k) => [k, 5]));
+}
+
+function clampInt(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+function parseBounded(raw: string, min: number, max: number): number | undefined {
+  if (raw.trim() === "") return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return undefined;
+  return clampInt(n, min, max);
+}
+
+function readDraft(): OnboardingDraft | null {
+  try {
+    const raw = localStorage.getItem(ONBOARDING_DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Partial<OnboardingDraft>;
+    if (!d || typeof d !== "object") return null;
+    const scores = defaultScores();
+    for (const key of DIMENSION_KEYS) {
+      const v = d.dimensionScores?.[key];
+      if (typeof v === "number" && Number.isFinite(v)) scores[key] = clampInt(v, 1, 10);
+    }
+    return {
+      step: typeof d.step === "number" ? clampInt(d.step, 0, STEPS.length - 1) : 0,
+      relationshipStatus:
+        typeof d.relationshipStatus === "string" && RELATIONSHIP_STATUSES.includes(d.relationshipStatus)
+          ? d.relationshipStatus
+          : "",
+      goals: Array.isArray(d.goals) ? d.goals.filter((g): g is string => typeof g === "string" && GOAL_OPTIONS.includes(g)) : [],
+      dimensionScores: scores,
+      scenarioMode: typeof d.scenarioMode === "string" ? d.scenarioMode : "default",
+      constraints: Array.isArray(d.constraints)
+        ? d.constraints
+            .filter((c): c is DraftConstraint => !!c && typeof c === "object" && typeof c.name === "string" && CONSTRAINT_TYPES.includes(c.type) && CONSTRAINT_DIMENSIONS.includes(c.dimension))
+            .map((c) => ({
+              name: c.name.slice(0, CONSTRAINT_NAME_MAX),
+              type: c.type,
+              dimension: c.dimension,
+              minValue: typeof c.minValue === "number" ? clampInt(c.minValue, 0, 10) : undefined,
+              maxValue: typeof c.maxValue === "number" ? clampInt(c.maxValue, 0, 10) : undefined,
+              budgetHours: typeof c.budgetHours === "number" ? clampInt(c.budgetHours, 0, 24) : undefined,
+            }))
+        : [],
+      partnerEmail: typeof d.partnerEmail === "string" ? d.partnerEmail : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(draft: OnboardingDraft) {
+  try {
+    localStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // Storage unavailable (private mode, quota) — the wizard still works without persistence.
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(ONBOARDING_DRAFT_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function OnboardingClient({
+  scenarioPresets,
+  initialStep = 0,
+  initialShowConstraintForm = false,
+}: OnboardingClientProps) {
+  const [step, setStep] = useState(clampInt(initialStep, 0, STEPS.length - 1));
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [restored, setRestored] = useState(false);
+  const firstScroll = useRef(true);
 
   // Step 1: Goals
   const [relationshipStatus, setRelationshipStatus] = useState("");
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 
   // Step 2: Self-assessment
-  const [dimensionScores, setDimensionScores] = useState<Record<string, number>>(
-    Object.fromEntries(DIMENSION_KEYS.map((k) => [k, 5]))
-  );
+  const [dimensionScores, setDimensionScores] = useState<Record<string, number>>(defaultScores);
 
   // Step 3: Scenario
   const [selectedScenario, setSelectedScenario] = useState("default");
 
   // Step 4: Constraints
-  const [userConstraints, setUserConstraints] = useState<
-    Array<{
-      name: string;
-      type: "time_budget" | "energy_budget" | "redline";
-      dimension: string;
-      minValue?: number;
-      maxValue?: number;
-      budgetHours?: number;
-    }>
-  >([]);
-  const [showConstraintForm, setShowConstraintForm] = useState(false);
-  const [newConstraint, setNewConstraint] = useState({
-    name: "",
-    type: "redline" as "time_budget" | "energy_budget" | "redline",
-    dimension: "vitality",
-    minValue: "",
-    maxValue: "",
-    budgetHours: "",
-  });
+  const [userConstraints, setUserConstraints] = useState<DraftConstraint[]>([]);
+  const [showConstraintForm, setShowConstraintForm] = useState(initialShowConstraintForm);
+  const [newConstraint, setNewConstraint] = useState(EMPTY_CONSTRAINT);
+  const [constraintError, setConstraintError] = useState<string | null>(null);
 
   // Step 5: Partner
   const [partnerEmail, setPartnerEmail] = useState("");
+
+  // D-17: restore an in-progress draft after reload / browser Back.
+  // Runs once after hydration; reading localStorage in a lazy initializer would
+  // render a different step on the client than on the server (hydration mismatch).
+  /* eslint-disable react-hooks/set-state-in-effect -- one-shot client-only restore */
+  useEffect(() => {
+    const draft = readDraft();
+    if (draft) {
+      setStep(draft.step);
+      setRelationshipStatus(draft.relationshipStatus);
+      setSelectedGoals(draft.goals);
+      setDimensionScores(draft.dimensionScores);
+      setSelectedScenario(draft.scenarioMode);
+      setUserConstraints(draft.constraints);
+      setPartnerEmail(draft.partnerEmail);
+    }
+    setRestored(true);
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // D-17: persist every answer change once the draft has been restored.
+  useEffect(() => {
+    if (!restored) return;
+    writeDraft({
+      step,
+      relationshipStatus,
+      goals: selectedGoals,
+      dimensionScores,
+      scenarioMode: selectedScenario,
+      constraints: userConstraints,
+      partnerEmail,
+    });
+  }, [restored, step, relationshipStatus, selectedGoals, dimensionScores, selectedScenario, userConstraints, partnerEmail]);
+
+  // D-47: each step starts at the top of the page.
+  useEffect(() => {
+    if (firstScroll.current) {
+      firstScroll.current = false;
+      return;
+    }
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      // ignore
+    }
+  }, [step]);
+
+  function goToStep(next: number) {
+    setError(null);
+    setStep(clampInt(next, 0, STEPS.length - 1));
+  }
 
   function toggleGoal(goal: string) {
     setSelectedGoals((prev) =>
@@ -174,28 +327,25 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
   }
 
   function addConstraint() {
-    if (!newConstraint.name) return;
+    const name = newConstraint.name.trim().slice(0, CONSTRAINT_NAME_MAX);
+    if (!name) {
+      setConstraintError("Give the constraint a name.");
+      return;
+    }
+    const isRedline = newConstraint.type === "redline";
+    const minValue = isRedline ? parseBounded(newConstraint.minValue, 0, 10) : undefined;
+    const maxValue = isRedline ? parseBounded(newConstraint.maxValue, 0, 10) : undefined;
+    const budgetHours = isRedline ? undefined : parseBounded(newConstraint.budgetHours, 0, 24);
+    if (minValue !== undefined && maxValue !== undefined && minValue > maxValue) {
+      setConstraintError("Minimum must not exceed maximum.");
+      return;
+    }
     setUserConstraints((prev) => [
       ...prev,
-      {
-        name: newConstraint.name,
-        type: newConstraint.type,
-        dimension: newConstraint.dimension,
-        minValue: newConstraint.minValue ? Number(newConstraint.minValue) : undefined,
-        maxValue: newConstraint.maxValue ? Number(newConstraint.maxValue) : undefined,
-        budgetHours: newConstraint.budgetHours
-          ? Number(newConstraint.budgetHours)
-          : undefined,
-      },
+      { name, type: newConstraint.type, dimension: newConstraint.dimension, minValue, maxValue, budgetHours },
     ]);
-    setNewConstraint({
-      name: "",
-      type: "redline",
-      dimension: "vitality",
-      minValue: "",
-      maxValue: "",
-      budgetHours: "",
-    });
+    setNewConstraint(EMPTY_CONSTRAINT);
+    setConstraintError(null);
     setShowConstraintForm(false);
   }
 
@@ -203,7 +353,16 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
     setUserConstraints((prev) => prev.filter((_, i) => i !== index));
   }
 
+  const partnerEmailTrimmed = partnerEmail.trim();
+  const partnerEmailInvalid = partnerEmailTrimmed !== "" && !EMAIL_RE.test(partnerEmailTrimmed);
+
   async function handleSubmit() {
+    if (submitting) return;
+    if (partnerEmailInvalid) {
+      setError("Please enter a valid partner email address, or leave it blank.");
+      return;
+    }
+    setError(null);
     setSubmitting(true);
     const onboardingData: OnboardingData = {
       relationshipStatus,
@@ -219,13 +378,26 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
       autonomy: dimensionScores.autonomy,
       scenarioMode: selectedScenario,
       constraints: userConstraints,
-      partnerEmail: partnerEmail || undefined,
+      partnerEmail: partnerEmailTrimmed || undefined,
     };
 
     try {
-      await completeOnboarding(onboardingData);
-    } catch {
-      // redirect throws an error in Next.js, which is expected
+      const result = await completeOnboarding(onboardingData);
+      if (result?.error) {
+        setError(result.error);
+        setSubmitting(false);
+        return;
+      }
+      // A successful action redirects to /overview; the draft is no longer needed.
+      clearDraft();
+    } catch (err) {
+      // Next.js signals redirect() by throwing; let it propagate so navigation proceeds.
+      if (err && typeof err === "object" && "digest" in err && String((err as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")) {
+        clearDraft();
+        throw err;
+      }
+      setError("Something went wrong while saving your setup. Please try again.");
+      setSubmitting(false);
     }
   }
 
@@ -235,9 +407,9 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
       {/* Progress indicator */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between" role="list" aria-label="Onboarding steps">
         {STEPS.map((s, i) => {
           const Icon = s.icon;
           const isActive = i === step;
@@ -245,6 +417,8 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
           return (
             <div
               key={s.title}
+              role="listitem"
+              aria-current={isActive ? "step" : undefined}
               className="flex flex-1 flex-col items-center gap-1"
             >
               <div
@@ -257,9 +431,9 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                 }`}
               >
                 {isDone ? (
-                  <Check className="h-5 w-5" />
+                  <Check className="h-5 w-5" aria-hidden="true" />
                 ) : (
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-5 w-5" aria-hidden="true" />
                 )}
               </div>
               <span
@@ -273,9 +447,6 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
               >
                 {s.title}
               </span>
-              {i < STEPS.length - 1 && (
-                <div className="absolute" />
-              )}
             </div>
           );
         })}
@@ -286,13 +457,13 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-primary" />
+              <Heart className="h-5 w-5 text-primary" aria-hidden="true" />
               Welcome! Let&apos;s get to know you
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-3">
-              <Label className="text-base font-medium">
+            <div className="space-y-3" role="group" aria-labelledby="onboarding-status-label">
+              <Label id="onboarding-status-label" className="text-base font-medium">
                 What&apos;s your relationship status?
               </Label>
               <div className="flex flex-wrap gap-2">
@@ -300,6 +471,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                   <button
                     key={status}
                     type="button"
+                    aria-pressed={relationshipStatus === status}
                     onClick={() => setRelationshipStatus(status)}
                     className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                       relationshipStatus === status
@@ -315,8 +487,8 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
 
             <Separator />
 
-            <div className="space-y-3">
-              <Label className="text-base font-medium">
+            <div className="space-y-3" role="group" aria-labelledby="onboarding-goals-label">
+              <Label id="onboarding-goals-label" className="text-base font-medium">
                 What would you like to improve? (select any)
               </Label>
               <div className="flex flex-wrap gap-2">
@@ -324,6 +496,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                   <button
                     key={goal}
                     type="button"
+                    aria-pressed={selectedGoals.includes(goal)}
                     onClick={() => toggleGoal(goal)}
                     className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                       selectedGoals.includes(goal)
@@ -345,7 +518,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Sliders className="h-5 w-5 text-primary" />
+              <Sliders className="h-5 w-5 text-primary" aria-hidden="true" />
               Quick Self-Assessment
             </CardTitle>
           </CardHeader>
@@ -365,11 +538,15 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                         {info.description}
                       </p>
                     </div>
-                    <span className="min-w-[2rem] text-right font-mono text-lg font-semibold text-primary">
+                    <span
+                      className="min-w-[2rem] text-right font-mono text-lg font-semibold text-primary"
+                      aria-hidden="true"
+                    >
                       {dimensionScores[key]}
                     </span>
                   </div>
                   <Slider
+                    aria-label={info.label}
                     value={[dimensionScores[key]]}
                     onValueChange={(v) => {
                       const val = Array.isArray(v) ? v[0] : v;
@@ -394,7 +571,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Layers className="h-5 w-5 text-primary" />
+              <Layers className="h-5 w-5 text-primary" aria-hidden="true" />
               Choose Your Scenario
             </CardTitle>
           </CardHeader>
@@ -403,11 +580,12 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
               Scenarios adjust how the optimizer weighs different dimensions
               based on your current life situation.
             </p>
-            <div className="grid gap-3">
+            <div className="grid gap-3" role="group" aria-label="Scenario">
               {scenarioPresets.map((preset) => (
                 <button
                   key={preset.mode}
                   type="button"
+                  aria-pressed={selectedScenario === preset.mode}
                   onClick={() => setSelectedScenario(preset.mode)}
                   className={`w-full rounded-lg border p-4 text-left transition-colors ${
                     selectedScenario === preset.mode
@@ -438,7 +616,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
+              <Shield className="h-5 w-5 text-primary" aria-hidden="true" />
               Set Constraints (Optional)
             </CardTitle>
           </CardHeader>
@@ -453,11 +631,11 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
               <div className="space-y-2">
                 {userConstraints.map((c, i) => (
                   <div
-                    key={i}
-                    className="flex items-center justify-between rounded-lg border p-3"
+                    key={`${c.name}-${i}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border p-3"
                   >
-                    <div>
-                      <span className="text-sm font-medium">{c.name}</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="block break-words text-sm font-medium">{c.name}</span>
                       <p className="text-xs text-muted-foreground">
                         {c.type.replace("_", " ")} on {c.dimension}
                         {c.minValue !== undefined && ` (min: ${c.minValue})`}
@@ -469,6 +647,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                     <Button
                       variant="ghost"
                       size="sm"
+                      aria-label={`Remove constraint ${c.name}`}
                       onClick={() => removeConstraint(i)}
                     >
                       Remove
@@ -481,13 +660,15 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
             {showConstraintForm ? (
               <div className="space-y-3 rounded-lg border p-4">
                 <div className="space-y-2">
-                  <Label>Name</Label>
+                  <Label htmlFor="constraint-name">Name</Label>
                   <Input
+                    id="constraint-name"
                     value={newConstraint.name}
+                    maxLength={CONSTRAINT_NAME_MAX}
                     onChange={(e) =>
                       setNewConstraint((prev) => ({
                         ...prev,
-                        name: e.target.value,
+                        name: e.target.value.slice(0, CONSTRAINT_NAME_MAX),
                       }))
                     }
                     placeholder="e.g., Minimum trust level"
@@ -495,14 +676,16 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Type</Label>
+                    <Label htmlFor="constraint-type">Type</Label>
                     <select
+                      id="constraint-type"
+                      aria-label="Constraint type"
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                       value={newConstraint.type}
                       onChange={(e) =>
                         setNewConstraint((prev) => ({
                           ...prev,
-                          type: e.target.value as "time_budget" | "energy_budget" | "redline",
+                          type: e.target.value as ConstraintType,
                         }))
                       }
                     >
@@ -512,8 +695,10 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Dimension</Label>
+                    <Label htmlFor="constraint-dimension">Dimension</Label>
                     <select
+                      id="constraint-dimension"
+                      aria-label="Constraint dimension"
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                       value={newConstraint.dimension}
                       onChange={(e) =>
@@ -534,11 +719,14 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                 {newConstraint.type === "redline" && (
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label>Min Value</Label>
+                      <Label htmlFor="constraint-min">Min Value (0–10)</Label>
                       <Input
+                        id="constraint-min"
                         type="number"
                         min={0}
                         max={10}
+                        step={1}
+                        inputMode="numeric"
                         value={newConstraint.minValue}
                         onChange={(e) =>
                           setNewConstraint((prev) => ({
@@ -550,11 +738,14 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Max Value</Label>
+                      <Label htmlFor="constraint-max">Max Value (0–10)</Label>
                       <Input
+                        id="constraint-max"
                         type="number"
                         min={0}
                         max={10}
+                        step={1}
+                        inputMode="numeric"
                         value={newConstraint.maxValue}
                         onChange={(e) =>
                           setNewConstraint((prev) => ({
@@ -570,10 +761,14 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                 {(newConstraint.type === "time_budget" ||
                   newConstraint.type === "energy_budget") && (
                   <div className="space-y-2">
-                    <Label>Budget Hours</Label>
+                    <Label htmlFor="constraint-budget">Budget Hours (0–24)</Label>
                     <Input
+                      id="constraint-budget"
                       type="number"
                       min={0}
+                      max={24}
+                      step={1}
+                      inputMode="numeric"
                       value={newConstraint.budgetHours}
                       onChange={(e) =>
                         setNewConstraint((prev) => ({
@@ -585,13 +780,21 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
                     />
                   </div>
                 )}
+                {constraintError && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {constraintError}
+                  </p>
+                )}
                 <div className="flex gap-2">
-                  <Button onClick={addConstraint} disabled={!newConstraint.name}>
+                  <Button onClick={addConstraint} disabled={!newConstraint.name.trim()}>
                     Add Constraint
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setShowConstraintForm(false)}
+                    onClick={() => {
+                      setConstraintError(null);
+                      setShowConstraintForm(false);
+                    }}
                   >
                     Cancel
                   </Button>
@@ -614,7 +817,7 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5 text-primary" />
+              <UserPlus className="h-5 w-5 text-primary" aria-hidden="true" />
               Invite Your Partner (Optional)
             </CardTitle>
           </CardHeader>
@@ -624,47 +827,66 @@ export function OnboardingClient({ scenarioPresets }: OnboardingClientProps) {
               always do this later from the Partner page.
             </p>
             <div className="space-y-2">
-              <Label>Partner&apos;s Email</Label>
+              <Label htmlFor="partner-email">Partner&apos;s Email</Label>
               <Input
+                id="partner-email"
                 type="email"
+                autoComplete="email"
+                inputMode="email"
                 value={partnerEmail}
-                onChange={(e) => setPartnerEmail(e.target.value)}
+                aria-invalid={partnerEmailInvalid || undefined}
+                aria-describedby={partnerEmailInvalid ? "partner-email-error" : undefined}
+                onChange={(e) => {
+                  setPartnerEmail(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="partner@example.com"
               />
+              {partnerEmailInvalid && (
+                <p id="partner-email-error" className="text-sm text-destructive">
+                  Enter a valid email address, or leave this blank.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {error && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+          {error}
+        </p>
       )}
 
       {/* Navigation */}
       <div className="flex items-center justify-between">
         <Button
           variant="outline"
-          onClick={() => setStep((s) => s - 1)}
-          disabled={step === 0}
+          onClick={() => goToStep(step - 1)}
+          disabled={step === 0 || submitting}
         >
-          <ChevronLeft className="mr-1 h-4 w-4" />
+          <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />
           Back
         </Button>
 
         {step < STEPS.length - 1 ? (
           <Button
-            onClick={() => setStep((s) => s + 1)}
+            onClick={() => goToStep(step + 1)}
             disabled={!canAdvance()}
           >
             Next
-            <ChevronRight className="ml-1 h-4 w-4" />
+            <ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
           </Button>
         ) : (
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} disabled={submitting || partnerEmailInvalid}>
             {submitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                 Setting up...
               </>
             ) : (
               <>
-                <Check className="mr-2 h-4 w-4" />
+                <Check className="mr-2 h-4 w-4" aria-hidden="true" />
                 Complete Setup
               </>
             )}
