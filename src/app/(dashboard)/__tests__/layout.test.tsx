@@ -22,6 +22,7 @@ vi.mock("@/components/welcome-modal", () => ({ WelcomeModal: () => <div data-tes
 vi.mock("@/components/streak-badge", () => ({ StreakBadge: () => <span /> }));
 vi.mock("@/components/revenuecat-init", () => ({ RevenueCatInit: () => null }));
 vi.mock("@/lib/billing/flags", () => ({ nativeBillingEnabled: () => false }));
+vi.mock("@/components/onboarding-guard", () => ({ OnboardingGuard: () => <span data-testid="onboarding-guard" /> }));
 import DashboardLayout from "@/app/(dashboard)/layout";
 
 async function render(pathname: string | null) {
@@ -38,14 +39,16 @@ describe("dashboard layout onboarding gate", () => {
     expect(html).not.toContain("sidebar-nav");
     expect(html).not.toContain("mobile-nav");
     expect(html).not.toContain("welcome-modal");
-    expect(html).not.toContain("Continue setup");
+    expect(html).toContain("onboarding-guard");
   });
 
-  it("keeps /settings reachable during onboarding with a way back to setup", async () => {
+  it("keeps /settings reachable during onboarding and mounts the client guard", async () => {
     const html = await render("/settings");
     expect(html).toContain("page body");
     expect(html).not.toContain("mobile-nav");
-    expect(html).toMatch(/href="\/onboarding"[^>]*>Continue setup/);
+    // The "Continue setup" link and soft-navigation redirect live in the client
+    // guard (see onboarding-guard.test.tsx), which reads the live pathname.
+    expect(html).toContain("onboarding-guard");
   });
 
   it("redirects every other dashboard route to /onboarding", async () => {
@@ -58,6 +61,8 @@ describe("dashboard layout onboarding gate", () => {
     const html = await render(null);
     expect(html).toContain("page body");
     expect(html).not.toContain("mobile-nav");
+    // The client guard still enforces the route from the live pathname.
+    expect(html).toContain("onboarding-guard");
   });
 
   it("renders the full chrome once onboarding is complete", async () => {
@@ -66,5 +71,6 @@ describe("dashboard layout onboarding gate", () => {
     expect(html).toContain("sidebar-nav");
     expect(html).toContain("mobile-nav");
     expect(html).toContain("welcome-modal");
+    expect(html).not.toContain("onboarding-guard");
   });
 });

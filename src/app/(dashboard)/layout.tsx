@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { requireAuth } from "@/lib/auth/guard";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +7,7 @@ import { MobileNav } from "@/components/nav/MobileNav";
 import { StreakBadge } from "@/components/streak-badge";
 import { WelcomeModal } from "@/components/welcome-modal";
 import { RevenueCatInit } from "@/components/revenuecat-init";
+import { OnboardingGuard } from "@/components/onboarding-guard";
 import { nativeBillingEnabled } from "@/lib/billing/flags";
 import { resolveOnboardingGate } from "@/lib/auth/onboarding-gate";
 import { getDb } from "@/lib/db";
@@ -21,8 +21,9 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Per-request server check: the user row is fetched fresh on every render,
-  // so a client-side navigation can never bypass the onboarding gate.
+  // Server half of the onboarding gate. Layouts do not re-render on client-side
+  // navigation, so this runs on full page loads only; <OnboardingGuard /> in the
+  // bare shell re-checks the live pathname after every soft navigation.
   const user = await requireAuth();
 
   const headersList = await headers();
@@ -37,20 +38,15 @@ export default async function DashboardLayout({
   }
 
   if (gate === "allow") {
-    const onOnboarding = (pathname ?? "/onboarding").startsWith("/onboarding");
     return (
       <div className="flex h-full min-h-[100dvh] flex-col">
         <header className="safe-top flex items-center gap-3 border-b bg-card px-4">
           <div className="flex h-14 w-full items-center gap-3">
             <span className="text-lg font-bold tracking-tight">Couplemetric</span>
-            {!onOnboarding && (
-              <Link
-                href="/onboarding"
-                className="ml-auto text-sm font-medium text-primary underline-offset-4 hover:underline"
-              >
-                Continue setup
-              </Link>
-            )}
+            {/* Re-checks the live pathname on soft navigation and owns the
+                "Continue setup" link; the server pathname above is stale after
+                the first client-side navigation. */}
+            <OnboardingGuard />
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
