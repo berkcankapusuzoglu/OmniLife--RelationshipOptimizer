@@ -181,6 +181,18 @@ describe("biometric helpers", () => {
 });
 
 describe("BiometricLock", () => {
+  type Listener = (s: { isActive: boolean }) => void;
+
+  async function mountNative(prefOn: boolean): Promise<Listener> {
+    state.native = true;
+    if (prefOn) state.store.set("cm.biometricLock", "1");
+    renderToStaticMarkup(React.createElement(BiometricLock));
+    state.effects.forEach((effect) => effect());
+    await flush();
+    expect(state.addListener).toHaveBeenCalledWith("appStateChange", expect.any(Function));
+    return (state.addListener.mock.calls[0] as unknown[])[1] as Listener;
+  }
+
   it("renders nothing and registers nothing on the web", async () => {
     state.store.set("cm.biometricLock", "1");
     expect(renderToStaticMarkup(React.createElement(BiometricLock))).toBe("");
@@ -191,23 +203,18 @@ describe("BiometricLock", () => {
     expect(state.verify).not.toHaveBeenCalled();
   });
 
-  it("stays idle on native while the preference is off", async () => {
-    state.native = true;
-    expect(renderToStaticMarkup(React.createElement(BiometricLock))).toBe("");
-    state.effects.forEach((effect) => effect());
+  it("listens but never prompts on native while the preference is off", async () => {
+    const listener = await mountNative(false);
+    expect(state.verify).not.toHaveBeenCalled();
+    listener({ isActive: false });
+    listener({ isActive: true });
     await flush();
-    expect(state.addListener).not.toHaveBeenCalled();
     expect(state.verify).not.toHaveBeenCalled();
   });
 
   it("verifies identity when the app returns to the foreground with the lock enabled", async () => {
-    state.native = true;
-    state.store.set("cm.biometricLock", "1");
-    renderToStaticMarkup(React.createElement(BiometricLock));
-    state.effects.forEach((effect) => effect());
-    await flush();
-    expect(state.addListener).toHaveBeenCalledWith("appStateChange", expect.any(Function));
-    const listener = (state.addListener.mock.calls[0] as unknown[])[1] as (s: { isActive: boolean }) => void;
+    const listener = await mountNative(true);
+    expect(state.verify).toHaveBeenCalledOnce(); // cold start
     state.verify.mockClear();
     listener({ isActive: false });
     await flush();
@@ -215,6 +222,48 @@ describe("BiometricLock", () => {
     listener({ isActive: true });
     await flush();
     expect(state.verify).toHaveBeenCalledOnce();
+  });
+
+  it("does not re-prompt for the pause/resume caused by its own prompt activity (Android)", async () => {
+    const listener = await mountNative(true);
+    state.verify.mockClear();
+    let resolvePrompt: () => void = () => {};
+    state.verify.mockImplementationOnce(() => new Promise<undefined>((resolve) => { resolvePrompt = () => resolve(undefined); }));
+    listener({ isActive: false });
+    listener({ isActive: true });
+    await flush();
+    expect(state.verify).toHaveBeenCalledOnce();
+    // The native AuthActivity pauses the bridge, resolves, then resumes it.
+    listener({ isActive: false });
+    resolvePrompt();
+    await flush();
+    listener({ isActive: true });
+    await flush();
+    expect(state.verify).toHaveBeenCalledOnce();
+    // A genuine background/foreground afterwards still locks.
+    listener({ isActive: false });
+    listener({ isActive: true });
+    await flush();
+    expect(state.verify).toHaveBeenCalledTimes(2);
+  });
+
+  it("honours the preference when it is enabled after mount", async () => {
+    const listener = await mountNative(false);
+    state.store.set(BIOMETRIC_LOCK_KEY, "1");
+    listener({ isActive: false });
+    listener({ isActive: true });
+    await flush();
+    expect(state.verify).toHaveBeenCalledOnce();
+  });
+
+  it("stops prompting once the preference is disabled", async () => {
+    const listener = await mountNative(true);
+    state.verify.mockClear();
+    state.store.delete(BIOMETRIC_LOCK_KEY);
+    listener({ isActive: false });
+    listener({ isActive: true });
+    await flush();
+    expect(state.verify).not.toHaveBeenCalled();
   });
 });
 

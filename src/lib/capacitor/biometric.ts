@@ -45,7 +45,8 @@ export async function isBiometricAvailable(): Promise<boolean> {
   }
 }
 
-/** Prompt for biometrics (device credential fallback allowed). Resolves `true`
+/** Prompt for biometrics (`useFallback` enables the device-credential fallback
+ *  on iOS only; Android ignores it). Resolves `true`
  *  only when the user passed; any cancel, failure or lockout resolves `false`. */
 export async function verifyIdentity(reason: string): Promise<boolean> {
   if (!isNativePlatform()) return false;
