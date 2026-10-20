@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
   }
   const { priceType, tier } = body;
-  if (tier !== "pro" && tier !== "premium") {
+  // Only Premium is sold on the web (v1.1.0). Legacy Pro stays readable but is not purchasable.
+  if (tier !== "premium") {
     return NextResponse.json({ error: "Invalid subscription tier" }, { status: 400 });
   }
 
@@ -62,6 +63,9 @@ export async function POST(request: NextRequest) {
     if (!reserved.length) return NextResponse.json({ error: "Account access changed. Please try again." }, { status: 409 });
 
     const stripe = getStripe();
+    // A 7-day trial mirrors the Play offer, but only for first-time Stripe customers.
+    // Returning customers reuse their Stripe customer and get no second trial.
+    const returningCustomer = user.stripeCustomerId ?? null;
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       payment_method_types: ["card"],
@@ -69,8 +73,13 @@ export async function POST(request: NextRequest) {
       success_url: `${appUrl}/overview?upgraded=true`,
       cancel_url: `${appUrl}/pricing`,
       client_reference_id: user.id,
+      allow_promotion_codes: true,
+      ...(returningCustomer ? { customer: returningCustomer } : {}),
       metadata: { tier, checkoutToken },
-      subscription_data: { metadata: { checkoutToken, appUserId: user.id } },
+      subscription_data: {
+        metadata: { checkoutToken, appUserId: user.id },
+        ...(returningCustomer ? {} : { trial_period_days: 7 }),
+      },
     });
     const bound = await db.update(users).set({ stripePendingCheckoutSessionId: checkoutSession.id })
       .where(and(eq(users.id, user.id), eq(users.stripePendingCheckoutToken, checkoutToken), canGrantSubscription("stripe")))

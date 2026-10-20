@@ -112,6 +112,13 @@ export async function POST(request: NextRequest) {
           ? new Date(subscription.current_period_end * 1000)
           : null;
 
+      // Mirror the Stripe trial (trial_period_days: 7 at checkout) the same way
+      // RevenueCat's period_type "trial" is mirrored; cleared once it converts.
+      const billingTrialEndsAt =
+        status === "trialing" && subscription.trial_end
+          ? new Date(subscription.trial_end * 1000)
+          : null;
+
       const isDowngrade = tier === "free";
       if (isDowngrade) await revokePendingCheckout(subscription);
       await db
@@ -122,6 +129,7 @@ export async function POST(request: NextRequest) {
           // Deletion clears ownership; a later active update can restore access.
           subscriptionSource: "stripe",
           subscriptionExpiresAt: isDowngrade ? null : expiresAt,
+          billingTrialEndsAt,
           updatedAt: new Date(),
         })
         .where(and(
@@ -147,6 +155,7 @@ export async function POST(request: NextRequest) {
           subscriptionSource: null,
           stripeSubscriptionId: null,
           subscriptionExpiresAt: null,
+          billingTrialEndsAt: null,
           updatedAt: new Date(),
         })
         .where(and(
