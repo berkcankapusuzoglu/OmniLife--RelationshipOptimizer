@@ -19,7 +19,7 @@ vi.mock("@/lib/referrals", () => ({ processReferral: vi.fn() }));
 import { loginAction, registerAction } from "@/lib/auth/actions";
 
 function form(values: Record<string, string>) { const data = new FormData(); for (const [k, v] of Object.entries(values)) data.set(k, v); return data; }
-const creds = { email: "qa@example.test", password: "password123" };
+const creds = { email: "qa@example.test", password: "password123", name: "QA Tester" };
 
 describe("auth actions post-auth routing (D-02)", () => {
   beforeEach(() => { mocks.selectRows = []; mocks.createSession.mockClear(); mocks.verify.mockClear(); });
