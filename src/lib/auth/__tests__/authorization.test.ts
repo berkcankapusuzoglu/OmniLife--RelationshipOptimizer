@@ -25,6 +25,7 @@ vi.mock("server-only", () => ({}));
 type MemoryRow = Record<string, unknown>;
 type MemoryQuery = PromiseLike<MemoryRow[]> & {
   where(predicate: SQL): MemoryQuery;
+  leftJoin(aliasTable: PgTable, on: SQL): MemoryQuery;
   orderBy(): MemoryQuery;
   limit(count: number): MemoryQuery;
   returning(): MemoryQuery;
@@ -65,17 +66,30 @@ function memoryDb() {
   function query(table: PgTable, kind: string, projection?: Record<string, unknown>, values: MemoryRow | MemoryRow[] = {}, undo?: Array<() => void>) {
     let predicate: SQL | undefined;
     let limit = Infinity;
+    // Left join against an aliased table (e.g. `alias(users, "partner")`); the
+    // ON predicate is compiled and evaluated per candidate row like WHERE.
+    let join: { alias: PgTable; on: SQL } | undefined;
     const columns = getTableColumns(table);
-    function matches(row: MemoryRow) {
-      if (!predicate) return true;
-      const compiled = dialect.sqlToQuery(predicate);
+    const field = (column: string) => Object.keys(columns).find((key) => columns[key].name === column)!;
+    function evaluate(sql: SQL, scope: Record<string, MemoryRow | null>) {
+      const compiled = dialect.sqlToQuery(sql);
       const expression = compiled.sql
-        .replace(/"[^"]+"\."([^"]+)"/g, (_, column) => JSON.stringify(row[Object.keys(columns).find((key) => columns[key].name === column)!] ?? null))
+        .replace(/"([^"]+)"\."([^"]+)"/g, (_, tableName, column) => JSON.stringify(scope[tableName]?.[field(column)] ?? null))
         .replace(/\$(\d+)/g, (_, index) => JSON.stringify(compiled.params[Number(index) - 1]))
         .replace(/\bis null\b/gi, "=== null")
         .replace(/(?<![<>!=])=(?!=)/g, "===")
         .replace(/\band\b/gi, "&&").replace(/\bor\b/gi, "||");
       return Function(`return (${expression})`)();
+    }
+    function matches(row: MemoryRow) {
+      if (!predicate) return true;
+      return evaluate(predicate, { [getTableName(table)]: row });
+    }
+    function joined(row: MemoryRow): MemoryRow | null {
+      if (!join) return null;
+      const aliasName = getTableName(join.alias);
+      const original = (join.alias as unknown as Record<symbol, string>)[Symbol.for("drizzle:OriginalName")];
+      return (state.rows[original] ?? []).find((candidate) => evaluate(join!.on, { [getTableName(table)]: row, [aliasName]: candidate })) ?? null;
     }
     const run = () => {
       const name = getTableName(table);
@@ -90,7 +104,13 @@ function memoryDb() {
       if (kind === "delete") { state.rows[name] = rows.filter((row) => !selected.includes(row)); undo?.push(() => { state.rows[name].push(...selected); }); }
       if (projection) {
         if (projection.count) return [{ count: selected.length }];
-        return selected.map((row) => Object.fromEntries(Object.entries(projection).map(([key, column]) => [key, row[Object.keys(columns).find((field) => columns[field] === column)!]])));
+        return selected.map((row) => {
+          const scope: Record<string, MemoryRow | null> = { [name]: row, ...(join ? { [getTableName(join.alias)]: joined(row) } : {}) };
+          return Object.fromEntries(Object.entries(projection).map(([key, column]) => {
+            const { table: owner, name: columnName } = column as { table: PgTable; name: string };
+            return [key, scope[getTableName(owner)]?.[field(columnName)] ?? null];
+          }));
+        });
       }
       return selected.map((row) => ({ ...row }));
     };
@@ -105,7 +125,7 @@ function memoryDb() {
       }
       return result;
     };
-    const chain: MemoryQuery = { where: (p: SQL) => { predicate = p; return chain; }, orderBy: () => chain, limit: (n: number) => { limit = n; return chain; }, returning: () => chain, then: (ok, fail) => Promise.resolve().then(execute).then(ok, fail) };
+    const chain: MemoryQuery = { where: (p: SQL) => { predicate = p; return chain; }, leftJoin: (aliasTable: PgTable, on: SQL) => { join = { alias: aliasTable, on }; return chain; }, orderBy: () => chain, limit: (n: number) => { limit = n; return chain; }, returning: () => chain, then: (ok, fail) => Promise.resolve().then(execute).then(ok, fail) };
     return chain;
   }
   const makeDb = (undo?: Array<() => void>) => ({ select: (p?: Record<string, unknown>) => ({ from: (t: PgTable) => query(t, "select", p, undefined, undo) }), insert: (t: PgTable) => ({ values: (v: MemoryRow | MemoryRow[]) => query(t, "insert", undefined, v, undo) }), update: (t: PgTable) => ({ set: (v: MemoryRow) => query(t, "update", undefined, v, undo) }), delete: (t: PgTable) => query(t, "delete", undefined, undefined, undo) });

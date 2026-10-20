@@ -2,7 +2,6 @@ import { requireAuth } from "@/lib/auth/guard";
 import { getDb } from "@/lib/db";
 import { users, scores } from "@/lib/db/schema";
 import { and, eq, desc } from "drizzle-orm";
-import { getCoupleBonus } from "@/lib/subscription/couple-bonus";
 import { PartnerClient } from "./partner-client";
 import { BackButton } from "@/components/back-button";
 
@@ -41,8 +40,6 @@ export default async function PartnerPage() {
     .limit(1);
   const userScore = userScoreRow ? Number(userScoreRow.totalQuality) : null;
 
-  const coupleBonus = getCoupleBonus(!!user.partnerId);
-
   return (
     <div className="space-y-6">
       <div>
@@ -60,7 +57,6 @@ export default async function PartnerPage() {
         partner={partner}
         partnerScore={partnerScore}
         userScore={userScore}
-        coupleBonus={coupleBonus}
       />
     </div>
   );

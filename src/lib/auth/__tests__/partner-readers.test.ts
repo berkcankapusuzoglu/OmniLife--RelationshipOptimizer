@@ -25,6 +25,7 @@ vi.mock("@/app/(dashboard)/insights/insights-client", () => ({ InsightsClient: (
 
 type ReadBuilder = PromiseLike<Row[]> & {
   where: (predicate: SQL) => ReadBuilder;
+  leftJoin: (aliasTable: PgTable, on: SQL) => ReadBuilder;
   orderBy: (...order: SQL[]) => ReadBuilder;
   limit: (count: number) => ReadBuilder;
 };
@@ -38,6 +39,22 @@ function readDb() {
     let predicate: SQL | undefined;
     let limit = Infinity;
     let descending = false;
+    // Left join on an aliased table (`alias(users, "partner")`): the ON predicate
+    // is compiled and evaluated per candidate row, so a one-way link yields null.
+    let join: { alias: PgTable; on: SQL } | undefined;
+    const fieldFor = (column: string) => Object.keys(columns).find((key) => columns[key].name === column)!;
+    const joined = (row: Row): Row | null => {
+      if (!join) return null;
+      const on = dialect.sqlToQuery(join.on);
+      const aliasName = getTableName(join.alias);
+      const original = (join.alias as unknown as Record<symbol, string>)[Symbol.for("drizzle:OriginalName")];
+      const expression = on.sql
+        .replace(/"([^"]+)"\."([^"]+)"/g, (_, tableName, column) => `scope[${JSON.stringify(tableName)}][${JSON.stringify(fieldFor(column))}]`)
+        .replace(/\$(\d+)/g, (_, index) => JSON.stringify(on.params[Number(index) - 1]))
+        .replace(/(?<![<>!=])=(?!=)/g, "===").replace(/\band\b/gi, "&&");
+      const test = Function("scope", `return (${expression})`) as (scope: Record<string, Row>) => boolean;
+      return (state.rows[original] ?? []).find((candidate) => test({ [getTableName(table)]: row, [aliasName]: candidate })) ?? null;
+    };
     const execute = () => {
       const query = predicate ? dialect.sqlToQuery(predicate) : null;
       if (query && /\bor\b/i.test(query.sql)) throw new Error("Unexpected OR in reader fixture");
@@ -52,13 +69,17 @@ function readDb() {
       const selected = rows.slice(0, limit);
       const fields = projection ?? columns;
       state.reads.push({ table: getTableName(table), fields: Object.keys(fields), count: selected.length, limit, params: query?.params ?? [] });
-      return selected.map((row) => Object.fromEntries(Object.entries(fields).map(([name, column]) => {
-        const field = Object.keys(columns).find((key) => columns[key] === column)!;
-        return [name, row[field]];
-      })));
+      return selected.map((row) => {
+        const scope: Record<string, Row | null> = { [getTableName(table)]: row, ...(join ? { [getTableName(join.alias)]: joined(row) } : {}) };
+        return Object.fromEntries(Object.entries(fields).map(([name, column]) => {
+          const { table: owner, name: columnName } = column as { table: PgTable; name: string };
+          return [name, scope[getTableName(owner)]?.[fieldFor(columnName)] ?? null];
+        }));
+      });
     };
     const builder: ReadBuilder = {
       where: (value) => { predicate = value; return builder; },
+      leftJoin: (aliasTable, on) => { join = { alias: aliasTable, on }; return builder; },
       orderBy: () => { descending = true; return builder; },
       limit: (value) => { limit = value; return builder; },
       then: (fulfilled, rejected) => Promise.resolve().then(execute).then(fulfilled, rejected),
