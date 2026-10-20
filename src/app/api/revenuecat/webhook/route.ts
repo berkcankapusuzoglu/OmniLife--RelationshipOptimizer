@@ -3,40 +3,55 @@
  *
  * Configure in RevenueCat dashboard:
  *   Project → Integrations → Webhooks → Add endpoint
- *   URL: https://omnilife-relationship-optimizer.vercel.app/api/revenuecat/webhook
+ *   URL: https://<app host>/api/revenuecat/webhook
  *   Authorization: <value of REVENUECAT_WEBHOOK_SECRET>
  *
- * Events handled: INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION
+ * Event fields are never trusted for state. Every handled event names one or
+ * more app user ids, and each is reconciled from the RevenueCat REST record
+ * (src/lib/revenuecat/reconcile.ts). Delivery is idempotent by `event.id`
+ * through the billing_events ledger; a failed reconcile releases the id and
+ * returns 500 so RevenueCat retries.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import type { SubscriptionTier } from "@/lib/subscription/tiers";
-import { canAdvanceRevenueCat } from "@/lib/subscription/ownership";
+import { billingEvents } from "@/lib/db/schema";
+import { isAccountId, reconcileRevenueCatUser, type ReconcileResult } from "@/lib/revenuecat/reconcile";
 
-// Map RevenueCat product_id → tier
-const PRODUCT_TO_TIER: Record<string, SubscriptionTier> = {
-  pro_monthly: "pro",
-  pro_yearly: "pro",
-  premium_monthly: "premium",
-  premium_yearly: "premium",
-};
+const RECONCILED_EVENTS = new Set([
+  "INITIAL_PURCHASE",
+  "RENEWAL",
+  "UNCANCELLATION",
+  "CANCELLATION",
+  "EXPIRATION",
+  "BILLING_ISSUE",
+  "PRODUCT_CHANGE",
+  "TRANSFER",
+  "SUBSCRIBER_ALIAS",
+]);
 
 interface RCWebhookEvent {
-  type: string;
-  app_user_id: string;
-  product_id: string;
-  expiration_at_ms?: number | null;
+  id?: unknown;
+  type?: unknown;
+  app_user_id?: unknown;
+  original_app_user_id?: unknown;
+  transferred_from?: unknown;
+  transferred_to?: unknown;
+  aliases?: unknown;
 }
 
-interface RCWebhookBody {
-  event: RCWebhookEvent;
+function ids(...values: unknown[]): string[] {
+  const out = new Set<string>();
+  for (const value of values) {
+    for (const item of Array.isArray(value) ? value : [value]) {
+      if (typeof item === "string" && item.length > 0) out.add(item);
+    }
+  }
+  return [...out];
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // Validate Authorization header
   const authHeader = req.headers.get("Authorization");
   const webhookSecret = process.env.REVENUECAT_WEBHOOK_SECRET;
 
@@ -44,77 +59,72 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     console.error("[RevenueCat webhook] REVENUECAT_WEBHOOK_SECRET not set");
     return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
   }
-
   if (authHeader !== webhookSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: RCWebhookBody;
+  let body: { event?: RCWebhookEvent };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { event } = body;
-  if (!event?.type || !event?.app_user_id) {
+  const event: RCWebhookEvent = body?.event ?? {};
+  const eventId = typeof event.id === "string" ? event.id : null;
+  const type = typeof event.type === "string" ? event.type : null;
+  if (!eventId || !type) {
     return NextResponse.json({ error: "Missing event fields" }, { status: 400 });
   }
 
-  const { type, app_user_id: userId, product_id: productId, expiration_at_ms } = event;
+  if (!RECONCILED_EVENTS.has(type)) {
+    console.log(`[RevenueCat webhook] Ignored event type: ${type}`);
+    return NextResponse.json({ received: true, ignored: type });
+  }
 
+  const named =
+    type === "TRANSFER"
+      ? ids(event.transferred_from, event.transferred_to, event.app_user_id)
+      : type === "SUBSCRIBER_ALIAS"
+        ? ids(event.app_user_id, event.original_app_user_id, event.aliases)
+        : ids(event.app_user_id);
+  if (named.length === 0) {
+    return NextResponse.json({ error: "Missing event fields" }, { status: 400 });
+  }
+  // Only UUIDs can name an account row (users.id is uuid); anonymous/legacy ids are skipped without a fetch.
+  const targets = named.filter(isAccountId);
+
+  const db = getDb();
+
+  let claimed: Array<{ id: string }>;
   try {
-    const db = getDb();
+    claimed = await db
+      .insert(billingEvents)
+      .values({ id: eventId, provider: "revenuecat" })
+      .onConflictDoNothing()
+      .returning({ id: billingEvents.id });
+  } catch (err) {
+    console.error("[RevenueCat webhook] Ledger error:", err);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  }
+  if (claimed.length === 0) {
+    return NextResponse.json({ duplicate: true });
+  }
 
-    if (type === "INITIAL_PURCHASE" || type === "RENEWAL") {
-      const tier = PRODUCT_TO_TIER[productId];
-      if (!tier) {
-        console.warn(`[RevenueCat webhook] Unknown product_id: ${productId}`);
-        return NextResponse.json({ received: true });
-      }
-
-      if (typeof expiration_at_ms !== "number" || !Number.isFinite(expiration_at_ms) || expiration_at_ms <= Date.now()) {
-        return NextResponse.json({ received: true });
-      }
-      const expiresAt = new Date(expiration_at_ms);
-      if (!Number.isFinite(expiresAt.getTime())) return NextResponse.json({ received: true });
-
-      await db
-        .update(users)
-        .set({
-          subscriptionTier: tier,
-          subscriptionSource: "revenuecat",
-          subscriptionExpiresAt: expiresAt,
-        })
-        .where(and(eq(users.id, userId), canAdvanceRevenueCat(expiresAt)));
-
-    } else if (type === "CANCELLATION") {
-      // Auto-renew cancellation does not change the entitlement period.
-      // Only purchase/renewal establishes expiry; delayed cancellation is inert.
-
-    } else if (type === "EXPIRATION") {
-      if (typeof expiration_at_ms !== "number" || !Number.isFinite(expiration_at_ms) || expiration_at_ms > Date.now()) {
-        return NextResponse.json({ received: true });
-      }
-      const expiresAt = new Date(expiration_at_ms);
-      if (!Number.isFinite(expiresAt.getTime())) return NextResponse.json({ received: true });
-      await db
-        .update(users)
-        .set({
-          subscriptionTier: "free",
-          subscriptionSource: null,
-          subscriptionExpiresAt: null,
-        })
-        .where(and(eq(users.id, userId), eq(users.subscriptionSource, "revenuecat"), eq(users.subscriptionExpiresAt, expiresAt)));
-
-    } else {
-      // Ignored event types: UNCANCELLATION, BILLING_ISSUE, PRODUCT_CHANGE, etc.
-      console.log(`[RevenueCat webhook] Ignored event type: ${type}`);
+  const results: Record<string, ReconcileResult> = {};
+  try {
+    for (const appUserId of targets) {
+      results[appUserId] = await reconcileRevenueCatUser(appUserId);
     }
   } catch (err) {
-    console.error("[RevenueCat webhook] DB error:", err);
+    console.error(`[RevenueCat webhook] Reconcile failed for ${type} ${eventId}:`, err);
+    try {
+      await db.delete(billingEvents).where(eq(billingEvents.id, eventId));
+    } catch (releaseErr) {
+      console.error("[RevenueCat webhook] Could not release event id:", releaseErr);
+    }
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 
-  return NextResponse.json({ received: true });
+  return NextResponse.json({ received: true, results });
 }

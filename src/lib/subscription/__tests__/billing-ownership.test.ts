@@ -6,7 +6,10 @@ import { POST as revenuecat } from "@/app/api/revenuecat/webhook/route";
 import { POST as stripe } from "@/app/api/stripe/webhook/route";
 import { syncRevenueCatEntitlement } from "@/lib/revenuecat/sync";
 
-const state = vi.hoisted(() => ({ row: {} as Record<string, unknown>, event: {} as Record<string, unknown>, beforeWrite: undefined as (() => void) | undefined, queries: [] as Array<{ sql: string; params: unknown[] }>, reads: 0 }));
+// `reads` counts SELECTs; `readsBeforeWrite` is the highest `reads` observed when any
+// UPDATE ran, so a diagnostic read *after* a guarded write never masks a preflight read.
+// `events` is the billing_events idempotency ledger; `subscriber` is the REST snapshot.
+const state = vi.hoisted(() => ({ row: {} as Record<string, unknown>, event: {} as Record<string, unknown>, beforeWrite: undefined as (() => void) | undefined, queries: [] as Array<{ sql: string; params: unknown[] }>, reads: 0, readsBeforeWrite: 0, events: new Set<string>(), subscriber: null as unknown, eventSeq: 0 }));
 
 // Evaluate the actual Drizzle WHERE expression against the row at write time.
 // A preflight SELECT cannot make an unconditional UPDATE pass these tests.
@@ -48,38 +51,61 @@ function matches(predicate: SQL) {
   expect(position).toBe(tokens.length);
   return result;
 }
+function param(predicate: SQL) { return String(new PgDialect().sqlToQuery(predicate).params[0]); }
+vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db", () => ({ getDb: () => ({
-  update: () => ({ set: (values: Record<string, unknown>) => ({ where: async (predicate: SQL) => {
-    state.beforeWrite?.(); state.beforeWrite = undefined;
-    if (matches(predicate)) for (const [key, value] of Object.entries(values)) state.row[key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)] = value;
+  update: () => ({ set: (values: Record<string, unknown>) => ({ where: (predicate: SQL) => {
+    const write = async () => {
+      state.beforeWrite?.(); state.beforeWrite = undefined;
+      state.readsBeforeWrite = Math.max(state.readsBeforeWrite, state.reads);
+      if (!matches(predicate)) return [];
+      for (const [key, value] of Object.entries(values)) state.row[key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)] = value;
+      return [{ id: state.row.id }];
+    };
+    return { returning: write, then: (ok: (value: unknown) => unknown, fail: (reason: unknown) => unknown) => write().then(() => undefined).then(ok, fail) };
   } }) }),
-  select: () => ({ from: () => ({ where: () => ({ limit: async () => { state.reads++; return [{ subscriptionSource: state.row.subscription_source }]; } }) }) }),
+  select: () => ({ from: () => ({ where: () => ({ limit: async () => { state.reads++; return [{ subscriptionSource: state.row.subscription_source, subscriptionExpiresAt: state.row.subscription_expires_at }]; } }) }) }),
+  insert: () => ({ values: (values: { id: string }) => ({ onConflictDoNothing: () => ({ returning: async () => { if (state.events.has(values.id)) return []; state.events.add(values.id); return [{ id: values.id }]; } }) }) }),
+  delete: () => ({ where: async (predicate: SQL) => { state.events.delete(param(predicate)); } }),
 }) }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => ({ webhooks: { constructEvent: () => state.event } }) }));
-vi.mock("@/lib/auth/guard", () => ({ requireAuth: async () => ({ id: "user-test" }) }));
+vi.mock("@/lib/auth/guard", () => ({ requireAuth: async () => ({ id: USER }) }));
 
+// users.id is a Postgres uuid column, so every account id named in a test must be a UUID.
+const USER = "11111111-1111-4111-8111-111111111111";
+const OTHER = "22222222-2222-4222-8222-222222222222";
+const OLD = "33333333-3333-4333-8333-333333333333";
+const ALIAS = "44444444-4444-4444-8444-444444444444";
 const future = new Date("2099-01-01T00:00:00Z");
 function row(source: string | null, tier = "premium") {
-  return { id: "user-test", subscription_source: source, subscription_tier: tier, subscription_expires_at: future, stripe_customer_id: "cus_test", stripe_subscription_id: "sub_test", stripe_pending_checkout_token: "token_test", stripe_pending_checkout_session_id: "cs_test" };
+  return { id: USER, subscription_source: source, subscription_tier: tier, subscription_expires_at: future, stripe_customer_id: "cus_test", stripe_subscription_id: "sub_test", stripe_pending_checkout_token: "token_test", stripe_pending_checkout_session_id: "cs_test" };
 }
-async function rc(type: string, expiry: number | null = Date.parse(type === "EXPIRATION" ? "2020-01-01" : "2100-01-01")) {
-  return revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers: { Authorization: "test-rc-auth" }, body: JSON.stringify({ event: { type, app_user_id: "user-test", product_id: "pro_monthly", expiration_at_ms: expiry } }) }));
+// The webhook never trusts event fields: the RevenueCat REST snapshot is the
+// source of truth, so each event also seeds the subscriber the REST mock returns.
+function snapshot(expiry: number | null, product = "pro_monthly", entitlement = "pro", extra: Record<string, unknown> = {}) {
+  const expires_date = expiry === null ? null : new Date(expiry).toISOString();
+  return { entitlements: { [entitlement]: { expires_date, product_identifier: product, purchase_date: "2020-01-01T00:00:00Z" } }, subscriptions: { [product]: { expires_date, period_type: "normal", store: "play_store", ...extra } } };
+}
+async function rc(type: string, expiry: number | null = Date.parse(type === "EXPIRATION" ? "2020-01-01" : "2099-01-01"), event: Record<string, unknown> = {}) {
+  state.subscriber = snapshot(expiry); state.reads = 0;
+  return revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers: { Authorization: "test-rc-auth" }, body: JSON.stringify({ event: { id: `evt_${++state.eventSeq}`, type, app_user_id: USER, product_id: "pro_monthly", expiration_at_ms: expiry, ...event } }) }));
 }
 async function checkoutEvent(subscription = "sub_test", token = "token_test", session = "cs_test") {
-  state.event = { type: "checkout.session.completed", data: { object: { id: session, mode: "subscription", payment_status: "paid", client_reference_id: "user-test", customer: "cus_test", subscription, metadata: { tier: "pro", checkoutToken: token } } } };
+  state.event = { type: "checkout.session.completed", data: { object: { id: session, mode: "subscription", payment_status: "paid", client_reference_id: USER, customer: "cus_test", subscription, metadata: { tier: "pro", checkoutToken: token } } } };
   return stripe(new NextRequest("https://example.test/api/stripe/webhook", { method: "POST", headers: { "stripe-signature": "test-signature" }, body: "test-event" }));
 }
 async function stripeEvent(type: string, status = "active", subscriptionId = "sub_test", priceId = "price_pro_monthly", checkoutToken?: string) {
-  state.event = { type, data: { object: { id: subscriptionId, customer: "cus_test", status, metadata: checkoutToken ? { checkoutToken, appUserId: "user-test" } : {}, current_period_end: Date.parse("2099-01-01") / 1000, items: { data: [{ price: { id: priceId } }] } } } };
+  state.event = { type, data: { object: { id: subscriptionId, customer: "cus_test", status, metadata: checkoutToken ? { checkoutToken, appUserId: USER } : {}, current_period_end: Date.parse("2099-01-01") / 1000, items: { data: [{ price: { id: priceId } }] } } } };
   return stripe(new NextRequest("https://example.test/api/stripe/webhook", { method: "POST", headers: { "stripe-signature": "test-signature" }, body: "test-event" }));
 }
 beforeEach(() => {
-  state.row = row("stripe"); state.queries = []; state.reads = 0; state.beforeWrite = undefined;
+  state.row = row("stripe"); state.queries = []; state.reads = 0; state.readsBeforeWrite = 0; state.beforeWrite = undefined; state.events = new Set(); state.subscriber = null;
   vi.stubEnv("REVENUECAT_WEBHOOK_SECRET", "test-rc-auth"); vi.stubEnv("STRIPE_WEBHOOK_SECRET", "test-stripe-auth"); vi.stubEnv("REVENUECAT_SECRET_KEY", "test-rc-server");
   vi.stubEnv("STRIPE_PRO_MONTHLY_PRICE_ID", "price_pro_monthly"); vi.stubEnv("STRIPE_PRO_YEARLY_PRICE_ID", "price_pro_yearly"); vi.stubEnv("STRIPE_MONTHLY_PRICE_ID", "price_premium_monthly"); vi.stubEnv("STRIPE_YEARLY_PRICE_ID", "price_premium_yearly");
-  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ subscriber: { entitlements: {} } }) })));
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ subscriber: state.subscriber ?? { entitlements: {}, subscriptions: {} } }) })));
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
@@ -164,7 +190,100 @@ describe("RevenueCat ownership", () => {
     await rc("RENEWAL", Date.parse("2090-01-01")); expect(state.row.subscription_expires_at).toEqual(future); expect(state.row.subscription_tier).toBe("premium");
     state.row.subscription_expires_at = new Date("2020-01-01");
     state.beforeWrite = () => { state.row.subscription_expires_at = future; };
-    await rc("EXPIRATION"); expect(state.row.subscription_expires_at).toEqual(future); expect(state.row.subscription_tier).toBe("premium"); expect(state.reads).toBe(0);
+    await rc("EXPIRATION"); expect(state.row.subscription_expires_at).toEqual(future); expect(state.row.subscription_tier).toBe("premium"); expect(state.readsBeforeWrite).toBe(0);
+  });
+});
+
+describe("RevenueCat webhook", () => {
+  const calls = () => vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
+  it("rejects a missing or wrong authorization header without reading RevenueCat", async () => {
+    for (const headers of [{}, { Authorization: "wrong" }] as Record<string, string>[]) {
+      const res = await revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers, body: JSON.stringify({ event: { id: "evt_x", type: "RENEWAL", app_user_id: USER } }) }));
+      expect(res.status).toBe(401);
+    }
+    expect(calls()).toEqual([]);
+  });
+  it("rejects malformed bodies and events without an id", async () => {
+    const post = (body: string) => revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers: { Authorization: "test-rc-auth" }, body }));
+    expect((await post("{")).status).toBe(400);
+    expect((await post(JSON.stringify({ event: { type: "RENEWAL", app_user_id: USER } }))).status).toBe(400);
+    expect((await post(JSON.stringify({ event: { id: "evt_x", app_user_id: USER } }))).status).toBe(400);
+    expect(calls()).toEqual([]);
+  });
+  it("reconciles from REST rather than event fields", async () => {
+    state.row = row(null, "free");
+    // Event claims a premium yearly purchase far in the future; REST says pro until 2099.
+    const res = await rc("INITIAL_PURCHASE", future.getTime(), { product_id: "premium_yearly", expiration_at_ms: Date.parse("2150-01-01") });
+    expect(res.status).toBe(200);
+    expect(state.row.subscription_tier).toBe("pro"); expect(state.row.subscription_expires_at).toEqual(future); expect(state.row.billing_product_id).toBe("pro_monthly");
+  });
+  it.each(["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "CANCELLATION", "EXPIRATION", "BILLING_ISSUE", "PRODUCT_CHANGE"])("reconciles %s from REST", async type => {
+    state.row = row(null, "free");
+    await rc(type, Date.parse("2099-01-01"));
+    expect(calls()).toEqual([`https://api.revenuecat.com/v1/subscribers/${USER}`]);
+    expect(state.row.subscription_tier).toBe("pro");
+  });
+  it("acknowledges a duplicate event id without reconciling again", async () => {
+    state.row = row(null, "free");
+    const first = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { id: "evt_dup" });
+    expect(await first.json()).toEqual({ received: true, results: { [USER]: "granted" } });
+    state.row = row(null, "free");
+    const second = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { id: "evt_dup" });
+    expect(second.status).toBe(200); expect(await second.json()).toEqual({ duplicate: true });
+    expect(calls()).toHaveLength(1); expect(state.row.subscription_tier).toBe("free");
+  });
+  it("treats a reordered RENEWAL as unchanged because REST already reflects the newest period", async () => {
+    state.row = row("revenuecat");
+    const res = await rc("RENEWAL", Date.parse("2090-01-01"), { expiration_at_ms: Date.parse("2080-01-01") });
+    expect(await res.json()).toEqual({ received: true, results: { [USER]: "unchanged" } });
+    expect(state.row.subscription_expires_at).toEqual(future);
+  });
+  it("returns 200 and writes nothing for an unknown user id or an anonymous id", async () => {
+    const original = { ...state.row };
+    const res = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { app_user_id: OTHER });
+    expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, results: { [OTHER]: "skipped-unowned" } });
+    expect(state.row).toEqual(original);
+    const anonymous = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { app_user_id: "$RCAnonymousID:abc" });
+    expect(anonymous.status).toBe(200); expect(calls()).toEqual([`https://api.revenuecat.com/v1/subscribers/${OTHER}`]);
+  });
+  it("returns 200 without fetching or writing for a non-UUID id (users.id is a uuid column)", async () => {
+    const original = { ...state.row };
+    for (const id of ["someone-else", "user-test", "1234", "11111111-1111-4111-8111-11111111111"]) {
+      const res = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { app_user_id: id });
+      expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, results: {} });
+    }
+    const transfer = await rc("TRANSFER", Date.parse("2099-01-01"), { app_user_id: undefined, transferred_from: ["legacy-rc-id"], transferred_to: [USER] });
+    expect(transfer.status).toBe(200); expect(await transfer.json()).toEqual({ received: true, results: { [USER]: "skipped-unowned" } });
+    expect(calls()).toEqual([`https://api.revenuecat.com/v1/subscribers/${USER}`]);
+    expect(state.row).toEqual(original);
+  });
+  it("returns 200 for a deleted RevenueCat subscriber", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })));
+    const original = { ...state.row };
+    const res = await rc("EXPIRATION");
+    expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, results: { [USER]: "unchanged" } });
+    expect(state.row).toEqual(original);
+  });
+  it("reconciles every id on TRANSFER and SUBSCRIBER_ALIAS", async () => {
+    await rc("TRANSFER", Date.parse("2099-01-01"), { app_user_id: undefined, transferred_from: [OLD], transferred_to: [USER] });
+    expect(calls().sort()).toEqual([`https://api.revenuecat.com/v1/subscribers/${OLD}`, `https://api.revenuecat.com/v1/subscribers/${USER}`].sort());
+    vi.mocked(fetch).mockClear();
+    await rc("SUBSCRIBER_ALIAS", Date.parse("2099-01-01"), { aliases: [USER, ALIAS] });
+    expect(calls().sort()).toEqual([`https://api.revenuecat.com/v1/subscribers/${ALIAS}`, `https://api.revenuecat.com/v1/subscribers/${USER}`].sort());
+  });
+  it("logs and acknowledges other event types without reconciling", async () => {
+    const res = await rc("TEST", Date.parse("2099-01-01"));
+    expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, ignored: "TEST" });
+    expect(calls()).toEqual([]);
+  });
+  it("returns 500 and releases the event id when reconciliation fails so RevenueCat retries", async () => {
+    state.row = row(null, "free");
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) })));
+    const failed = await rc("RENEWAL", Date.parse("2099-01-01"), { id: "evt_retry" });
+    expect(failed.status).toBe(500); expect(state.events.has("evt_retry")).toBe(false); expect(state.row.subscription_tier).toBe("free");
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ subscriber: state.subscriber }) })));
+    const retried = await rc("RENEWAL", Date.parse("2099-01-01"), { id: "evt_retry" });
+    expect(retried.status).toBe(200); expect(state.row.subscription_tier).toBe("pro");
   });
 });
 
@@ -202,7 +321,7 @@ describe("Stripe ownership", () => {
     await stripeEvent("customer.subscription.updated"); expect(state.row).toEqual(original);
   });
   it("allows an owned RevenueCat purchase to renew and atomically guards its grant", async () => {
-    state.row = row("revenuecat"); await rc("RENEWAL"); expect(state.row.subscription_tier).toBe("pro");
+    state.row = row("revenuecat"); await rc("RENEWAL", Date.parse("2100-01-01")); expect(state.row.subscription_tier).toBe("pro");
     state.row = row(null, "free"); state.beforeWrite = () => { state.row = row("stripe"); };
     await rc("INITIAL_PURCHASE"); expect(state.row).toEqual(row("stripe"));
   });
