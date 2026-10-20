@@ -9,6 +9,7 @@ import { hashPassword, verifyPassword } from "./password";
 import { createSession, deleteSession } from "./session";
 import { processReferral } from "@/lib/referrals";
 import { inviteInput } from "./action-inputs";
+import { postAuthDestination } from "./onboarding-gate";
 
 const authSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -62,7 +63,9 @@ export async function registerAction(formData: FormData) {
   await createSession(newUser.id);
 
   if (inviteCode.success) redirect(`/invite/${inviteCode.data}`);
-  redirect("/overview");
+  // New accounts always start onboarding; redirecting via /overview made the
+  // dashboard layout chain a second redirect, which blanked the page (D-02).
+  redirect(postAuthDestination(false));
 }
 
 export async function loginAction(formData: FormData) {
@@ -80,7 +83,11 @@ export async function loginAction(formData: FormData) {
   const db = getDb();
 
   const [user] = await db
-    .select({ id: users.id, passwordHash: users.passwordHash })
+    .select({
+      id: users.id,
+      passwordHash: users.passwordHash,
+      onboardingCompleted: users.onboardingCompleted,
+    })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
@@ -97,7 +104,7 @@ export async function loginAction(formData: FormData) {
   await createSession(user.id);
   const inviteCode = inviteInput.safeParse(formData.get("invite"));
   if (inviteCode.success) redirect(`/invite/${inviteCode.data}`);
-  redirect("/overview");
+  redirect(postAuthDestination(user.onboardingCompleted === true));
 }
 
 export async function logoutAction() {

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAuth } from "@/lib/auth/guard";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { StreakBadge } from "@/components/streak-badge";
 import { WelcomeModal } from "@/components/welcome-modal";
 import { RevenueCatInit } from "@/components/revenuecat-init";
 import { nativeBillingEnabled } from "@/lib/billing/flags";
+import { resolveOnboardingGate } from "@/lib/auth/onboarding-gate";
 import { getDb } from "@/lib/db";
 import { dailyLogs, scenarioProfiles } from "@/lib/db/schema";
 import { eq, count } from "drizzle-orm";
@@ -19,16 +21,41 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Per-request server check: the user row is fetched fresh on every render,
+  // so a client-side navigation can never bypass the onboarding gate.
   const user = await requireAuth();
 
   const headersList = await headers();
-  const pathname = headersList.get("x-pathname") ?? "";
+  const pathname = headersList.get("x-pathname");
 
-  // Redirect to onboarding if not completed (avoid infinite redirect loop on /onboarding itself)
-  if (!user.onboardingCompleted) {
-    if (!pathname.startsWith("/onboarding")) {
-      redirect("/onboarding");
-    }
+  // Onboarding gate (D-02/D-03/D-37). `x-pathname` comes from src/proxy.ts; if it
+  // is absent the gate renders the bare shell instead of redirecting, so the
+  // layout can never loop on /onboarding.
+  const gate = resolveOnboardingGate(user.onboardingCompleted, pathname);
+  if (gate === "redirect") {
+    redirect("/onboarding");
+  }
+
+  if (gate === "allow") {
+    const onOnboarding = (pathname ?? "/onboarding").startsWith("/onboarding");
+    return (
+      <div className="flex h-full min-h-[100dvh] flex-col">
+        <header className="safe-top flex items-center gap-3 border-b bg-card px-4">
+          <div className="flex h-14 w-full items-center gap-3">
+            <span className="text-lg font-bold tracking-tight">Couplemetric</span>
+            {!onOnboarding && (
+              <Link
+                href="/onboarding"
+                className="ml-auto text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Continue setup
+              </Link>
+            )}
+          </div>
+        </header>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+      </div>
+    );
   }
 
   const db = getDb();
@@ -100,8 +127,7 @@ export default async function DashboardLayout({
         </main>
       </div>
 
-      {/* Don't show welcome modal during onboarding — it would cover the onboarding form */}
-      {!pathname.startsWith("/onboarding") && <WelcomeModal hasLogs={hasLogs} />}
+      <WelcomeModal hasLogs={hasLogs} />
 
       {/* Native billing SDK: configured once per page load, only when the server flag is on */}
       <RevenueCatInit userId={user.id} enabled={nativeBillingEnabled()} />
