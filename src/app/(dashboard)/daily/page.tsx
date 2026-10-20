@@ -5,10 +5,30 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { DailyLogWizard } from "./daily-client";
 import Link from "next/link";
 
-export default async function DailyPage() {
+const DIMENSION_LABELS = [
+  ["vitalityScore", "Vitality"],
+  ["growthScore", "Growth"],
+  ["securityScore", "Security"],
+  ["connectionScore", "Connection"],
+  ["emotionalScore", "Emotional"],
+  ["trustScore", "Trust"],
+  ["fairnessScore", "Fairness"],
+  ["stressScore", "Stress"],
+  ["autonomyScore", "Autonomy"],
+  ["mood", "Mood"],
+  ["energyLevel", "Energy"],
+] as const;
+
+export default async function DailyPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ edit?: string | string[] }>;
+}) {
   const user = await requireAuth();
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];
+  const params = (await searchParams) ?? {};
+  const wantsEdit = params.edit === "1" || params.edit === "true";
 
   // Check if already logged today
   const [existingLog] = await db
@@ -17,7 +37,11 @@ export default async function DailyPage() {
     .where(and(eq(dailyLogs.userId, user.id), eq(dailyLogs.date, today)))
     .limit(1);
 
-  if (existingLog) {
+  // Already logged today: show the entry with an Edit action. `?edit=1` opens the
+  // wizard pre-filled with today's values so the onboarding-sourced log (or a
+  // mistaken entry) can be replaced; the action updates in place.
+  if (existingLog && !wantsEdit) {
+    const isOnboardingLog = existingLog.notes === "Initial assessment from onboarding";
     // Fetch today's scores
     const [todayScores] = await db
       .select()
@@ -37,7 +61,9 @@ export default async function DailyPage() {
             You&apos;ve already logged today
           </h1>
           <p className="mb-8 text-muted-foreground">
-            Come back tomorrow to log again. Consistency is key!
+            {isOnboardingLog
+              ? "Today\u2019s entry comes from your onboarding self-assessment. You can refine it any time today."
+              : "Come back tomorrow to log again. Consistency is key!"}
           </p>
 
           {todayScores && (
@@ -63,10 +89,33 @@ export default async function DailyPage() {
             </div>
           )}
 
+          <div className="mb-8 rounded-xl border bg-card p-4 text-left" data-testid="today-log-values">
+            <div className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Today&apos;s entry
+            </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
+              {DIMENSION_LABELS.map(([column, label]) => (
+                <div key={column} className="flex items-center justify-between gap-2">
+                  <dt className="text-muted-foreground">{label}</dt>
+                  <dd className="font-mono font-medium tabular-nums">{existingLog[column]}/10</dd>
+                </div>
+              ))}
+            </dl>
+            {existingLog.notes && !isOnboardingLog && (
+              <p className="mt-3 text-sm text-muted-foreground">{existingLog.notes}</p>
+            )}
+          </div>
+
           <div className="flex flex-col gap-3">
             <Link
-              href="/exercises"
+              href="/daily?edit=1"
               className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Edit Today&apos;s Log
+            </Link>
+            <Link
+              href="/exercises"
+              className="inline-flex h-12 items-center justify-center rounded-md border bg-background px-6 text-sm font-medium hover:bg-accent"
             >
               Do Today&apos;s Exercises
             </Link>
@@ -120,8 +169,23 @@ export default async function DailyPage() {
         }
       : null;
 
-  // Previous log values used as carry-forward defaults for non-asked quick-mode dimensions
-  const prevLog = recentLogs[0] ?? null;
+  // Previous log values used as carry-forward defaults for non-asked quick-mode dimensions.
+  // When editing, today's own entry is the source so the wizard opens pre-filled.
+  const prevLog = existingLog
+    ? {
+        vitality: existingLog.vitalityScore,
+        growth: existingLog.growthScore,
+        security: existingLog.securityScore,
+        connection: existingLog.connectionScore,
+        emotional: existingLog.emotionalScore,
+        trust: existingLog.trustScore,
+        fairness: existingLog.fairnessScore,
+        stress: existingLog.stressScore,
+        autonomy: existingLog.autonomyScore,
+        mood: existingLog.mood,
+        energyLevel: existingLog.energyLevel,
+      }
+    : recentLogs[0] ?? null;
   const previousLogValues = prevLog
     ? {
         vitality: prevLog.vitality,

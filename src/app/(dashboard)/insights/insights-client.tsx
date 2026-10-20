@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -61,8 +63,24 @@ const REL_COLORS: Record<string, string> = {
   autonomy: "#22c55e",
 };
 
+const VIEWPORT_GUTTER = 16;
+
 function InfoTooltip({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
+
+  // Keep the popover inside the viewport: measure once it mounts and pull it
+  // back from whichever edge it overflows (phones clip it on the right).
+  // A callback ref runs after layout, so no state round-trip is needed.
+  const keepInViewport = useCallback((el: HTMLSpanElement | null) => {
+    if (!el || typeof window === "undefined") return;
+    el.style.transform = "";
+    const rect = el.getBoundingClientRect();
+    const overflowRight = rect.right - (window.innerWidth - VIEWPORT_GUTTER);
+    const overflowLeft = VIEWPORT_GUTTER - rect.left;
+    const shift = overflowRight > 0 ? -overflowRight : overflowLeft > 0 ? overflowLeft : 0;
+    if (shift !== 0) el.style.transform = `translateX(${shift}px)`;
+  }, []);
+
   return (
     <span className="relative inline-flex items-center">
       <button
@@ -70,11 +88,16 @@ function InfoTooltip({ text }: { text: string }) {
         onClick={() => setOpen((v) => !v)}
         className="text-muted-foreground hover:text-foreground transition-colors ml-1"
         aria-label="More info"
+        aria-expanded={open}
       >
         {open ? <X className="h-3.5 w-3.5" /> : <HelpCircle className="h-3.5 w-3.5" />}
       </button>
       {open && (
-        <span className="absolute left-6 top-0 z-10 w-64 rounded-md border bg-popover px-3 py-2 text-xs text-muted-foreground shadow-md">
+        <span
+          ref={keepInViewport}
+          role="tooltip"
+          className="absolute left-0 top-full z-10 mt-1 w-64 max-w-[calc(100vw-32px)] whitespace-normal rounded-md border bg-popover px-3 py-2 text-left text-xs font-normal text-muted-foreground shadow-md"
+        >
           {text}
         </span>
       )}
@@ -181,6 +204,47 @@ export function InsightsClient({
               </CardContent>
             </Card>
           ))
+        ) : currentDimScores && Object.keys(currentDimScores).length > 0 ? (
+          (() => {
+            // A logged day with no rule firing means nothing is in the red. Point at
+            // the weakest dimension (stress counts when high) so there is always a next step.
+            const ranked = Object.entries(currentDimScores)
+              .map(([dim, value]) => ({ dim, value, weakness: dim === "stress" ? value : 10 - value }))
+              .sort((a, b) => b.weakness - a.weakness);
+            const weakest = ranked[0];
+            return (
+              <Card data-testid="balanced-recommendation">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Lightbulb className="h-4 w-4 text-emerald-400" />
+                    <CardTitle className="text-base flex-1 min-w-0">Nothing urgent today</CardTitle>
+                    <Badge variant="secondary" className="ml-auto shrink-0">maintenance</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm">
+                    No dimension is in a danger zone, so there is no urgent fix. Your scores
+                    are an even baseline right now. Log a few more days and personalized
+                    recommendations will sharpen as trends appear.
+                  </p>
+                  {weakest && (
+                    <p className="text-sm text-muted-foreground">
+                      Easiest win: <span className="font-medium capitalize text-foreground">{weakest.dim}</span>{" "}
+                      ({weakest.value.toFixed(1)}/10).{DIM_TIPS[weakest.dim] ? ` ${DIM_TIPS[weakest.dim]}` : ""}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button size="sm" render={<Link href="/exercises" />}>
+                      Try an exercise
+                    </Button>
+                    <Button size="sm" variant="outline" render={<Link href="/daily" />}>
+                      Refine today&apos;s log
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()
         ) : (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">

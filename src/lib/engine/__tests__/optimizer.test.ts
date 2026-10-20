@@ -121,4 +121,57 @@ describe('optimizeAllocations', () => {
       expect(val).toBeLessThanOrEqual(10)
     }
   })
+
+  // ── D-10: tradeoffs and predictions come from the clamped solution ──
+  it('never reports a tradeoff larger than the 0-10 scale allows', () => {
+    const highStress = {
+      pillars: midScores.pillars,
+      relDims: { emotional: 5, trust: 5, fairness: 5, stress: 9, autonomy: 5 } as RelDimScores,
+    }
+    const result = optimizeAllocations(highStress, defaultWeights, [])
+    for (const t of result.tradeoffs) {
+      const match = t.match(/~([\d.]+) points/)
+      expect(match).not.toBeNull()
+      expect(Number(match![1])).toBeLessThanOrEqual(10)
+    }
+  })
+
+  it('does not describe lowering stress as a tradeoff', () => {
+    const highStress = {
+      pillars: midScores.pillars,
+      relDims: { emotional: 5, trust: 5, fairness: 5, stress: 9, autonomy: 5 } as RelDimScores,
+    }
+    const result = optimizeAllocations(highStress, defaultWeights, [])
+    expect(result.tradeoffs.some((t) => t.startsWith('stress may decrease'))).toBe(false)
+    // The plan itself still moves stress down
+    expect(result.recommendedAllocations.stress).toBeLessThan(9)
+  })
+
+  it('keeps every recommendation within maxStep of the current value (default 2)', () => {
+    const result = optimizeAllocations(midScores, defaultWeights, [])
+    for (const val of Object.values(result.recommendedAllocations)) {
+      expect(val).toBeGreaterThanOrEqual(3)
+      expect(val).toBeLessThanOrEqual(7)
+    }
+    // Reachable plan: a balanced 5/10 profile does not predict a perfect 100
+    expect(result.predictedScores.totalQuality).toBeLessThan(100)
+    expect(result.predictedScores.totalQuality).toBeGreaterThan(50)
+  })
+
+  it('honours a custom maxStep', () => {
+    const result = optimizeAllocations(midScores, defaultWeights, [], { maxStep: 1 })
+    for (const val of Object.values(result.recommendedAllocations)) {
+      expect(val).toBeGreaterThanOrEqual(4)
+      expect(val).toBeLessThanOrEqual(6)
+    }
+  })
+
+  it('an unbounded run still clamps allocations to 0-10 and predicts at most 100', () => {
+    const result = optimizeAllocations(midScores, defaultWeights, [], { maxStep: 100 })
+    for (const val of Object.values(result.recommendedAllocations)) {
+      expect(val).toBeGreaterThanOrEqual(0)
+      expect(val).toBeLessThanOrEqual(10)
+    }
+    expect(result.predictedScores.totalQuality).toBeLessThanOrEqual(100)
+  })
 })

@@ -420,7 +420,7 @@ export function DashboardClient({
               <Button
                 variant="outline"
                 className="h-auto justify-start py-3"
-                render={<Link href="/insights" />}
+                render={<Link href="/daily" />}
               >
                 <Calendar className="mr-3 h-5 w-5 text-blue-400" />
                 <div className="text-left">

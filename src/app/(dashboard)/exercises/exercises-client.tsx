@@ -54,6 +54,13 @@ export function ExercisesClient({
   const [timer, setTimer] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const handle = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(handle);
+  }, [toast]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -68,6 +75,15 @@ export function ExercisesClient({
   }
 
   async function handleComplete(exercise: Exercise, rating: number) {
+    // Rating at 0:00 means the exercise was never started; ask before logging it.
+    if (timer === 0 && !isRunning) {
+      const proceed =
+        typeof window !== "undefined" &&
+        window.confirm(
+          "You haven't started the timer yet. Mark this exercise as completed anyway?",
+        );
+      if (!proceed) return;
+    }
     const result = await completeExercise({
       exerciseId: exercise.id,
       title: exercise.title,
@@ -87,7 +103,20 @@ export function ExercisesClient({
     setActiveExercise(null);
     setIsRunning(false);
     setTimer(0);
+    setToast(`"${exercise.title}" completed and saved to your history.`);
   }
+
+  const toastNode = toast ? (
+    <div
+      role="status"
+      aria-live="polite"
+      data-testid="exercise-toast"
+      className="fixed inset-x-4 bottom-24 z-50 mx-auto flex max-w-md items-center gap-2 rounded-md border bg-card px-4 py-3 text-sm shadow-lg"
+    >
+      <Check className="h-4 w-4 shrink-0 text-emerald-400" />
+      <span className="flex-1">{toast}</span>
+    </div>
+  ) : null;
 
   if (activeExercise) {
     return (
@@ -179,6 +208,7 @@ export function ExercisesClient({
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {toastNode}
       {(actionError || showsWeeklyAllowance) && (
         <div className="col-span-full space-y-2">
           {showsWeeklyAllowance && (
