@@ -4,6 +4,7 @@ import { dailyLogs, interventions } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { ExercisesClient } from "./exercises-client";
 import { getUserTier } from "@/lib/subscription/access";
+import { exercisesRemainingThisWeek, weeklyWindowStart } from "@/lib/subscription/history";
 import { computeInterventionImpact } from "@/lib/engine/impact";
 
 export default async function ExercisesPage() {
@@ -11,8 +12,7 @@ export default async function ExercisesPage() {
   const userTier = await getUserTier(user.id);
   const db = getDb();
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const sevenDaysAgo = weeklyWindowStart();
 
   const [latestLog, recentInterventions] = await Promise.all([
     db
@@ -48,13 +48,12 @@ export default async function ExercisesPage() {
       }
     : null;
 
-  const recentExerciseIds = recentInterventions
-    .filter(
-      (i) =>
-        i.createdAt &&
-        new Date(i.createdAt) >= sevenDaysAgo
-    )
-    .map((i) => i.type);
+  const completedThisWeek = recentInterventions.filter(
+    (i) => i.createdAt && new Date(i.createdAt) >= sevenDaysAgo
+  );
+  const recentExerciseIds = completedThisWeek.map((i) => i.type);
+  // Mirrors the server check in completeExercise; the client only displays it.
+  const remainingThisWeek = exercisesRemainingThisWeek(userTier, completedThisWeek.length);
 
   // Compute impact from completed interventions
   const impactSummary = computeInterventionImpact(recentInterventions);
@@ -73,6 +72,7 @@ export default async function ExercisesPage() {
         currentScores={currentScores}
         recentExerciseIds={recentExerciseIds}
         userTier={userTier}
+        remainingThisWeek={remainingThisWeek}
         impactSummary={impactSummary}
       />
     </div>

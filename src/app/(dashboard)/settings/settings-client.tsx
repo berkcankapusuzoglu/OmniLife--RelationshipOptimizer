@@ -348,6 +348,7 @@ export function SettingsClient({
               variant="outline"
               onClick={async () => {
                 const data = await exportData();
+                if ("error" in data) { window.alert(data.error); return; }
                 const blob = new Blob([JSON.stringify(data, null, 2)], {
                   type: "application/json",
                 });

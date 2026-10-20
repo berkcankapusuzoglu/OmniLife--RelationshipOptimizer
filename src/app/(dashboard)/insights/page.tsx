@@ -1,12 +1,13 @@
 import { requireAuth } from "@/lib/auth/guard";
 import { getDb } from "@/lib/db";
 import { scores, dailyLogs, constraints } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc, gte } from "drizzle-orm";
 import { InsightsClient } from "./insights-client";
 import { findParetoFrontier, getPositionRelativeToFrontier } from "@/lib/engine/pareto";
 import { generateRecommendations } from "@/lib/recommendations/rules";
 import { detectTrendViolations } from "@/lib/engine/trends";
-import { getUserTier, getFeatureLimits } from "@/lib/subscription/access";
+import { canAccess, getUserTier } from "@/lib/subscription/access";
+import { historyCutoff } from "@/lib/subscription/history";
 import { BackButton } from "@/components/back-button";
 import type { Constraint, OptimizerResult, ParetoAnalysis } from "@/lib/engine/types";
 import { linkedPartnerId } from "@/lib/auth/authorization";
@@ -14,19 +15,21 @@ import { linkedPartnerId } from "@/lib/auth/authorization";
 export default async function InsightsPage() {
   const user = await requireAuth();
   const userTier = await getUserTier(user.id);
+  const insightsUnlocked = canAccess(userTier, "insights");
+  const cutoff = historyCutoff(userTier);
   const db = getDb();
 
   const [allScores, recentLogs, userConstraints] = await Promise.all([
     db
       .select()
       .from(scores)
-      .where(eq(scores.userId, user.id))
+      .where(and(eq(scores.userId, user.id), gte(scores.date, cutoff)))
       .orderBy(desc(scores.date))
       .limit(90),
     db
       .select()
       .from(dailyLogs)
-      .where(eq(dailyLogs.userId, user.id))
+      .where(and(eq(dailyLogs.userId, user.id), gte(dailyLogs.date, cutoff)))
       .orderBy(desc(dailyLogs.date))
       .limit(30),
     db
@@ -139,11 +142,8 @@ export default async function InsightsPage() {
       )
     : [];
 
-  const limits = getFeatureLimits(userTier);
-  const historyLimit = limits.historyDays === Infinity ? recentLogs.length : limits.historyDays;
-  const limitedLogs = recentLogs.slice(0, historyLimit);
-
-  const trendData = limitedLogs.reverse().map((log) => ({
+  // History is already bounded server-side by `historyCutoff`.
+  const trendData = [...recentLogs].reverse().map((log) => ({
     date: log.date,
     vitality: log.vitalityScore,
     growth: log.growthScore,
@@ -206,7 +206,7 @@ export default async function InsightsPage() {
 
   // Fetch partner scores for comparison (if partner linked)
   let partnerPoints: { lifeScore: number; relScore: number; date: string }[] = [];
-  const partnerId = await linkedPartnerId(user);
+  const partnerId = insightsUnlocked ? await linkedPartnerId(user) : null;
   if (partnerId) {
     const partnerScores = await db
       .select({ lifeScore: scores.lifeScore, relScore: scores.relScore, date: scores.date })
@@ -234,10 +234,11 @@ export default async function InsightsPage() {
         </p>
       </div>
       <InsightsClient
-        historicalPoints={historicalPoints}
-        frontierPoints={frontierPoints}
+        // Locked sections receive no real data: the gate renders a static placeholder.
+        historicalPoints={insightsUnlocked ? historicalPoints : []}
+        frontierPoints={insightsUnlocked ? frontierPoints : []}
         currentPoint={
-          historicalPoints.length > 0
+          insightsUnlocked && historicalPoints.length > 0
             ? {
                 lifeScore: historicalPoints[0].lifeScore,
                 relScore: historicalPoints[0].relScore,

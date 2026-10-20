@@ -28,7 +28,7 @@ export function UpgradePrompt({
         <div className="flex-1 space-y-1">
           <p className="text-sm font-medium">{featureDescription}</p>
           <p className="text-xs text-muted-foreground">
-            {native === false ? "Unlock all features with Premium" : "This feature is not available for your account."}
+            {native === false ? "Unlock everything with Premium. One plan covers both partners." : "This feature is not available for your account."}
           </p>
         </div>
         {native === false && <div className="flex gap-2">

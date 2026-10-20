@@ -114,8 +114,8 @@ export function PartnerClient({
                   Partner Linked!
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  You&apos;ve unlocked couple bonuses: +3 extra exercises, 14-day
-                  history, and couple comparison view.
+                  You can now compare scores and share tasks. If either of you
+                  has Premium, it covers you both while you stay linked.
                 </p>
               </div>
             </CardContent>

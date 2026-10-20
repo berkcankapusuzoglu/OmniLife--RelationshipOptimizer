@@ -880,7 +880,7 @@ export default function LandingClient() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-3 text-sm">
-                  {[...TIERS.pro.featureList, ...TIERS.premium.featureList.slice(1)].map((item) => (
+                  {TIERS.premium.featureList.map((item) => (
                     <li key={item} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-violet-400" />
                       {item}

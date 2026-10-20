@@ -6,6 +6,8 @@ import { eq, desc, and, gte } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth/guard";
 import { linkedPartnerId } from "@/lib/auth/authorization";
 import { getUserTier } from "@/lib/subscription/access";
+import { compareCutoff } from "@/lib/subscription/history";
+import { TIERS } from "@/lib/subscription/tiers";
 import { z } from "zod";
 
 const comparisonWindow = z.union([z.literal(7), z.literal(30)]);
@@ -15,13 +17,15 @@ export async function getPartnerData(dayLimit: number) {
   const partnerId = await linkedPartnerId(user);
   if (!partnerId) return { partner: null, scores: [], logs: [] };
   const requestedWindow = comparisonWindow.parse(dayLimit);
+  // Server-enforced: the effective window never exceeds the tier's compareDays.
   const tier = await getUserTier(user.id);
-  dayLimit = Math.min(requestedWindow, tier === "premium" ? 30 : 7);
+  dayLimit = Math.min(requestedWindow, TIERS[tier].features.compareDays);
   const db = getDb();
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - dayLimit);
-  const cutoff = cutoffDate.toISOString().split("T")[0];
+  // Narrowest of: the tier's compare window and the requested window.
+  const requestedCutoff = new Date();
+  requestedCutoff.setUTCDate(requestedCutoff.getUTCDate() - dayLimit);
+  const cutoff = [compareCutoff(tier), requestedCutoff.toISOString().split("T")[0]].sort().at(-1)!;
 
   const [partner, partnerScores, partnerLogs] = await Promise.all([
     db

@@ -11,6 +11,7 @@ import { verifyPassword } from "@/lib/auth/password";
 import { deleteSession } from "@/lib/auth/session";
 import { BillingDeletionError, deleteAccount } from "@/lib/account/delete-account";
 import { redirect } from "next/navigation";
+import { hasFeatureAccess } from "@/lib/auth/tier-gate";
 
 export async function deleteAccountAction(_state: { error?: string }, formData: FormData): Promise<{ error?: string }> {
   const user = await requireAuth();
@@ -70,6 +71,8 @@ export async function updateWeights(weights: Weights) {
 
 export async function exportData() {
   const user = await requireAuth();
+  const access = await hasFeatureAccess(user.id, "exportReports");
+  if (!access.allowed) return { error: "Data export is a Premium feature." } as const;
   const userId = user.id;
   const db = getDb();
 

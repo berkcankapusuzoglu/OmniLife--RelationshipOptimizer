@@ -103,7 +103,8 @@ export function ScenariosClient({
                   <Button
                     size="sm"
                     onClick={async () => {
-                      await activateScenario(scenario.id, scenario.mode);
+                      const result = await activateScenario(scenario.id, scenario.mode);
+                      if (result?.error) window.alert(result.error);
                     }}
                     disabled={activeScenarioId === scenario.id}
                   >

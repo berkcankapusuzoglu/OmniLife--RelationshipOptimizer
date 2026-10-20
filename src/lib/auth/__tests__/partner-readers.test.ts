@@ -234,7 +234,13 @@ describe("Compare server-side entitlement window", () => {
     expect(state.reads.filter((read) => read.table === "scores" || read.table === "daily_logs")).toEqual([]);
   });
 
-  it.each(["free", "pro", "expired-paid", "expired-trial"])("caps a requested paid window to seven days for effective entitlement %s", async (entitlement) => {
+  it("gives legacy pro the compareDays window from the feature matrix (30 days)", async () => {
+    state.rows.users[1].subscriptionTier = "pro";
+    const result = await getPartnerData(30);
+    expect(result.scores.map((score) => score.date)).toEqual(["2026-10-14", "2026-10-07", "2026-10-06", "2026-09-14"]);
+  });
+
+  it.each(["free", "expired-paid", "expired-trial"])("caps a requested paid window to seven days for effective entitlement %s", async (entitlement) => {
     const viewer = state.rows.users[1];
     viewer.subscriptionTier = entitlement === "expired-paid" ? "premium" : entitlement === "expired-trial" ? "free" : entitlement;
     viewer.subscriptionExpiresAt = entitlement === "expired-paid" ? new Date("2026-10-13T00:00:00Z") : null;
