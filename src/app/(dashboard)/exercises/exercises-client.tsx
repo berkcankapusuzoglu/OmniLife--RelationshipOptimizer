@@ -9,7 +9,7 @@ import { Clock, BookOpen, Star, Play, Check, BarChart3, TrendingUp, TrendingDown
 import { getRecommendedExercises } from "@/lib/recommendations/engine";
 import { completeExercise } from "./actions";
 import { UpgradePrompt } from "@/components/upgrade-prompt";
-import { TIERS } from "@/lib/subscription/tiers";
+import { TIERS, type SubscriptionTier } from "@/lib/subscription/tiers";
 import type { PillarScores, RelDimScores, Exercise } from "@/lib/engine/types";
 import type { ImpactSummary } from "@/lib/engine/impact";
 
@@ -20,6 +20,8 @@ interface ExercisesClientProps {
   } | null;
   recentExerciseIds: string[];
   userTier: string;
+  /** Exercises left in the rolling 7-day window (Infinity = unlimited). Enforced server-side. */
+  remainingThisWeek?: number;
   impactSummary?: ImpactSummary;
 }
 
@@ -27,10 +29,13 @@ export function ExercisesClient({
   currentScores,
   recentExerciseIds,
   userTier,
+  remainingThisWeek = Infinity,
   impactSummary,
 }: ExercisesClientProps) {
-  const tier = userTier as "free" | "premium";
+  const tier = (userTier in TIERS ? userTier : "free") as SubscriptionTier;
   const exerciseLimit = TIERS[tier].features.exerciseLimit;
+  const weeklyAllowanceSpent = remainingThisWeek <= 0;
+  const [actionError, setActionError] = useState<string | null>(null);
   const defaultScores = {
     pillars: { vitality: 5, growth: 5, security: 5, connection: 5 },
     relDims: { emotional: 5, trust: 5, fairness: 5, stress: 5, autonomy: 5 },
@@ -63,13 +68,21 @@ export function ExercisesClient({
   }
 
   async function handleComplete(exercise: Exercise, rating: number) {
-    await completeExercise({
+    const result = await completeExercise({
       exerciseId: exercise.id,
       title: exercise.title,
       theoryBasis: exercise.theoryBasis,
       targetDimension: exercise.targetDimensions[0],
       rating,
     });
+    if (result?.error) {
+      setActionError(result.error);
+      setActiveExercise(null);
+      setIsRunning(false);
+      setTimer(0);
+      return;
+    }
+    setActionError(null);
     setCompleted((prev) => new Set(prev).add(exercise.id));
     setActiveExercise(null);
     setIsRunning(false);
@@ -162,9 +175,24 @@ export function ExercisesClient({
       ? exercises
       : exercises.slice(0, exerciseLimit);
   const hasMore = exercises.length > visibleExercises.length;
+  const showsWeeklyAllowance = Number.isFinite(remainingThisWeek);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {(actionError || showsWeeklyAllowance) && (
+        <div className="col-span-full space-y-2">
+          {showsWeeklyAllowance && (
+            <p className="text-sm text-muted-foreground" data-testid="weekly-allowance">
+              {weeklyAllowanceSpent
+                ? `You've used all ${exerciseLimit} exercises for this week. Your allowance resets as completions age past 7 days.`
+                : `${remainingThisWeek} of ${exerciseLimit} exercises left this week.`}
+            </p>
+          )}
+          {actionError && (
+            <p className="text-sm text-destructive" role="alert">{actionError}</p>
+          )}
+        </div>
+      )}
       {visibleExercises.map((exercise) => (
         <Card key={exercise.id}>
           <CardHeader className="pb-3">
@@ -199,9 +227,13 @@ export function ExercisesClient({
               size="sm"
               className="w-full"
               onClick={() => setActiveExercise(exercise)}
-              disabled={completed.has(exercise.id)}
+              disabled={completed.has(exercise.id) || weeklyAllowanceSpent}
             >
-              {completed.has(exercise.id) ? "Completed" : "Start Exercise"}
+              {completed.has(exercise.id)
+                ? "Completed"
+                : weeklyAllowanceSpent
+                  ? "Weekly limit reached"
+                  : "Start Exercise"}
             </Button>
           </CardContent>
         </Card>
@@ -210,7 +242,7 @@ export function ExercisesClient({
       {hasMore && (
         <div className="col-span-full">
           <UpgradePrompt
-            featureDescription={`You're seeing ${exerciseLimit} of ${exercises.length} exercises available for your account.`}
+            featureDescription={`You're seeing ${exerciseLimit} of ${exercises.length} exercises this week. Premium unlocks the full library.`}
           />
         </div>
       )}

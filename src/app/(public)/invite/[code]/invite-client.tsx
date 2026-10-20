@@ -39,9 +39,9 @@ export function InviteClient({
               <div className="flex items-start gap-3">
                 <Sparkles className="mt-0.5 h-4 w-4 text-purple-400 shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Couple Bonus Unlocked</p>
+                  <p className="text-sm font-medium">One plan covers you both</p>
                   <p className="text-xs text-muted-foreground">
-                    8 exercises, 14-day history, and couple comparison view
+                    If your partner has Premium, you share it while linked
                   </p>
                 </div>
               </div>

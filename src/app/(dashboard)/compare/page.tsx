@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { BackButton } from "@/components/back-button";
+import { getUserTier } from "@/lib/subscription/access";
+import { compareCutoff } from "@/lib/subscription/history";
+import { TIERS } from "@/lib/subscription/tiers";
 
 export default async function ComparePage() {
   const user = await requireAuth();
@@ -33,15 +36,10 @@ export default async function ComparePage() {
     );
   }
 
-  // Free users get 7 days, premium get 30
-  // For now, treat all as free (7 days) — premium check can be added later
-  const { getUserTier } = await import("@/lib/subscription/access");
+  // Comparison window comes from TIERS[tier].features.compareDays (free 7, Premium 30).
   const userTier = await getUserTier(user.id);
-  const dayLimit = userTier === "premium" ? 30 : 7;
-
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - dayLimit);
-  const cutoff = cutoffDate.toISOString().split("T")[0];
+  const dayLimit = TIERS[userTier].features.compareDays;
+  const cutoff = compareCutoff(userTier);
 
   const [myScores, myLogs, partnerData] = await Promise.all([
     getDb()

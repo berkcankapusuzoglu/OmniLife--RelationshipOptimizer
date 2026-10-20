@@ -77,7 +77,8 @@ export function ConstraintsClient({
             </DialogHeader>
             <form
               action={async (formData) => {
-                await addConstraint(formData);
+                const result = await addConstraint(formData);
+                if (result?.error) { window.alert(result.error); return; }
                 setOpen(false);
               }}
               className="space-y-4"

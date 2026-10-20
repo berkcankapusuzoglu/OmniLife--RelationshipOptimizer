@@ -8,10 +8,13 @@ import { v4 as uuid } from "uuid";
 import { requireAuth } from "@/lib/auth/guard";
 import { constraintInput, optionalFormNumber, resourceId } from "@/lib/auth/action-inputs";
 import { z } from "zod";
+import { hasFeatureAccess } from "@/lib/auth/tier-gate";
 
-export async function addConstraint(formData: FormData) {
+export async function addConstraint(formData: FormData): Promise<{ error?: string }> {
   const user = await requireAuth();
   const data = constraintInput.parse({ name: formData.get("name"), type: formData.get("type"), dimension: formData.get("dimension"), minValue: optionalFormNumber(formData.get("minValue")), maxValue: optionalFormNumber(formData.get("maxValue")), budgetHours: optionalFormNumber(formData.get("budgetHours")) });
+  const access = await hasFeatureAccess(user.id, "constraints");
+  if (!access.allowed) return { error: "Limits & boundaries are a Premium feature." };
   const db = getDb();
 
   await db.insert(constraints).values({
@@ -27,6 +30,7 @@ export async function addConstraint(formData: FormData) {
   });
 
   revalidatePath("/constraints");
+  return { error: undefined };
 }
 
 export async function toggleConstraint(id: string, isActive: boolean) {

@@ -6,35 +6,27 @@ import { DashboardClient } from "./dashboard-client";
 import { detectTrendViolations } from "@/lib/engine/trends";
 import { detectCrisisAlerts } from "@/lib/engine/alerts";
 import { generateGratitude } from "@/lib/gratitude";
+import { getUserTier } from "@/lib/subscription/access";
+import { historyCutoff } from "@/lib/subscription/history";
 
 export default async function DashboardPage() {
   const user = await requireAuth();
   const db = getDb();
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  // The overview shows the last 7 entries, never older than the tier's history window.
+  const cutoff = historyCutoff(await getUserTier(user.id));
 
   const [recentLogs, recentScores] = await Promise.all([
     db
       .select()
       .from(dailyLogs)
-      .where(
-        and(
-          eq(dailyLogs.userId, user.id),
-          gte(dailyLogs.date, sevenDaysAgo.toISOString().split("T")[0])
-        )
-      )
+      .where(and(eq(dailyLogs.userId, user.id), gte(dailyLogs.date, cutoff)))
       .orderBy(desc(dailyLogs.date))
       .limit(7),
     db
       .select()
       .from(scores)
-      .where(
-        and(
-          eq(scores.userId, user.id),
-          gte(scores.date, sevenDaysAgo.toISOString().split("T")[0])
-        )
-      )
+      .where(and(eq(scores.userId, user.id), gte(scores.date, cutoff)))
       .orderBy(desc(scores.date))
       .limit(7),
   ]);

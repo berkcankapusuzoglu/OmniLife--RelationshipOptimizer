@@ -2,11 +2,13 @@
 
 import { getDb } from "@/lib/db";
 import { interventions, dailyLogs } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, count, eq, desc, gte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { v4 as uuid } from "uuid";
 import { requireAuth } from "@/lib/auth/guard";
 import { exerciseInput } from "@/lib/auth/action-inputs";
+import { getUserTier } from "@/lib/subscription/access";
+import { exercisesRemainingThisWeek, weeklyWindowStart } from "@/lib/subscription/history";
 
 export async function completeExercise(data: {
   exerciseId: string;
@@ -14,10 +16,22 @@ export async function completeExercise(data: {
   theoryBasis: string;
   targetDimension: string;
   rating: number;
-}) {
+}): Promise<{ error?: string }> {
   const user = await requireAuth();
   data = exerciseInput.parse(data);
   const db = getDb();
+
+  // Server-enforced weekly limit: count this user's completions in the rolling week.
+  const tier = await getUserTier(user.id);
+  const [completed] = await db
+    .select({ count: count() })
+    .from(interventions)
+    // Bound as a raw Date param (postgres.js serializes Dates) so the window is an exact timestamp.
+    .where(and(eq(interventions.userId, user.id), gte(interventions.createdAt, sql`${weeklyWindowStart()}`)));
+  const completedLast7Days = Number(completed?.count ?? 0) || 0;
+  if (exercisesRemainingThisWeek(tier, completedLast7Days) <= 0) {
+    return { error: "You've used all of this week's exercises. Premium unlocks the full library." };
+  }
 
   // Get the latest daily log to extract scoreBefore for the target dimension
   const [latestLog] = await db
@@ -57,4 +71,5 @@ export async function completeExercise(data: {
   });
 
   revalidatePath("/exercises");
+  return { error: undefined };
 }

@@ -8,26 +8,28 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth/guard";
 import { resourceId, scenarioMode } from "@/lib/auth/action-inputs";
 import { v4 as uuid } from "uuid";
+import { hasFeatureAccess } from "@/lib/auth/tier-gate";
 
 export async function activateScenario(
   scenarioId: string,
   mode: string
-) {
+): Promise<{ error?: string }> {
   const user = await requireAuth();
   mode = scenarioMode.parse(mode);
+  const access = await hasFeatureAccess(user.id, "scenarios");
+  if (!access.allowed) return { error: "Scenario modes are a Premium feature." };
   const db = getDb();
   const preset = SCENARIO_PRESETS.find((p) => p.mode === mode);
-  if (!preset) return;
-  if (scenarioId === preset.id) {
-    // UI presets have symbolic IDs; activeScenarioId stores an owned UUID row.
+  if (!preset) return { error: "Unknown scenario mode." };
+  const parsedId = resourceId.safeParse(scenarioId);
+  if (!parsedId.success) {
+    // UI presets have symbolic (non-UUID) IDs; activeScenarioId stores an owned UUID row.
     scenarioId = uuid();
     await db.insert(scenarioProfiles).values({ id: scenarioId, userId: user.id, name: preset.name, mode: preset.mode, description: preset.description, weightOverrides: preset.weightOverrides, constraintOverrides: preset.constraintOverrides, isPreset: true });
   } else {
-    const parsedId = resourceId.safeParse(scenarioId);
-    if (!parsedId.success) return;
     const [owned] = await db.select({ id: scenarioProfiles.id }).from(scenarioProfiles)
       .where(and(eq(scenarioProfiles.id, parsedId.data), eq(scenarioProfiles.userId, user.id), eq(scenarioProfiles.mode, mode as typeof scenarioProfiles.$inferSelect.mode))).limit(1);
-    if (!owned) return;
+    if (!owned) return { error: "Scenario not found." };
     scenarioId = owned.id;
   }
 
@@ -61,4 +63,5 @@ export async function activateScenario(
   await db.update(users).set(updateData).where(eq(users.id, user.id));
 
   revalidatePath("/", "layout");
+  return { error: undefined };
 }
