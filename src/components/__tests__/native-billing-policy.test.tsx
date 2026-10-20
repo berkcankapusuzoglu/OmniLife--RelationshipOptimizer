@@ -95,7 +95,7 @@ describe("native billing policy with the flag off (pre-1.1.0 clients and disable
   });
   it.each(["free", "pro", "premium"])("makes native direct pricing safe for %s users", async (tier) => {
     expectNoBilling(html(<PricingClient currentTier={tier} userId="test-user" />));
-    expectNoBilling(html(await PricingPage()));
+    expectNoBilling(html(await PricingPage({ searchParams: Promise.resolve({}) })));
   });
   it("keeps landing-page native navigation free of paid offers", () => {
     expectNoBilling(html(<LandingClient />));
@@ -120,7 +120,7 @@ describe("native billing policy with the flag on", () => {
     expect(markup).not.toMatch(/Manage Subscription/);
   });
   it("renders the same flag-on paywall from the server pricing page", async () => {
-    const markup = html(await PricingPage());
+    const markup = html(await PricingPage({ searchParams: Promise.resolve({}) }));
     expect(markup).toContain("Loading plans");
     expectNoWebPricing(markup);
   });

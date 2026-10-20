@@ -25,8 +25,8 @@ export const metadata: Metadata = {
 export default async function PricingPage({
   searchParams,
 }: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const params = (await searchParams) ?? {};
   // Upgrade CTAs deep-link here with `?plan=premium` so the plan is preselected.
   const preselectPlan = params.plan === "premium" ? "premium" : null;
