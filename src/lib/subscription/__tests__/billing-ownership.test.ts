@@ -69,11 +69,16 @@ vi.mock("@/lib/db", () => ({ getDb: () => ({
   delete: () => ({ where: async (predicate: SQL) => { state.events.delete(param(predicate)); } }),
 }) }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => ({ webhooks: { constructEvent: () => state.event } }) }));
-vi.mock("@/lib/auth/guard", () => ({ requireAuth: async () => ({ id: "user-test" }) }));
+vi.mock("@/lib/auth/guard", () => ({ requireAuth: async () => ({ id: USER }) }));
 
+// users.id is a Postgres uuid column, so every account id named in a test must be a UUID.
+const USER = "11111111-1111-4111-8111-111111111111";
+const OTHER = "22222222-2222-4222-8222-222222222222";
+const OLD = "33333333-3333-4333-8333-333333333333";
+const ALIAS = "44444444-4444-4444-8444-444444444444";
 const future = new Date("2099-01-01T00:00:00Z");
 function row(source: string | null, tier = "premium") {
-  return { id: "user-test", subscription_source: source, subscription_tier: tier, subscription_expires_at: future, stripe_customer_id: "cus_test", stripe_subscription_id: "sub_test", stripe_pending_checkout_token: "token_test", stripe_pending_checkout_session_id: "cs_test" };
+  return { id: USER, subscription_source: source, subscription_tier: tier, subscription_expires_at: future, stripe_customer_id: "cus_test", stripe_subscription_id: "sub_test", stripe_pending_checkout_token: "token_test", stripe_pending_checkout_session_id: "cs_test" };
 }
 // The webhook never trusts event fields: the RevenueCat REST snapshot is the
 // source of truth, so each event also seeds the subscriber the REST mock returns.
@@ -83,14 +88,14 @@ function snapshot(expiry: number | null, product = "pro_monthly", entitlement = 
 }
 async function rc(type: string, expiry: number | null = Date.parse(type === "EXPIRATION" ? "2020-01-01" : "2099-01-01"), event: Record<string, unknown> = {}) {
   state.subscriber = snapshot(expiry); state.reads = 0;
-  return revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers: { Authorization: "test-rc-auth" }, body: JSON.stringify({ event: { id: `evt_${++state.eventSeq}`, type, app_user_id: "user-test", product_id: "pro_monthly", expiration_at_ms: expiry, ...event } }) }));
+  return revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers: { Authorization: "test-rc-auth" }, body: JSON.stringify({ event: { id: `evt_${++state.eventSeq}`, type, app_user_id: USER, product_id: "pro_monthly", expiration_at_ms: expiry, ...event } }) }));
 }
 async function checkoutEvent(subscription = "sub_test", token = "token_test", session = "cs_test") {
-  state.event = { type: "checkout.session.completed", data: { object: { id: session, mode: "subscription", payment_status: "paid", client_reference_id: "user-test", customer: "cus_test", subscription, metadata: { tier: "pro", checkoutToken: token } } } };
+  state.event = { type: "checkout.session.completed", data: { object: { id: session, mode: "subscription", payment_status: "paid", client_reference_id: USER, customer: "cus_test", subscription, metadata: { tier: "pro", checkoutToken: token } } } };
   return stripe(new NextRequest("https://example.test/api/stripe/webhook", { method: "POST", headers: { "stripe-signature": "test-signature" }, body: "test-event" }));
 }
 async function stripeEvent(type: string, status = "active", subscriptionId = "sub_test", priceId = "price_pro_monthly", checkoutToken?: string) {
-  state.event = { type, data: { object: { id: subscriptionId, customer: "cus_test", status, metadata: checkoutToken ? { checkoutToken, appUserId: "user-test" } : {}, current_period_end: Date.parse("2099-01-01") / 1000, items: { data: [{ price: { id: priceId } }] } } } };
+  state.event = { type, data: { object: { id: subscriptionId, customer: "cus_test", status, metadata: checkoutToken ? { checkoutToken, appUserId: USER } : {}, current_period_end: Date.parse("2099-01-01") / 1000, items: { data: [{ price: { id: priceId } }] } } } };
   return stripe(new NextRequest("https://example.test/api/stripe/webhook", { method: "POST", headers: { "stripe-signature": "test-signature" }, body: "test-event" }));
 }
 beforeEach(() => {
@@ -193,7 +198,7 @@ describe("RevenueCat webhook", () => {
   const calls = () => vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
   it("rejects a missing or wrong authorization header without reading RevenueCat", async () => {
     for (const headers of [{}, { Authorization: "wrong" }] as Record<string, string>[]) {
-      const res = await revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers, body: JSON.stringify({ event: { id: "evt_x", type: "RENEWAL", app_user_id: "user-test" } }) }));
+      const res = await revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers, body: JSON.stringify({ event: { id: "evt_x", type: "RENEWAL", app_user_id: USER } }) }));
       expect(res.status).toBe(401);
     }
     expect(calls()).toEqual([]);
@@ -201,8 +206,8 @@ describe("RevenueCat webhook", () => {
   it("rejects malformed bodies and events without an id", async () => {
     const post = (body: string) => revenuecat(new NextRequest("https://example.test/api/revenuecat/webhook", { method: "POST", headers: { Authorization: "test-rc-auth" }, body }));
     expect((await post("{")).status).toBe(400);
-    expect((await post(JSON.stringify({ event: { type: "RENEWAL", app_user_id: "user-test" } }))).status).toBe(400);
-    expect((await post(JSON.stringify({ event: { id: "evt_x", app_user_id: "user-test" } }))).status).toBe(400);
+    expect((await post(JSON.stringify({ event: { type: "RENEWAL", app_user_id: USER } }))).status).toBe(400);
+    expect((await post(JSON.stringify({ event: { id: "evt_x", app_user_id: USER } }))).status).toBe(400);
     expect(calls()).toEqual([]);
   });
   it("reconciles from REST rather than event fields", async () => {
@@ -215,13 +220,13 @@ describe("RevenueCat webhook", () => {
   it.each(["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "CANCELLATION", "EXPIRATION", "BILLING_ISSUE", "PRODUCT_CHANGE"])("reconciles %s from REST", async type => {
     state.row = row(null, "free");
     await rc(type, Date.parse("2099-01-01"));
-    expect(calls()).toEqual(["https://api.revenuecat.com/v1/subscribers/user-test"]);
+    expect(calls()).toEqual([`https://api.revenuecat.com/v1/subscribers/${USER}`]);
     expect(state.row.subscription_tier).toBe("pro");
   });
   it("acknowledges a duplicate event id without reconciling again", async () => {
     state.row = row(null, "free");
     const first = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { id: "evt_dup" });
-    expect(await first.json()).toEqual({ received: true, results: { "user-test": "granted" } });
+    expect(await first.json()).toEqual({ received: true, results: { [USER]: "granted" } });
     state.row = row(null, "free");
     const second = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { id: "evt_dup" });
     expect(second.status).toBe(200); expect(await second.json()).toEqual({ duplicate: true });
@@ -230,30 +235,41 @@ describe("RevenueCat webhook", () => {
   it("treats a reordered RENEWAL as unchanged because REST already reflects the newest period", async () => {
     state.row = row("revenuecat");
     const res = await rc("RENEWAL", Date.parse("2090-01-01"), { expiration_at_ms: Date.parse("2080-01-01") });
-    expect(await res.json()).toEqual({ received: true, results: { "user-test": "unchanged" } });
+    expect(await res.json()).toEqual({ received: true, results: { [USER]: "unchanged" } });
     expect(state.row.subscription_expires_at).toEqual(future);
   });
   it("returns 200 and writes nothing for an unknown user id or an anonymous id", async () => {
     const original = { ...state.row };
-    const res = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { app_user_id: "someone-else" });
-    expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, results: { "someone-else": "skipped-unowned" } });
+    const res = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { app_user_id: OTHER });
+    expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, results: { [OTHER]: "skipped-unowned" } });
     expect(state.row).toEqual(original);
     const anonymous = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { app_user_id: "$RCAnonymousID:abc" });
-    expect(anonymous.status).toBe(200); expect(calls()).toEqual(["https://api.revenuecat.com/v1/subscribers/someone-else"]);
+    expect(anonymous.status).toBe(200); expect(calls()).toEqual([`https://api.revenuecat.com/v1/subscribers/${OTHER}`]);
+  });
+  it("returns 200 without fetching or writing for a non-UUID id (users.id is a uuid column)", async () => {
+    const original = { ...state.row };
+    for (const id of ["someone-else", "user-test", "1234", "11111111-1111-4111-8111-11111111111"]) {
+      const res = await rc("INITIAL_PURCHASE", Date.parse("2099-01-01"), { app_user_id: id });
+      expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, results: {} });
+    }
+    const transfer = await rc("TRANSFER", Date.parse("2099-01-01"), { app_user_id: undefined, transferred_from: ["legacy-rc-id"], transferred_to: [USER] });
+    expect(transfer.status).toBe(200); expect(await transfer.json()).toEqual({ received: true, results: { [USER]: "skipped-unowned" } });
+    expect(calls()).toEqual([`https://api.revenuecat.com/v1/subscribers/${USER}`]);
+    expect(state.row).toEqual(original);
   });
   it("returns 200 for a deleted RevenueCat subscriber", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })));
     const original = { ...state.row };
     const res = await rc("EXPIRATION");
-    expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, results: { "user-test": "unchanged" } });
+    expect(res.status).toBe(200); expect(await res.json()).toEqual({ received: true, results: { [USER]: "unchanged" } });
     expect(state.row).toEqual(original);
   });
   it("reconciles every id on TRANSFER and SUBSCRIBER_ALIAS", async () => {
-    await rc("TRANSFER", Date.parse("2099-01-01"), { app_user_id: undefined, transferred_from: ["user-old"], transferred_to: ["user-test"] });
-    expect(calls().sort()).toEqual(["https://api.revenuecat.com/v1/subscribers/user-old", "https://api.revenuecat.com/v1/subscribers/user-test"]);
+    await rc("TRANSFER", Date.parse("2099-01-01"), { app_user_id: undefined, transferred_from: [OLD], transferred_to: [USER] });
+    expect(calls().sort()).toEqual([`https://api.revenuecat.com/v1/subscribers/${OLD}`, `https://api.revenuecat.com/v1/subscribers/${USER}`].sort());
     vi.mocked(fetch).mockClear();
-    await rc("SUBSCRIBER_ALIAS", Date.parse("2099-01-01"), { aliases: ["user-test", "user-alias"] });
-    expect(calls().sort()).toEqual(["https://api.revenuecat.com/v1/subscribers/user-alias", "https://api.revenuecat.com/v1/subscribers/user-test"]);
+    await rc("SUBSCRIBER_ALIAS", Date.parse("2099-01-01"), { aliases: [USER, ALIAS] });
+    expect(calls().sort()).toEqual([`https://api.revenuecat.com/v1/subscribers/${ALIAS}`, `https://api.revenuecat.com/v1/subscribers/${USER}`].sort());
   });
   it("logs and acknowledges other event types without reconciling", async () => {
     const res = await rc("TEST", Date.parse("2099-01-01"));

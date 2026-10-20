@@ -75,6 +75,18 @@ export type ReconcileResult = "granted" | "advanced" | "expired" | "unchanged" |
 
 const TIER_RANK: Record<SubscriptionTier, number> = { free: 0, pro: 1, premium: 2 };
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * `users.id` is a Postgres `uuid` column. Any other RevenueCat app user id
+ * (anonymous ids, legacy aliases, transferred_from values) can never name an
+ * account row, and using it in a predicate would make Postgres throw
+ * `invalid input syntax for type uuid` instead of matching nothing.
+ */
+export function isAccountId(appUserId: string): boolean {
+  return UUID.test(appUserId);
+}
+
 function parseDate(value: string | null | undefined): Date | null {
   if (!value) return null;
   const date = new Date(value);
@@ -162,6 +174,7 @@ export async function reconcileRevenueCatUser(
   appUserId: string,
   opts: { now?: Date } = {},
 ): Promise<ReconcileResult> {
+  if (!isAccountId(appUserId)) return "skipped-unowned";
   const now = opts.now ?? new Date();
   const subscriber = await fetchSubscriber(appUserId);
   if (!subscriber) return "unchanged";

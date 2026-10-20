@@ -50,6 +50,9 @@ vi.mock("@/lib/db", () => ({ getDb: () => ({
   } }) }) }),
 }) }));
 
+// users.id is a Postgres uuid column, so account ids under test must be UUIDs.
+const USER_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const USER_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const now = new Date("2026-10-19T12:00:00Z");
 const past = "2026-10-01T00:00:00Z";
 const soon = "2026-11-19T12:00:00Z";
@@ -65,7 +68,7 @@ function subscriber(overrides: { entitlement?: Partial<Entitlement>; subscriptio
   };
 }
 function row(overrides: Row = {}): Row {
-  return { id: "user-a", subscription_tier: "free", subscription_source: null, subscription_expires_at: null, billing_product_id: null, billing_trial_ends_at: null, ...overrides };
+  return { id: USER_A, subscription_tier: "free", subscription_source: null, subscription_expires_at: null, billing_product_id: null, billing_trial_ends_at: null, ...overrides };
 }
 function stubFetch(body: unknown, status = 200) {
   const fetchMock = vi.fn(async () => ({ ok: status >= 200 && status < 300, status, json: async () => body }));
@@ -158,36 +161,36 @@ describe("fetchSubscriber", () => {
 describe("reconcileRevenueCatUser", () => {
   it("grants an unowned free account and records product and trial", async () => {
     stubFetch({ subscriber: subscriber({ subscription: { period_type: "trial" } }) });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("granted");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("granted");
     expect(state.rows[0]).toMatchObject({ subscription_tier: "premium", subscription_source: "revenuecat", subscription_expires_at: new Date(soon), billing_product_id: "premium_monthly", billing_trial_ends_at: new Date(soon) });
     expect(state.reads).toBe(0);
   });
   it("advances an owned period on renewal and clears the trial marker", async () => {
     state.rows = [row({ subscription_tier: "premium", subscription_source: "revenuecat", subscription_expires_at: new Date(soon), billing_trial_ends_at: new Date(soon) })];
     stubFetch({ subscriber: subscriber({ entitlement: { expires_date: later }, subscription: { expires_date: later } }) });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("advanced");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("advanced");
     expect(state.rows[0]).toMatchObject({ subscription_expires_at: new Date(later), billing_trial_ends_at: null });
     expect(state.reads).toBe(0);
   });
   it("advances through a grace period extension", async () => {
     state.rows = [row({ subscription_tier: "premium", subscription_source: "revenuecat", subscription_expires_at: new Date(soon) })];
     stubFetch({ subscriber: subscriber({ entitlement: { expires_date: soon, grace_period_expires_date: later }, subscription: { billing_issues_detected_at: soon, grace_period_expires_date: later } }) });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("advanced");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("advanced");
     expect(state.rows[0].subscription_expires_at).toEqual(new Date(later));
   });
   it("reports unchanged for an equal-period replay and for an older period", async () => {
     state.rows = [row({ subscription_tier: "premium", subscription_source: "revenuecat", subscription_expires_at: new Date(later) })];
     stubFetch({ subscriber: subscriber({ entitlement: { expires_date: later }, subscription: { expires_date: later } }) });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("unchanged");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("unchanged");
     stubFetch({ subscriber: subscriber() });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("unchanged");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("unchanged");
     expect(state.rows[0].subscription_expires_at).toEqual(new Date(later));
   });
   it("expires an owned elapsed period (account hold) and a refund, clearing billing columns", async () => {
     for (const subscription of [{ expires_date: past, billing_issues_detected_at: past }, { refunded_at: past }]) {
       state.rows = [row({ subscription_tier: "premium", subscription_source: "revenuecat", subscription_expires_at: new Date(past), billing_product_id: "premium_monthly", billing_trial_ends_at: new Date(past) })];
       stubFetch({ subscriber: subscriber({ entitlement: { expires_date: past }, subscription }) });
-      expect(await reconcileRevenueCatUser("user-a", { now })).toBe("expired");
+      expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("expired");
       expect(state.rows[0]).toMatchObject({ subscription_tier: "free", subscription_source: null, subscription_expires_at: null, billing_product_id: null, billing_trial_ends_at: null });
     }
     expect(state.reads).toBe(0);
@@ -195,40 +198,54 @@ describe("reconcileRevenueCatUser", () => {
   it("does not expire an unelapsed owned period when RevenueCat reports nothing", async () => {
     state.rows = [row({ subscription_tier: "premium", subscription_source: "revenuecat", subscription_expires_at: new Date(later) })];
     stubFetch({ subscriber: { entitlements: {}, subscriptions: {} } });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("unchanged");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("unchanged");
     expect(state.rows[0].subscription_tier).toBe("premium");
   });
   it.each(["stripe", "manual"])("never writes to a %s-owned row, for grants or revocation", async (source) => {
     const owned = row({ subscription_tier: "premium", subscription_source: source, subscription_expires_at: new Date(past) });
     state.rows = [{ ...owned }];
     stubFetch({ subscriber: subscriber({ entitlement: { expires_date: later }, subscription: { expires_date: later } }) });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("skipped-unowned");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("skipped-unowned");
     expect(state.rows[0]).toEqual(owned);
     stubFetch({ subscriber: { entitlements: {}, subscriptions: {} } });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("unchanged");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("unchanged");
     expect(state.rows[0]).toEqual(owned);
   });
   it("never claims a paid legacy row with unknown ownership", async () => {
     const legacy = row({ subscription_tier: "pro", subscription_source: null, subscription_expires_at: null });
     state.rows = [{ ...legacy }];
     stubFetch({ subscriber: subscriber() });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("skipped-unowned");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("skipped-unowned");
     expect(state.rows[0]).toEqual(legacy);
   });
   it("only touches the addressed user", async () => {
-    state.rows = [row(), row({ id: "user-b" })];
+    state.rows = [row(), row({ id: USER_B })];
     stubFetch({ subscriber: subscriber() });
-    await reconcileRevenueCatUser("user-b", { now });
+    await reconcileRevenueCatUser(USER_B, { now });
     expect(state.rows[0].subscription_tier).toBe("free"); expect(state.rows[1].subscription_tier).toBe("premium");
   });
   it("returns unchanged on 404 and for a lifetime entitlement, and propagates 5xx", async () => {
     stubFetch({}, 404);
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("unchanged");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("unchanged");
     stubFetch({ subscriber: subscriber({ entitlement: { expires_date: null }, subscription: { expires_date: null } }) });
-    expect(await reconcileRevenueCatUser("user-a", { now })).toBe("unchanged");
+    expect(await reconcileRevenueCatUser(USER_A, { now })).toBe("unchanged");
     expect(state.writes).toEqual([]);
     stubFetch({}, 503);
-    await expect(reconcileRevenueCatUser("user-a", { now })).rejects.toThrow(/503/);
+    await expect(reconcileRevenueCatUser(USER_A, { now })).rejects.toThrow(/503/);
     expect(state.rows[0].subscription_tier).toBe("free");
+  });
+  it("skips a non-UUID app user id before any fetch or database predicate", async () => {
+    const fetchMock = stubFetch({ subscriber: subscriber() });
+    for (const id of ["someone-else", "$RCAnonymousID:abc", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaag"]) {
+      expect(await reconcileRevenueCatUser(id, { now })).toBe("skipped-unowned");
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(state.writes).toEqual([]); expect(state.reads).toBe(0);
+    expect(state.rows[0].subscription_tier).toBe("free");
+  });
+  it("accepts an upper-case UUID", async () => {
+    state.rows = [row({ id: USER_A.toUpperCase() })];
+    stubFetch({ subscriber: subscriber() });
+    expect(await reconcileRevenueCatUser(USER_A.toUpperCase(), { now })).toBe("granted");
   });
 });

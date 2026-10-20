@@ -17,7 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { billingEvents } from "@/lib/db/schema";
-import { reconcileRevenueCatUser, type ReconcileResult } from "@/lib/revenuecat/reconcile";
+import { isAccountId, reconcileRevenueCatUser, type ReconcileResult } from "@/lib/revenuecat/reconcile";
 
 const RECONCILED_EVENTS = new Set([
   "INITIAL_PURCHASE",
@@ -50,9 +50,6 @@ function ids(...values: unknown[]): string[] {
   }
   return [...out];
 }
-
-// Anonymous RevenueCat ids never map to an account row.
-const isAccountId = (id: string) => !id.startsWith("$RCAnonymousID:");
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const authHeader = req.headers.get("Authorization");
@@ -94,6 +91,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (named.length === 0) {
     return NextResponse.json({ error: "Missing event fields" }, { status: 400 });
   }
+  // Only UUIDs can name an account row (users.id is uuid); anonymous/legacy ids are skipped without a fetch.
   const targets = named.filter(isAccountId);
 
   const db = getDb();
