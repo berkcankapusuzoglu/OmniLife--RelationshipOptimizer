@@ -407,7 +407,7 @@ export function OnboardingClient({
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
+    <div className="mx-auto max-w-2xl space-y-6 pb-[calc(6rem+max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px)))] sm:pb-6">
       {/* Progress indicator */}
       <div className="flex items-center justify-between" role="list" aria-label="Onboarding steps">
         {STEPS.map((s, i) => {

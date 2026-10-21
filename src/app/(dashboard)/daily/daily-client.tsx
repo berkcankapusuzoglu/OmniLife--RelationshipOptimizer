@@ -591,7 +591,7 @@ export function DailyLogWizard({
         </div>
 
         {/* Navigation buttons — pinned at bottom, never scrolled off screen */}
-        <div className="shrink-0 border-t border-border bg-background mx-auto flex w-full max-w-lg items-center justify-between gap-4 px-6 pt-4" style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))" }}>
+        <div className="shrink-0 border-t border-border bg-background mx-auto flex w-full max-w-lg items-center justify-between gap-4 px-6 pt-4" style={{ paddingBottom: "max(2.5rem, env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))" }}>
           <Button
             variant="ghost"
             onClick={handleBack}

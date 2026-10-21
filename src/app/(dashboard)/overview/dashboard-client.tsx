@@ -468,7 +468,7 @@ export function DashboardClient({
       )}
 
       {/* Mobile bottom action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur-sm md:hidden" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur-sm md:hidden" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px))" }}>
         {hasLoggedToday ? (
           <Button render={<Link href="/insights" />} className="mb-2 w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-base font-semibold hover:from-emerald-500 hover:to-teal-500">
             <TrendingUp className="mr-2 h-5 w-5" />

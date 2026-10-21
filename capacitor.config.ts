@@ -25,6 +25,10 @@ const config: CapacitorConfig = {
       style: "DARK",
       backgroundColor: "#09090b",
     },
+    SystemBars: {
+      insetsHandling: "css",
+      initialViewportFitValueHint: "cover",
+    },
   },
 };
 
