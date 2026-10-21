@@ -22,7 +22,7 @@ Single source of truth for "where are we". Update this file whenever a step chan
 ## Owner must do (blocked for Claude by permission classifier)
 - [x] `NATIVE_BILLING_ENABLED=true` in Vercel + redeployed (2026-10-20 22:27)
 - [x] Reddit tester posts made (owner, 2026-10-20). Ongoing: reply to swap offers, opt into theirs, reply "done"
-- [ ] Laptop opt-in for the remaining Gmail accounts (open link signed in as each → Become a tester → optionally install to phone): https://play.google.com/apps/testing/app.couplemetric.android
+- [ ] Track now uses Google Group couplemetric-testers@googlegroups.com (anyone can join; members/posts visible to managers only). EVERY tester incl. the owner's 7 accounts must join https://groups.google.com/g/couplemetric-testers, then open https://play.google.com/apps/testing/app.couplemetric.android → Become a tester
 - [ ] Keep a feedback log here (who / what / what changed) for the production-access form
 - [ ] Reach 12 opted-in testers; keep them 14 continuous days (clock started when track went active, 2026-10-20)
 
