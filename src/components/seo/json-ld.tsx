@@ -3,7 +3,7 @@ export function OrganizationJsonLd() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Couplemetric",
-    url: "https://omnilife.app",
+    url: "https://couplemetric.app",
     description:
       "Multi-objective life and relationship optimization through psychology, philosophy, and mathematics.",
     foundingDate: "2026",
@@ -23,7 +23,7 @@ export function WebApplicationJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: "Couplemetric",
-    url: "https://omnilife.app",
+    url: "https://couplemetric.app",
     description:
       "A relationship optimizer that uses weighted scoring across 9 dimensions, scenario modes, and evidence-based exercises to help couples build stronger partnerships.",
     applicationCategory: "HealthApplication",

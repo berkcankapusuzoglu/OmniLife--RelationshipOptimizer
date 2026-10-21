@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     description:
       "Research-backed articles on relationship scoring, couples assessment, and the psychology behind a healthier partnership.",
     type: "website",
-    url: "https://omnilife.app/blog",
+    url: "https://couplemetric.app/blog",
     images: [
       {
         url: "/api/og?life=78&rel=82&total=80&date=2026-03-21",

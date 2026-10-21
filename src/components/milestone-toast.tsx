@@ -69,7 +69,7 @@ export function MilestoneToast({ milestones, onDismiss }: MilestoneToastProps) {
     const shareUrl =
       typeof window !== "undefined"
         ? `${window.location.origin}/milestone?m=${milestone.id}`
-        : "https://omnilife.app";
+        : "https://couplemetric.app";
 
     if (typeof navigator !== "undefined" && navigator.share) {
       try {

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://omnilife.app";
+  const baseUrl = "https://couplemetric.app";
 
   return [
     {

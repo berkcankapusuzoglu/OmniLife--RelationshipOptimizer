@@ -21,6 +21,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://omnilife.app/sitemap.xml",
+    sitemap: "https://couplemetric.app/sitemap.xml",
   };
 }

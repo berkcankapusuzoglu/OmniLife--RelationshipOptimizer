@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "article",
       publishedTime: post.date,
       authors: [post.author],
-      url: `https://omnilife.app/blog/${post.slug}`,
+      url: `https://couplemetric.app/blog/${post.slug}`,
     },
     twitter: {
       card: "summary_large_image",
@@ -56,11 +56,11 @@ export default async function BlogPostPage({ params }: Props) {
     publisher: {
       "@type": "Organization",
       name: "Couplemetric",
-      url: "https://omnilife.app",
+      url: "https://couplemetric.app",
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://omnilife.app/blog/${post.slug}`,
+      "@id": `https://couplemetric.app/blog/${post.slug}`,
     },
     keywords: post.tags.join(", "),
   };
