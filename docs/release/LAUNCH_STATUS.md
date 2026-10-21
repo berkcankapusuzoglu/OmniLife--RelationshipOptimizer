@@ -1,4 +1,4 @@
-# Couplemetric launch status (updated 2026-10-20 night)
+# Couplemetric launch status (updated 2026-10-20 22:15)
 
 Single source of truth for "where are we". Update this file whenever a step changes.
 
@@ -25,7 +25,8 @@ Single source of truth for "where are we". Update this file whenever a step chan
 - [ ] Reach 12 opted-in testers; keep them 14 continuous days (clock started when track went active, 2026-10-20)
 
 ## Claude next
-- [ ] Build versionCode 8 with WebView origin couplemetric.app; upload to Alpha (draft via `play-api.mjs upload`), owner confirms rollout
+- [x] Build versionCode 8 / 1.1.1 with WebView origin couplemetric.app; uploaded to Alpha as draft (jar verified)
+- [ ] Roll out 1.1.1 (8) on Alpha: Preview → Save → Submit for review (Claude does this in Play Console)
 - [ ] Polish sprint during the 14 days: onboarding ≤10 steps + skip, Insights radar chart, visual pass (QA report `docs/release/2026-10-20-web-qa-report.md`), recapture 03-insights screenshot
 - [ ] License testers in Play (Setup → License testing) with owner emails so trial purchases are free; end-to-end sandbox purchase → `users.subscription_tier='premium'`, `subscription_source='revenuecat'`
 - [ ] Verify Play "Changes in review" (privacy/delete URL update) cleared
