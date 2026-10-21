@@ -6,7 +6,7 @@
 
 export function getAppUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ??
-    "https://omnilife-relationship-optimizer.vercel.app";
+    "https://couplemetric.app";
 }
 
 type StripeTier = "pro" | "premium";

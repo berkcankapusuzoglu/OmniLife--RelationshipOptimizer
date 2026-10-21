@@ -43,9 +43,9 @@ Premium: $4.99/month or $24.99/year with a 7-day free trial, billed through Goog
 Application → Lifestyle (alt: Health & Fitness)
 
 ## Contact
-Email: info.llcluna@gmail.com · Website: https://omnilife-relationship-optimizer.vercel.app (→ couplemetric.app when live)
-Privacy policy: https://omnilife-relationship-optimizer.vercel.app/privacy
-Account deletion: https://omnilife-relationship-optimizer.vercel.app/delete-account
+Email: info.llcluna@gmail.com · Website: https://couplemetric.app
+Privacy policy: https://couplemetric.app/privacy
+Account deletion: https://couplemetric.app/delete-account
 
 ## App content declarations (answers from code)
 - Ads: No ads

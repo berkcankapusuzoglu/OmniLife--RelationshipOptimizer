@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
   },
   server: {
     // Load the live Vercel deployment
-    url: "https://omnilife-relationship-optimizer.vercel.app",
+    url: "https://couplemetric.app",
     cleartext: false,
     errorPath: "index.html",
   },

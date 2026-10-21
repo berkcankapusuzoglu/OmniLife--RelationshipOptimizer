@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin") ?? request.headers.get("x-forwarded-host");
   const appUrl = origin?.startsWith("http")
     ? origin
-    : `https://${origin ?? "omnilife-relationship-optimizer.vercel.app"}`;
+    : `https://${origin ?? "couplemetric.app"}`;
 
   try {
     const db = getDb();

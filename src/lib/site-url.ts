@@ -1,6 +1,6 @@
 // Public site origin for share links, OG images and footers. Safe on the
 // client and the edge runtime: NEXT_PUBLIC_APP_URL is inlined at build time.
-const FALLBACK_SITE_URL = "https://omnilife-relationship-optimizer.vercel.app";
+const FALLBACK_SITE_URL = "https://couplemetric.app";
 
 export function getSiteUrl(): string {
   const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();

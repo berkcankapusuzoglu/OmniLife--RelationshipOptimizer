@@ -9,7 +9,7 @@ import { users, passwordResets } from "@/lib/db/schema";
 import { hashPassword } from "./password";
 import { sendPasswordResetEmail } from "@/lib/email";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://omnilife-relationship-optimizer.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://couplemetric.app";
 
 function getResetBaseUrl(): string {
   const url = new URL(BASE_URL);
