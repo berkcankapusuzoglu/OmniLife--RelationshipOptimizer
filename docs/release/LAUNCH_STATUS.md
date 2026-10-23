@@ -1,4 +1,4 @@
-# Couplemetric launch status (updated 2026-10-21)
+# Couplemetric launch status (updated 2026-10-23)
 
 Single source of truth for "where are we". Update this file whenever a step changes.
 
@@ -25,6 +25,18 @@ Single source of truth for "where are we". Update this file whenever a step chan
 - [ ] Track now uses Google Group couplemetric-testers@googlegroups.com (anyone can join; members/posts visible to managers only). EVERY tester incl. the owner's 7 accounts must join https://groups.google.com/g/couplemetric-testers, then open https://play.google.com/apps/testing/app.couplemetric.android → Become a tester
 - [ ] Keep a feedback log here (who / what / what changed) for the production-access form
 - [ ] Reach 12 opted-in testers; keep them 14 continuous days (clock started when track went active, 2026-10-20)
+
+### Tester roster (group members -> must still opt in on Play)
+| Person | Added to group | Opted in on Play |
+|---|---|---|
+| Owner (berkcan1992) | yes | ? |
+| Partner | pending | pending |
+| Friend: cdsenbil@gmail.com | 2026-10-23 | pending |
+| Friend: kutayglr@gmail.com | 2026-10-23 | pending |
+
+Strategy decision 2026-10-23: drop the 5 spare personal Gmail accounts (low usage = "insufficient
+tester engagement" risk, and r/androiddev warns dev-swap opt-ins can create account-association
+signals). Recruit real people instead: friends, family, coworkers, couples communities.
 
 ## Claude next
 - [x] Build versionCode 8 / 1.1.1 with WebView origin couplemetric.app; uploaded to Alpha as draft (jar verified)
