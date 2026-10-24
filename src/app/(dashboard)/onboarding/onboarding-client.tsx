@@ -858,12 +858,16 @@ export function OnboardingClient({
         </p>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
+      {/* Navigation. Sticky so "Next" stays on screen without scrolling to the
+          bottom of the step (tester feedback 2026-10-23). `bottom-0` sticks it
+          above the page's safe-area padding; the backdrop keeps the step
+          content readable as it scrolls underneath. */}
+      <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-border/40 bg-background/90 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border sm:px-4">
         <Button
           variant="outline"
           onClick={() => goToStep(step - 1)}
           disabled={step === 0 || submitting}
+          className="h-12 px-4"
         >
           <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />
           Back
@@ -873,12 +877,17 @@ export function OnboardingClient({
           <Button
             onClick={() => goToStep(step + 1)}
             disabled={!canAdvance()}
+            className="h-12 min-w-[7rem] px-4"
           >
             Next
             <ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
           </Button>
         ) : (
-          <Button onClick={handleSubmit} disabled={submitting || partnerEmailInvalid}>
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || partnerEmailInvalid}
+            className="h-12 px-4"
+          >
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />

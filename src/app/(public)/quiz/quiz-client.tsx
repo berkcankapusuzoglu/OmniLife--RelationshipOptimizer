@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
@@ -54,6 +55,19 @@ const QUESTIONS = [
 
 const DEFAULT_ANSWER = 5;
 
+/**
+ * Single-screen step flow (tester feedback 2026-10-23: "user need to scroll
+ * down to click next, it should fit the full screen").
+ *
+ * Layout contract for every screen here:
+ * - the root is exactly one viewport tall (`h-[100dvh]`) and does not scroll;
+ * - the primary action lives in a bottom bar that is always on screen and
+ *   padded for the home indicator (`safe-bottom`);
+ * - the question body is the only flexible region and may shrink (`min-h-0`),
+ *   so the bar can never be pushed below the fold.
+ * `/quiz` is in CHROME_HIDDEN_PATHS so the shared public header/footer does not
+ * add height on top of this.
+ */
 export function QuizClient() {
   const router = useRouter();
   const [started, setStarted] = useState(false);
@@ -104,32 +118,32 @@ export function QuizClient() {
   // ---------- Intro screen ----------
   if (!started) {
     return (
-      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-gradient-to-br from-background via-background to-purple-950/20 px-6">
-        <div className="w-full max-w-lg text-center">
-          <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">
-            How Strong Is Your Relationship,{" "}
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Really?
-            </span>
-          </h1>
-          <p className="mb-6 text-lg text-muted-foreground">
-            5 questions. 60 seconds. Based on the same dimensions used by
-            relationship therapists.
-          </p>
-          <p className="mb-10 text-sm text-muted-foreground/80">
-            12,000+ couples have taken this quiz
-          </p>
+      <div className="flex h-[100dvh] flex-col bg-gradient-to-br from-background via-background to-purple-950/20">
+        <div className="safe-top flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-4">
+          <div className="w-full max-w-lg text-center">
+            <h1 className="mb-3 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
+              How Strong Is Your Relationship,{" "}
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Really?
+              </span>
+            </h1>
+            <p className="text-base text-muted-foreground sm:text-lg">
+              5 questions. 60 seconds. Based on the same dimensions used by
+              relationship therapists.
+            </p>
+            <p className="mt-4 text-sm text-muted-foreground/80">
+              No signup required. Results are instant.
+            </p>
+          </div>
+        </div>
 
+        <div className="safe-bottom shrink-0 border-t border-border/40 bg-background/80 px-6 pb-4 pt-4 backdrop-blur">
           <Button
             onClick={() => setStarted(true)}
-            className="h-14 w-full max-w-xs text-lg font-semibold"
+            className="mx-auto h-14 w-full max-w-lg text-lg font-semibold"
           >
             Start Quiz
           </Button>
-
-          <p className="mt-4 text-xs text-muted-foreground/60">
-            No signup required. Results are instant.
-          </p>
         </div>
       </div>
     );
@@ -137,9 +151,9 @@ export function QuizClient() {
 
   // ---------- Question screens ----------
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-gradient-to-br from-background via-background to-purple-950/20">
+    <div className="flex h-[100dvh] flex-col bg-gradient-to-br from-background via-background to-purple-950/20">
       {/* Progress */}
-      <div className="mx-auto w-full max-w-lg px-6 pt-8">
+      <div className="safe-top mx-auto w-full max-w-lg shrink-0 px-6 pt-4">
         <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
           <span>
             Question {step + 1} of {QUESTIONS.length}
@@ -149,8 +163,8 @@ export function QuizClient() {
         <Progress value={((step + 1) / QUESTIONS.length) * 100} />
       </div>
 
-      {/* Question area */}
-      <div className="flex flex-1 items-center justify-center px-6">
+      {/* Question area — the only region allowed to shrink */}
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-6 py-4">
         <div className="w-full max-w-lg">
           <div
             className={`transition-all duration-300 ${
@@ -161,21 +175,21 @@ export function QuizClient() {
                 : "translate-x-0 opacity-100"
             }`}
           >
-            <h2 className="mb-4 text-center text-2xl font-semibold leading-snug tracking-tight md:text-3xl">
+            <h2 className="mb-2 text-center text-xl font-semibold leading-snug tracking-tight sm:text-2xl md:text-3xl">
               {currentQ.label}
             </h2>
 
             {/* Micro-copy */}
-            <p className="mb-10 text-center text-sm italic text-muted-foreground/70">
+            <p className="mb-4 text-center text-xs italic text-muted-foreground/70 sm:mb-6 sm:text-sm">
               {currentQ.microcopy}
             </p>
 
             {/* Score display */}
-            <div className="mb-8 text-center">
-              <span className="text-6xl font-bold tabular-nums text-primary">
+            <div className="mb-4 text-center sm:mb-6">
+              <span className="text-5xl font-bold tabular-nums text-primary sm:text-6xl">
                 {answers[step]}
               </span>
-              <span className="text-2xl text-muted-foreground">/10</span>
+              <span className="text-xl text-muted-foreground sm:text-2xl">/10</span>
             </div>
 
             {/* Slider */}
@@ -193,26 +207,30 @@ export function QuizClient() {
                 <span>{currentQ.high}</span>
               </div>
             </div>
-            <p className="mt-6 text-center text-xs text-muted-foreground/60">
+            <p className="mt-4 text-center text-xs text-muted-foreground/60">
               Leave it at {DEFAULT_ANSWER} if that feels right, or drag the slider.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Navigation: the page header already has the site Back control, so the
-          only in-quiz control is "Previous question", shown from question 2 on. */}
-      <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-4 px-6 pb-12">
-        {step > 0 ? (
-          <Button variant="ghost" onClick={handlePrevious} className="min-w-[80px]">
-            Previous
+      {/* Bottom action bar: always on screen, never scrolled out of reach. */}
+      <div className="safe-bottom shrink-0 border-t border-border/40 bg-background/80 px-6 pb-4 pt-3 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-lg items-center gap-3">
+          <Button
+            variant="ghost"
+            onClick={handlePrevious}
+            disabled={step === 0}
+            className="h-12 px-4 disabled:opacity-0"
+            aria-label="Previous question"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />
+            Back
           </Button>
-        ) : (
-          <span className="min-w-[80px]" aria-hidden="true" />
-        )}
-        <Button onClick={handleNext} className="min-w-[120px]">
-          {isLastQuestion ? "See My Score" : "Next"}
-        </Button>
+          <Button onClick={handleNext} className="h-12 flex-1 text-base font-semibold">
+            {isLastQuestion ? "See My Score" : "Next"}
+          </Button>
+        </div>
       </div>
     </div>
   );

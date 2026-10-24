@@ -97,11 +97,20 @@ describe("public layout chrome (D-58, D-59)", () => {
     expect(markup).toContain('href="/blog"');
     expect(markup).toContain("body");
   });
-  it.each(["/privacy", "/blog", "/pricing", "/quiz", "/blog/some-post"])("renders chrome on %s", (pathname) => {
+  it.each(["/privacy", "/blog", "/pricing", "/blog/some-post"])("renders chrome on %s", (pathname) => {
     nav.pathname = pathname;
     const markup = html(<PublicChrome><p>body</p></PublicChrome>);
     expect(markup).toContain("<header");
     expect(markup).toContain("<footer");
+  });
+  // /quiz owns its chrome: it is a 100dvh step flow with a sticky bottom CTA, and
+  // the shared header + footer pushed "Next" below the fold (tester feedback 2026-10-23).
+  it("skips the shared header and footer on the quiz so each step fits one screen", () => {
+    nav.pathname = "/quiz";
+    const markup = html(<PublicChrome><p>quiz</p></PublicChrome>);
+    expect(markup).not.toContain("<header");
+    expect(markup).not.toContain("<footer");
+    expect(CHROME_HIDDEN_PATHS.has("/quiz")).toBe(true);
   });
   it("skips the shared header and footer on the landing page", () => {
     nav.pathname = "/";

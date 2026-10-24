@@ -449,7 +449,7 @@ export function yearlySavingsPercent(tier: { monthlyPrice: number; yearlyPrice: 
 export default function LandingClient() {
   const native = useNativePlatform();
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div className="relative min-h-[100dvh] overflow-hidden bg-background">
       {/* Background gradient orbs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-[40%] -left-[20%] h-[80%] w-[60%] rounded-full bg-violet-600/8 blur-[120px]" />
@@ -461,18 +461,22 @@ export default function LandingClient() {
       <StickyCTABar />
 
       {/* Navigation */}
-      <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+      <nav className="safe-top relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-blue-500">
             <Heart className="h-5 w-5 text-white" />
           </div>
           <span className="text-lg font-bold tracking-tight">Couplemetric</span>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" render={<Link href="/login" />}>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            className="h-11 px-4 text-sm"
+            render={<Link href="/login" />}
+          >
             Log in
           </Button>
-          <Button size="sm" render={<Link href="/register" />}>
+          <Button className="h-11 px-4 text-sm" render={<Link href="/register" />}>
             Get Started
           </Button>
         </div>

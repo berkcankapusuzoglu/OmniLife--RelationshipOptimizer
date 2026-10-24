@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7C3AED"/>
-      <stop offset="100%" stop-color="#A855F7"/>
-    </linearGradient>
-  </defs>
-  <circle cx="256" cy="256" r="256" fill="url(#g)"/>
-  <text x="256" y="340" text-anchor="middle" font-family="system-ui,sans-serif" font-size="320" font-weight="700" fill="white">O</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" rx="22" fill="#7C3AED"/>
+  <g transform="translate(19 19) scale(0.62)"><g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 86 C20 66 6 51 6 34 C6 20 17 10 30 10 C39 10 46 14.5 50 21.5 C54 14.5 61 10 70 10 C83 10 94 20 94 34 C94 51 80 66 50 86 Z" stroke-width="7.5"/>
+    <g stroke-width="3.2" opacity="0.92"><circle cx="50" cy="42" r="6.5"/><path d="M50 42 L62 30" stroke-width="3.6"/></g>
+    <g stroke-width="2.8" opacity="0.62" stroke-dasharray="7 6"><circle cx="50" cy="42" r="14"/></g>
+    <g stroke-width="2.4" opacity="0.4" stroke-dasharray="5 7"><circle cx="50" cy="42" r="21.5"/></g>
+    <circle cx="62" cy="30" r="3.4" fill="#FFFFFF" stroke="none"/>
+  </g></g>
 </svg>

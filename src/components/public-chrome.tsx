@@ -14,7 +14,13 @@ import { BackButton } from "@/components/back-button";
  * landing page with duplicate chrome after /privacy -> / and the legal pages
  * with no chrome after / -> /privacy.
  */
-export const CHROME_HIDDEN_PATHS = new Set(["/"]);
+/**
+ * "/quiz" is here as of 2026-10-23: the quiz renders a full-height (100dvh)
+ * step flow with its own back control and sticky CTA. Wrapping it in the shared
+ * header + footer made every step taller than the viewport, so testers had to
+ * scroll down to reach "Next".
+ */
+export const CHROME_HIDDEN_PATHS = new Set(["/", "/quiz"]);
 
 export function PublicChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
