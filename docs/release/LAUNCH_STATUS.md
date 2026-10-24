@@ -11,6 +11,11 @@ Single source of truth for "where are we". Update this file whenever a step chan
 - [x] Signed AAB 1.1.0 (versionCode 7) on closed track **Alpha**, approved by Google, track ACTIVE
 - [x] Countries: all 178. Tester list "Couplemetric closed testers": 7 emails (owner + partner + own accounts)
 - [x] Play subscription `premium`: base plans `premium-monthly` $4.99, `premium-yearly` $24.99, 7-day trial offers `trial`, all ACTIVE
+- [x] Involuntary-churn recovery widened to Google's max on both base plans (grace P30D + account
+      hold P30D = 60 days, was 7+30). 32.3% of Play cancellations are billing errors; Google reports
+      ~10% lower involuntary churn at a 60-day window. Owner ran scratchpad `play/widen-recovery.mjs`
+      2026-10-24. Note: the Play regions version is now `2026/01`; older scripts pinned to `2022/02`
+      fail with "Region code ET is not billable".
 - [x] RevenueCat: Play SA credentials valid; products `premium:premium-monthly` / `premium:premium-yearly` attached to `$rc_monthly` / `$rc_annual` and entitlement `premium`; webhook → https://couplemetric.app/api/revenuecat/webhook
 - [x] Firebase SA key in Vercel; `/api/push/reminders` returns ok
 - [x] Domain couplemetric.app bought (Vercel registrar), attached, HTTPS, www→apex 308
@@ -40,11 +45,13 @@ signals). Recruit real people instead: friends, family, coworkers, couples commu
 
 ## Claude next
 - [x] Build versionCode 8 / 1.1.1 with WebView origin couplemetric.app; uploaded to Alpha as draft (jar verified)
-- [ ] **Owner: redeploy the web app to production** (the usual Vercel prod deploy; the classifier
-      blocks it for Claude). The login/nav/quiz/overlay fixes are web-side and reach testers only
-      after that deploy.
-- [ ] Roll out Alpha draft **1.1.2 (9)** to testers (supersedes the never-released 1.1.1 (8) draft).
-      Only the new launcher icon needs the new bundle; everything else ships with the web deploy.
+- [x] Web fixes live in production (auto-deployed on push; verified `safe-top` nav and chrome-free
+      `/quiz` served from couplemetric.app).
+- [x] Alpha **1.1.2 (9)** released to testers 2026-10-24 with feedback-derived release notes; the
+      web-side fixes had already auto-deployed with the push.
+- [ ] Apply the three growth decisions (price, title, listing v2) — see `docs/release/growth-strategy.md`,
+      `pricing-model.md`, `store-listing-v2.md`. Price is the only one with a deadline: Play price-locks
+      existing subscribers, and there are zero today.
 - [x] **Fix wave from tester A feedback** (see `docs/release/tester-feedback.md`): landing page read
       the removed pre-migration cookie so users always looked signed out; landing nav lacked
       `safe-top` and had 28px buttons; `/quiz` rendered a 100dvh flow inside the shared header+footer;
