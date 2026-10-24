@@ -14,14 +14,41 @@ change and also re-enters Play review, so it is not applied automatically.
 
 ---
 
-## Title (30 max)
+## Title (30 max) — CHANGE RECOMMENDED
 
-Unchanged pending the ASO keyword research:
+**Current:** `Couplemetric: Couples Tracker` (29)
+
+The ASO research found "Couples Tracker" is an **intent trap**. A live Play search
+for "relationship tracker" / "couples tracker" returns almost entirely
+days-together counters: Love Counter, LoveDays, Been Together, Count Love,
+The Couple (Days in Love), Mi & Ju. People searching that phrase want a
+how-long-we-have-been-together widget. We can rank for it and still churn them,
+because the product they wanted is not the product we built.
+
+**Recommended:** 
 
 ```
-Couplemetric: Couples Tracker
+Couplemetric: Couples Check-In
 ```
-(29 chars)
+(exactly 30 chars)
+
+The check-in cluster is the one place where demand matches our product and
+competition is thin — only two titled competitors exist (`Pulse: Couples Check-In`,
+`Relationship Check-In`), against Paired's 1M+ installs and 64K ratings guarding
+"couples app" / "relationship app". Almost no competitor title uses **daily**,
+**score** or **health**; those words are open to us.
+
+Runner-up: `Couplemetric: Relationship` (26) — highest-volume generic term, but a
+head-on fight with every heavily-ranked relationship app, and it leaves no room
+for a second keyword.
+
+**Ruled out:** "Marriage App" (Play reads it as matrimony — Nikah Forever,
+Shaadi.com, Muzz — entirely wrong intent) and "Couples Quiz" (party-game studios,
+and we are not a quiz game).
+
+Note: the title is a **one-way bet**. Play Store listing experiments can A/B the
+short description, full description and graphics, but **not the title**. So this
+choice gets made deliberately, once, before public launch.
 
 ## Short description (80 max)
 

@@ -32,42 +32,77 @@ between the worst and best cell is **20,500 installs versus 5,000** for the same
 $500. Pricing is the cheaper of the two levers to pull, because it costs one
 afternoon and no distribution.
 
-## The yearly plan is the actual problem
+## The yearly plan is the actual problem — but not for the reason I first gave
 
-At $4.99/mo and $24.99/yr, the yearly plan is **five months of monthly for twelve
-months of service** — a 58% discount. Because 60% of payers take the yearly plan,
-most of our revenue comes in at an effective **$1.77 per couple per month**.
+**Correction.** I initially called the 58% annual discount "unusually aggressive".
+The benchmark research says the opposite: published average annual discounts are
+**67% off (RevenueCat 2025) to ~75% off (Adapty 2026 medians: $12.99/mo, $38.42/yr)**.
+Our 58% is *shallower* than typical. The discount ratio is not the problem.
 
-A yearly subscriber at $24.99 is worth less over a full year than a monthly
-subscriber who stays five months.
+The problem is the **absolute price**, which the ratio was hiding. Benchmarks pair
+those deep discounts with a **$12.99 median monthly**. We pair ours with $4.99. So:
 
-The standard annual discount is far shallower than ours. Raising the yearly to
-$39.99 while leaving the monthly untouched lifts net revenue per couple by 23%
-and removes 34 couples from the target — with no change to the monthly price
-point that people compare first.
+- Our yearly nets **$1.77 per couple per month**.
+- Adapty's median yearly ($38.42) nets ~$2.72/month *after* a deeper discount.
+- **Paired charges $79.99 per couple per year** at standard price, with the same
+  "one partner subscribes for both" structure as ours — **3.2x our yearly**.
 
-## Can we raise the monthly price without losing more than we gain?
+Full competitor pricing (point estimates; Play does not expose subscription SKU
+prices, so most come from iOS listings and vendor snapshots — see
+`growth-strategy.md` for confidence tags):
 
-Going $4.99 → $7.99 (with yearly $24.99 → $39.99) multiplies net revenue per
-couple by **1.60**. So revenue holds as long as the number of paying couples falls
-by **less than 38%**.
+| App | Monthly | Yearly | Covers both |
+|---|---|---|---|
+| Paired | — | **$79.99** | Yes |
+| Lasting | $11.99 | $79.99 | Yes |
+| Connected | $12.99 | $77.99 | Yes |
+| Couply | ~$14.99 | ~$70.99 | ? |
+| Evergreen | $9.99–$12.99 | ~$49.99 | ? |
+| Agapé | $9.99–$14.99 | ~$49.99 | ? |
+| Flamme | $12.99 | ~$44.99 | Yes |
+| Candle | $12.99–$14.99 | $39.99–$49.99 | ? |
+| Lovewick | $9.99 | $29.99 | ? |
+| **Couplemetric** | **$4.99** | **$24.99** | **Yes** |
 
-That is a wide margin. A 60% price increase very rarely costs 38% of conversions in
-subscription apps, for three reasons specific to our situation:
+**Median: $12.99/month, ~$49.99/year.** We are at 38% of the median monthly and
+roughly half the median yearly — the second-lowest yearly in the entire set, beaten
+only by Between, which is a messaging app in a different category.
 
-1. We are below every meaningful anchor in the category, so $7.99 still reads as
-   cheap rather than as a decision point.
-2. The price is split across two people. "$7.99 for both of us" is $4 each — the
-   couple framing is a real willingness-to-pay advantage, and it should be stated
-   on the paywall explicitly.
-3. The 7-day free trial means the price is evaluated *after* the product has
-   proven itself, not before. Trial-gated pricing is substantially less elastic
-   than up-front pricing.
+Note also that our yearly is **5.0 months of monthly**, and peers run 3.5–6 months.
+Our ratio is squarely normal. It is the absolute price that is the outlier.
 
-> **Evidence status:** the elasticity argument above is reasoning from our own
-> numbers plus category norms. The dedicated pricing-benchmark research is tracked
-> separately; if it contradicts any of this, this section gets rewritten rather
-> than defended.
+A yearly subscriber at $24.99 is still worth less over a full year than a monthly
+subscriber who stays five months. That arithmetic holds regardless of the ratio.
+
+Annual is also where the retention is: RevenueCat reports **33.9% of annual
+subscribers active after one year versus 13.8% of monthly** (Airbridge: 44.1% vs
+17.5%). We are underpricing the plan that both retains best and carries ~60% of
+category revenue.
+
+## How confident is the price increase?
+
+**Also tempering an earlier claim.** I said a 60% increase "very rarely" costs 38%
+of conversions. The evidence does not support that strongly:
+
+- Adapty travel app: +30% price → conversion −5%, ARPU +102%. Self-reported.
+- Superwall PropGPT: +43% price → proceeds/user +47.5%. Self-reported.
+- Superwall BuyBye: +50% price → proceeds/user +25%. Self-reported.
+
+Every published case is a **survivor** — teams publish wins, and the researcher
+found **no published failed price increases**. The cases are +30% to +50%, mostly
+iOS, none in our category. Our proposed +60% sits **outside** that range.
+
+What survives scrutiny:
+- The break-even arithmetic is exact: at $7.99/$39.99 we need to keep **more than
+  62%** of paying couples. That is a fact about our numbers, not a forecast.
+- Direction of evidence is consistent: in every published case conversion fell by
+  less than price rose.
+- We are 3.2x below Paired, the category benchmark, on the directly comparable
+  per-couple-per-year figure.
+
+What does not survive:
+- Any claim about *our* elasticity. We have no data and will not have enough
+  volume for a significant price test for a long time.
 
 ## Recommendation
 
@@ -86,9 +121,10 @@ changes the number nobody compares, and is almost risk-free.
 What to keep unchanged:
 - The 7-day free trial. It is working as a qualifier and sits in the range that
   converts best.
-- One subscription covering both partners. This is the differentiator; do not
-  monetize the partner separately. It should be the headline on the paywall:
-  "$39.99/year — for both of you."
+- One subscription covering both partners. **Correction: this is parity, not a
+  differentiator** — Paired, Lasting, Connected and Flamme all do it, and nobody in
+  the set monetizes the partner separately. Keep it, say it on the paywall
+  ("$39.99/year — for both of you"), but do not build positioning on it.
 - The free tier staying genuinely usable daily. The whole funnel depends on the
   habit forming before the paywall is relevant.
 
