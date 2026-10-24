@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Heart } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -54,10 +55,10 @@ export function PWARegister() {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md rounded-lg border border-border bg-card p-4 shadow-lg">
+    <div className="safe-bottom fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-md rounded-lg border border-border bg-card p-4 shadow-lg">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-purple-500">
-          <span className="text-lg font-bold text-white">O</span>
+          <Heart className="h-5 w-5 text-white" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <p className="text-sm font-medium text-foreground">
@@ -70,13 +71,13 @@ export function PWARegister() {
         <div className="flex gap-2">
           <button
             onClick={handleDismiss}
-            className="rounded-md px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="h-11 rounded-md px-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Later
           </button>
           <button
             onClick={handleInstall}
-            className="rounded-md bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 transition-colors"
+            className="h-11 rounded-md bg-violet-600 px-4 text-sm font-medium text-white hover:bg-violet-700 transition-colors"
           >
             Install
           </button>
