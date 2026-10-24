@@ -23,7 +23,7 @@ Single source of truth for "where are we". Update this file whenever a step chan
 - [x] `NATIVE_BILLING_ENABLED=true` in Vercel + redeployed (2026-10-20 22:27)
 - [x] Reddit tester posts made (owner, 2026-10-20). Ongoing: reply to swap offers, opt into theirs, reply "done"
 - [ ] Track now uses Google Group couplemetric-testers@googlegroups.com (anyone can join; members/posts visible to managers only). EVERY tester incl. the owner's 7 accounts must join https://groups.google.com/g/couplemetric-testers, then open https://play.google.com/apps/testing/app.couplemetric.android → Become a tester
-- [ ] Keep a feedback log here (who / what / what changed) for the production-access form
+- [x] Keep a feedback log (`docs/release/tester-feedback.md`) (who / what / what changed) for the production-access form
 - [ ] Reach 12 opted-in testers; keep them 14 continuous days (clock started when track went active, 2026-10-20)
 
 ### Tester roster (group members -> must still opt in on Play)
@@ -41,6 +41,9 @@ signals). Recruit real people instead: friends, family, coworkers, couples commu
 ## Claude next
 - [x] Build versionCode 8 / 1.1.1 with WebView origin couplemetric.app; uploaded to Alpha as draft (jar verified)
 - [ ] Roll out 1.1.1 (8) on Alpha once owner confirms in-app Sign in works after the safe-area fix
+- [ ] **Fix wave from tester A feedback** (see `docs/release/tester-feedback.md`): session persistence
+      in the Android WebView; public-layout header (Log in tap target + safe-top); quiz/onboarding
+      steps fit 100dvh with sticky CTA, no scroll; redesign launcher icon as one smooth surface
 - [ ] Polish sprint during the 14 days: onboarding ≤10 steps + skip, Insights radar chart, visual pass (QA report `docs/release/2026-10-20-web-qa-report.md`), recapture 03-insights screenshot
 - [ ] License testers in Play (Setup → License testing) with owner emails so trial purchases are free; end-to-end sandbox purchase → `users.subscription_tier='premium'`, `subscription_source='revenuecat'`
 - [ ] Verify Play "Changes in review" (privacy/delete URL update) cleared
@@ -54,4 +57,9 @@ signals). Recruit real people instead: friends, family, coworkers, couples commu
 - Helper scripts: scratchpad `play/` (`play-api.mjs`, `create-subscription.mjs`, `set-firebase-env.mjs`, `enable-native-billing.mjs`)
 
 ## Feedback log (14-day window)
-- 2026-10-20 owner: header overlapped status bar → fixed (safe-area CSS vars). Sign in tap unresponsive → re-test after fix.
+Full verbatim log + triage: **`docs/release/tester-feedback.md`** (this is what we hand Google
+on the production-access form). Summary:
+- 2026-10-20 owner: header overlapped status bar → fixed (safe-area CSS vars), live.
+- 2026-10-23 tester A (friend), 4 items: not staying logged in; top Log in button doesn't work and
+  sits too high; quiz/onboarding steps need scrolling to reach Next; app icon looks unprofessional
+  (inner square, should be one smooth surface like Libby/Spotify).
