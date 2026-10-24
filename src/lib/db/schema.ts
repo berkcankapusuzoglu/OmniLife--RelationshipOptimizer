@@ -11,6 +11,7 @@ import {
   jsonb,
   check,
   primaryKey,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -364,6 +365,32 @@ export const pushTokens = pgTable("push_tokens", {
     .notNull()
     .defaultNow(),
 });
+
+// ── Analytics Events ──────────────────────────────────────────────────────────
+// Funnel instrumentation. Written by /api/track (client events) and by server
+// actions. `userId` is nullable on purpose: the most important events in the
+// funnel (quiz, landing, register page) happen before anyone has an account, and
+// an anonymous `sessionId` is what stitches those to the eventual signup.
+// Properties are sanitized by src/lib/analytics/payload.ts before they land here;
+// no personal data or free text is stored.
+
+export const events = pgTable(
+  "events",
+  {
+    id: uuid("id").primaryKey(),
+    name: text("name").notNull(),
+    properties: jsonb("properties").notNull().default(sql`'{}'::jsonb`),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    sessionId: text("session_id"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("events_name_created_at_idx").on(table.name, table.createdAt),
+    index("events_session_idx").on(table.sessionId),
+  ]
+);
 
 // ── Coaching Usage ────────────────────────────────────────────────────────────
 // Per-user daily AI message counter for the premium quota.

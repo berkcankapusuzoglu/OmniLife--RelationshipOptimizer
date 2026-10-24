@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
+import { trackEvent } from "@/lib/analytics/track";
 import { Button } from "@/components/ui/button";
 import { NewsletterSignup } from "@/components/newsletter-signup";
 import { shareCard, type ShareCardResult } from "@/lib/capacitor/share";
@@ -333,19 +334,37 @@ export function ResultClient({
           showContent ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
         }`}
       >
-        <Button onClick={handleShare} className="w-full" disabled={busy} aria-busy={busy}>
+        {/* Signup is the primary action and leads. It used to sit third, under two
+            share buttons, which buried the only step that converts quiz traffic. */}
+        <Button
+          render={<Link href={quizRegisterHref(shareParam)} />}
+          className="h-12 w-full text-base font-semibold"
+          onClick={() => trackEvent("quiz_signup_clicked", {})}
+        >
+          Get Your Full Assessment — Free
+        </Button>
+        <Button
+          onClick={() => {
+            trackEvent("quiz_shared", { target: "partner_challenge" });
+            handleShare();
+          }}
+          variant="outline"
+          className="h-12 w-full"
+          disabled={busy}
+          aria-busy={busy}
+        >
           {copied ? "Link Copied!" : "Challenge Your Partner"}
         </Button>
         <Button
-          onClick={handlePartnerShare}
+          onClick={() => {
+            trackEvent("quiz_shared", { target: "partner_compare" });
+            handlePartnerShare();
+          }}
           variant="outline"
-          className="w-full"
+          className="h-12 w-full"
           disabled={busy}
         >
           See if your partner agrees
-        </Button>
-        <Button render={<Link href={quizRegisterHref(shareParam)} />} className="w-full">
-          Get Your Full Assessment — Free
         </Button>
         <Button
           render={<Link href="/quiz" />}

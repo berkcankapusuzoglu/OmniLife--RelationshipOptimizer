@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { encodeQuizScores, saveQuizScores } from "@/lib/quiz";
+import { trackEvent } from "@/lib/analytics/track";
 
 const QUESTIONS = [
   {
@@ -96,6 +97,7 @@ export function QuizClient() {
     if (isLastQuestion) {
       // Keep the answers on this device so onboarding can prefill them after signup.
       saveQuizScores(answers);
+      trackEvent("quiz_completed", { questions: QUESTIONS.length });
       router.push(`/quiz/result?s=${encodeURIComponent(encodeQuizScores(answers))}`);
     } else {
       goTo(step + 1, "next");
@@ -139,7 +141,10 @@ export function QuizClient() {
 
         <div className="safe-bottom shrink-0 border-t border-border/40 bg-background/80 px-6 pb-4 pt-4 backdrop-blur">
           <Button
-            onClick={() => setStarted(true)}
+            onClick={() => {
+              trackEvent("quiz_started", {});
+              setStarted(true);
+            }}
             className="mx-auto h-14 w-full max-w-lg text-lg font-semibold"
           >
             Start Quiz

@@ -1,9 +1,13 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CookieConsent } from "@/components/cookie-consent";
 import { CapacitorInit } from "@/components/capacitor-init";
 import { BiometricLock } from "@/components/biometric-lock";
+import { AnalyticsProvider } from "@/components/analytics-provider";
+import { AnalyticsSink } from "@/components/analytics-sink";
+import { ConversionTracker } from "@/components/conversion-tracker";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,7 +46,14 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground">
         <TooltipProvider>
           <CapacitorInit />
-          {children}
+          {/* Funnel instrumentation. The sink forwards trackEvent() to
+              /api/track; ConversionTracker reads UTM params so quiz traffic can
+              be attributed, which needs a Suspense boundary for useSearchParams. */}
+          <AnalyticsSink />
+          <Suspense fallback={null}>
+            <ConversionTracker />
+          </Suspense>
+          <AnalyticsProvider>{children}</AnalyticsProvider>
           <CookieConsent />
           {/* Native-only app lock; renders nothing on the web and in server HTML. */}
           <BiometricLock />
