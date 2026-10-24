@@ -23,6 +23,8 @@ import {
 import { completeOnboarding } from "./actions";
 import type { OnboardingData } from "./actions";
 import { CONSTRAINT_NAME_MAX } from "@/lib/auth/action-inputs";
+import { loadQuizScores } from "@/lib/quiz";
+import { applyQuizPrefill } from "@/lib/quiz/prefill";
 
 interface ScenarioPresetData {
   id: string;
@@ -248,6 +250,7 @@ export function OnboardingClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
+  const [prefilledFromQuiz, setPrefilledFromQuiz] = useState(false);
   const firstScroll = useRef(true);
 
   // Step 1: Goals
@@ -283,6 +286,15 @@ export function OnboardingClient({
       setSelectedScenario(draft.scenarioMode);
       setUserConstraints(draft.constraints);
       setPartnerEmail(draft.partnerEmail);
+    } else {
+      // No draft in progress: carry over a recent quiz so we don't ask the same
+      // five questions the person just answered. An in-progress draft always
+      // wins -- those are real answers typed in this flow.
+      const quiz = loadQuizScores();
+      if (quiz) {
+        setDimensionScores((current) => applyQuizPrefill(current, quiz));
+        setPrefilledFromQuiz(true);
+      }
     }
     setRestored(true);
   }, []);
@@ -527,6 +539,14 @@ export function OnboardingClient({
               Rate each dimension from 1 (very low) to 10 (excellent). This
               becomes your first daily log.
             </p>
+            {/* A silent prefill reads as a bug, so say where the numbers came
+                from and make it clear they are still editable. */}
+            {prefilledFromQuiz && (
+              <p className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm text-muted-foreground">
+                We filled in five of these from the quiz you just took — adjust
+                anything that does not feel right.
+              </p>
+            )}
             {DIMENSION_KEYS.map((key) => {
               const info = DIMENSION_LABELS[key];
               return (
