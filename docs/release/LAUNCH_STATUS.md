@@ -1,4 +1,4 @@
-# Couplemetric launch status (updated 2026-10-23)
+# Couplemetric launch status (updated 2026-10-23, evening)
 
 Single source of truth for "where are we". Update this file whenever a step changes.
 
@@ -40,10 +40,16 @@ signals). Recruit real people instead: friends, family, coworkers, couples commu
 
 ## Claude next
 - [x] Build versionCode 8 / 1.1.1 with WebView origin couplemetric.app; uploaded to Alpha as draft (jar verified)
-- [ ] Roll out 1.1.1 (8) on Alpha once owner confirms in-app Sign in works after the safe-area fix
-- [ ] **Fix wave from tester A feedback** (see `docs/release/tester-feedback.md`): session persistence
-      in the Android WebView; public-layout header (Log in tap target + safe-top); quiz/onboarding
-      steps fit 100dvh with sticky CTA, no scroll; redesign launcher icon as one smooth surface
+- [ ] **Owner: redeploy the web app to production** (the usual Vercel prod deploy; the classifier
+      blocks it for Claude). The login/nav/quiz/overlay fixes are web-side and reach testers only
+      after that deploy.
+- [ ] Roll out Alpha draft **1.1.2 (9)** to testers (supersedes the never-released 1.1.1 (8) draft).
+      Only the new launcher icon needs the new bundle; everything else ships with the web deploy.
+- [x] **Fix wave from tester A feedback** (see `docs/release/tester-feedback.md`): landing page read
+      the removed pre-migration cookie so users always looked signed out; landing nav lacked
+      `safe-top` and had 28px buttons; `/quiz` rendered a 100dvh flow inside the shared header+footer;
+      adaptive icon inset the background and shipped an opaque foreground. All fixed, 835 tests pass.
+      Built, signed (jar verified) and uploaded as Alpha draft **1.1.2 (9)** with real release notes.
 - [ ] Polish sprint during the 14 days: onboarding ≤10 steps + skip, Insights radar chart, visual pass (QA report `docs/release/2026-10-20-web-qa-report.md`), recapture 03-insights screenshot
 - [ ] License testers in Play (Setup → License testing) with owner emails so trial purchases are free; end-to-end sandbox purchase → `users.subscription_tier='premium'`, `subscription_source='revenuecat'`
 - [ ] Verify Play "Changes in review" (privacy/delete URL update) cleared
@@ -62,4 +68,6 @@ on the production-access form). Summary:
 - 2026-10-20 owner: header overlapped status bar → fixed (safe-area CSS vars), live.
 - 2026-10-23 tester A (friend), 4 items: not staying logged in; top Log in button doesn't work and
   sits too high; quiz/onboarding steps need scrolling to reach Next; app icon looks unprofessional
-  (inner square, should be one smooth surface like Libby/Spotify).
+  (inner square, should be one smooth surface like Libby/Spotify). **All four fixed in 1.1.2 (9)**,
+  plus two more found while verifying (cookie notice covering the step CTA; offline page still
+  linking to the old Vercel origin).
