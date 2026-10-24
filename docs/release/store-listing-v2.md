@@ -1,4 +1,8 @@
-# Play store listing v2 (draft — not yet published)
+# Play store listing v2 — PUBLISHED 2026-10-24 (in Play review)
+
+Applied via scratchpad `play/set-listing.mjs` in a single edit (title + short +
+full together = one review pass instead of two). Live values:
+title 30/30, short description 74/80, full description **3,186/4,000**.
 
 Why: the live full description uses 1,549 of the 4,000 indexed characters. On Google
 Play the entire full description is indexed (unlike Apple), so the unused ~2,400
@@ -9,14 +13,15 @@ Rules applied: primary keyword inside the first 167 characters (the part shown a
 the fold), target keyword 3-5 times across the description with variants, no exact-phrase
 repetition, benefit-led bullets.
 
-**Status:** awaiting owner approval. Publishing a listing change is a public content
-change and also re-enters Play review, so it is not applied automatically.
+**Status:** published. A listing change does not reset the 14-day tester clock, and
+the app is still in closed testing, so the listing is not yet exposed to public
+traffic — the cheapest possible moment to take a review pass.
 
 ---
 
-## Title (30 max) — CHANGE RECOMMENDED
+## Title (30 max) — CHANGED
 
-**Current:** `Couplemetric: Couples Tracker` (29)
+**Was:** `Couplemetric: Couples Tracker` (29) · **Now:** `Couplemetric: Couples Check-In` (30)
 
 The ASO research found "Couples Tracker" is an **intent trap**. A live Play search
 for "relationship tracker" / "couples tracker" returns almost entirely
@@ -50,14 +55,19 @@ Note: the title is a **one-way bet**. Play Store listing experiments can A/B the
 short description, full description and graphics, but **not the title**. So this
 choice gets made deliberately, once, before public launch.
 
-## Short description (80 max)
-
-Unchanged — it is already dense and natural:
+## Short description (80 max) — CHANGED
 
 ```
-Daily 2-minute couples check-in. Score your relationship across 9 dimensions.
+Your daily relationship health score. A 2-minute check-in for both of you.
 ```
-(77 chars)
+(74 chars)
+
+Leads with **"daily relationship health score"**: all three of *daily*, *score* and
+*health* are words essentially no competitor title uses, and the short description is
+indexed *and* A/B testable through Play listing experiments — unlike the title. It
+also now states the couple-plan ("for both of you") in the one line shown in search
+results. Previous: "Daily 2-minute couples check-in. Score your relationship across
+9 dimensions." (77).
 
 ## Full description (4,000 max)
 

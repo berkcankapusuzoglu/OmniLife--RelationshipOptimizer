@@ -143,3 +143,47 @@ What to keep unchanged:
 
 This is a ~1 hour change across both stores and the copy, and it is worth more
 than several thousand installs.
+
+---
+
+## Decision taken 2026-10-24: $7.99 / $39.99
+
+An independent expert pass was asked to choose, given the full research and without
+being told which way this document leaned. It chose **$7.99/month and $39.99/year**,
+keep the 7-day trial, keep freemium.
+
+**It also corrected the central framing of this document.** Everything above measured
+$7.99 against $4.99 and asked whether we would lose more than 38% of payers. That test
+is meaningless: **there are zero subscribers, so $4.99 is a price nobody has ever
+paid.** This is an *initial* price, not an increase. The elasticity literature — and
+the worry that +60% sits outside the published +30–50% range — simply does not apply.
+The only valid comparison is the market, where $7.99 is still ~38% below the $12.99
+median monthly and $39.99 is ~20% below the ~$49.99 median yearly. We remain the
+cheap option; we stop being the second-cheapest app in the category.
+
+Corollary it drew that this document had backwards: **keep the 58% annual discount.**
+At $7.99 the yearly is 5.0 months of monthly, inside the peer range of 3.5–6, and it
+steers buyers toward the plan that retains 33.9% at one year versus 13.8% for monthly.
+Chasing the 67–75% "average" discount would be optimising a ratio at the cost of price.
+
+On freemium it declined to harden the paywall despite the 10.7% vs 2.1% gap, because
+(a) a wall suppresses ratings exactly when we have none, (b) the partner who did not
+download cannot try it, which breaks the couple-plan pitch, and (c) partner-linking
+failure is already the category's top 1-star complaint and a paywall in front of it
+adds more. Its alternative: **keep freemium but move the trial offer to install day**,
+immediately after the first check-in score, dismissible. 89.4% of trial starts happen
+on install day, so a paywall first met on day 4 has already missed nearly all of them.
+
+### Status
+
+| Step | State |
+|---|---|
+| Play base-plan prices → $7.99 / $39.99 | **Pending** — run scratchpad `play/set-prices.mjs --apply` (classifier blocks it for Claude) |
+| Stripe prices for the web path | Pending owner — create new prices, then set the env price IDs |
+| `src/lib/subscription/tiers.ts` + marketing copy | **Deliberately held** until the two above land |
+
+The code change is held on purpose. Native prices always come from the store offering,
+so Android is unaffected by `TIERS` — but the web and marketing pages render from it,
+and Stripe would still charge the old $4.99 price IDs. Publishing $7.99 on the web
+while Stripe charges $4.99 would be a billing mismatch. Sequence: Play prices →
+Stripe prices + env → code and copy in one commit.
