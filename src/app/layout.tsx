@@ -8,6 +8,7 @@ import { BiometricLock } from "@/components/biometric-lock";
 import { AnalyticsProvider } from "@/components/analytics-provider";
 import { AnalyticsSink } from "@/components/analytics-sink";
 import { ConversionTracker } from "@/components/conversion-tracker";
+import { ThemeScript } from "@/components/theme-script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,8 +42,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // The pre-paint script sets the theme class, so <html> differs from
+      // server HTML by design.
+      suppressHydrationWarning
     >
+      <head>
+        <ThemeScript />
+      </head>
       <body className="min-h-full bg-background text-foreground">
         <TooltipProvider>
           <CapacitorInit />

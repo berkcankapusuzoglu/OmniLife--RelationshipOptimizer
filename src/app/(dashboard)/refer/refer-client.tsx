@@ -20,6 +20,7 @@ import {
   Trophy,
   Star,
 } from "lucide-react";
+import { REFERRAL_TIERS } from "@/lib/referrals/rewards";
 
 interface ReferClientProps {
   referralCode: string;
@@ -36,12 +37,12 @@ interface ReferClientProps {
 const SHARE_TEXT =
   "I've been using Couplemetric to optimize my relationship — check it out! Get started free:";
 
-// Incentive tiers
-const TIERS = [
-  { referrals: 1, reward: "1 month Premium", months: 1 },
-  { referrals: 3, reward: "3 months Premium", months: 3 },
-  { referrals: 5, reward: "6 months Premium", months: 6 },
-];
+// Labels are derived from the granting curve so the promise cannot drift
+// from what processReferral actually adds to the trial.
+const TIERS = REFERRAL_TIERS.map((tier) => ({
+  ...tier,
+  reward: `${tier.months} month${tier.months !== 1 ? "s" : ""} Premium`,
+}));
 
 export function ReferClient({ referralCode, userName, stats }: ReferClientProps) {
   const [copied, setCopied] = useState(false);
@@ -163,7 +164,7 @@ export function ReferClient({ referralCode, userName, stats }: ReferClientProps)
             Rewards
           </CardTitle>
           <CardDescription>
-            Get 1 free month of Premium for every friend who signs up
+            1 free month of Premium per friend who signs up, plus a bonus month at 5
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

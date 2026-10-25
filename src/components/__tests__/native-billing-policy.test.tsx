@@ -191,6 +191,10 @@ describe("hydration safety and the ordinary web", () => {
     expect(landing).not.toMatch(/free trial|lock in|before it increases/i);
     const prompt = html(<UpgradePrompt featureDescription="Guided exercises" />);
     expect(prompt).toContain(`$${TIERS.premium.monthlyPrice}/mo`);
-    expect(prompt).not.toMatch(/free trial|\$7\.99/i);
+    // The guard is against a STALE hard-coded price, not against any particular
+    // number: $7.99 used to be the stale literal and is now the real price, so
+    // the superseded $4.99 is what must never reappear.
+    expect(prompt).not.toMatch(/free trial/i);
+    expect(prompt).not.toContain("$4.99");
   });
 });

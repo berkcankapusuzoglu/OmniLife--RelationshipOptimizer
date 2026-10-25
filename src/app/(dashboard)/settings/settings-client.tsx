@@ -21,6 +21,7 @@ import { ManageSubscriptionButton } from "@/components/manage-subscription-butto
 import { RestorePurchasesButton } from "@/components/restore-purchases-button";
 import { NotificationSettings } from "@/components/notification-settings";
 import { BiometricSettings } from "@/components/biometric-settings";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LogOut,
   Download,
@@ -160,7 +161,7 @@ export function SettingsClient({
         {native === true && <TabsTrigger value="device">Device</TabsTrigger>}
       </TabsList>
 
-      <TabsContent value="profile">
+      <TabsContent value="profile" className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
@@ -236,6 +237,18 @@ export function SettingsClient({
                 Sign Out
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Appearance</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              System follows your device setting.
+            </p>
+            <ThemeToggle />
           </CardContent>
         </Card>
       </TabsContent>

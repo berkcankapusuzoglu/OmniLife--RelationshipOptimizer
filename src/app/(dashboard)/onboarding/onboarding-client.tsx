@@ -20,7 +20,7 @@ import {
   Shield,
   UserPlus,
 } from "lucide-react";
-import { completeOnboarding } from "./actions";
+import { completeOnboarding, skipOnboarding } from "./actions";
 import type { OnboardingData } from "./actions";
 import { CONSTRAINT_NAME_MAX } from "@/lib/auth/action-inputs";
 import { loadQuizScores } from "@/lib/quiz";
@@ -248,6 +248,7 @@ export function OnboardingClient({
 }: OnboardingClientProps) {
   const [step, setStep] = useState(clampInt(initialStep, 0, STEPS.length - 1));
   const [submitting, setSubmitting] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
   const [prefilledFromQuiz, setPrefilledFromQuiz] = useState(false);
@@ -369,7 +370,9 @@ export function OnboardingClient({
   const partnerEmailInvalid = partnerEmailTrimmed !== "" && !EMAIL_RE.test(partnerEmailTrimmed);
 
   async function handleSubmit() {
-    if (submitting) return;
+    // A skip in flight is already writing the first log; a second write path
+    // would duplicate the log/score and bump the streak twice.
+    if (submitting || skipping) return;
     if (partnerEmailInvalid) {
       setError("Please enter a valid partner email address, or leave it blank.");
       return;
@@ -410,6 +413,35 @@ export function OnboardingClient({
       }
       setError("Something went wrong while saving your setup. Please try again.");
       setSubmitting(false);
+    }
+  }
+
+  async function handleSkip() {
+    if (submitting || skipping) return;
+    setError(null);
+    setSkipping(true);
+    try {
+      // Only the assessment and scenario travel with a skip: those are answers
+      // the person gave (or the quiz gave on their behalf). Half-entered
+      // constraints and the partner invite are reachable from Settings and the
+      // Partner page, so they are not worth holding the first score hostage.
+      const result = await skipOnboarding({
+        dimensionScores,
+        scenarioMode: selectedScenario,
+      });
+      if (result?.error) {
+        setError(result.error);
+        setSkipping(false);
+        return;
+      }
+      clearDraft();
+    } catch (err) {
+      if (err && typeof err === "object" && "digest" in err && String((err as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")) {
+        clearDraft();
+        throw err;
+      }
+      setError("Something went wrong while skipping setup. Please try again.");
+      setSkipping(false);
     }
   }
 
@@ -882,11 +914,12 @@ export function OnboardingClient({
           bottom of the step (tester feedback 2026-10-23). `bottom-0` sticks it
           above the page's safe-area padding; the backdrop keeps the step
           content readable as it scrolls underneath. */}
-      <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-border/40 bg-background/90 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border sm:px-4">
+      <div className="sticky bottom-0 -mx-4 border-t border-border/40 bg-background/90 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border sm:px-4">
+        <div className="flex items-center justify-between gap-3">
         <Button
           variant="outline"
           onClick={() => goToStep(step - 1)}
-          disabled={step === 0 || submitting}
+          disabled={step === 0 || submitting || skipping}
           className="h-12 px-4"
         >
           <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />
@@ -896,7 +929,7 @@ export function OnboardingClient({
         {step < STEPS.length - 1 ? (
           <Button
             onClick={() => goToStep(step + 1)}
-            disabled={!canAdvance()}
+            disabled={!canAdvance() || submitting || skipping}
             className="h-12 min-w-[7rem] px-4"
           >
             Next
@@ -905,7 +938,7 @@ export function OnboardingClient({
         ) : (
           <Button
             onClick={handleSubmit}
-            disabled={submitting || partnerEmailInvalid}
+            disabled={submitting || skipping || partnerEmailInvalid}
             className="h-12 px-4"
           >
             {submitting ? (
@@ -921,6 +954,22 @@ export function OnboardingClient({
             )}
           </Button>
         )}
+        </div>
+
+        {/* Secondary by construction: a text-only link under the primary
+            action, so it is findable without ever reading as the way forward.
+            Skipping still writes a first log from the neutral defaults, which
+            is what gets the person to a score. */}
+        <div className="mt-2 text-center">
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={submitting || skipping}
+            className="text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground disabled:opacity-50"
+          >
+            {skipping ? "Skipping..." : "Skip for now"}
+          </button>
+        </div>
       </div>
     </div>
   );

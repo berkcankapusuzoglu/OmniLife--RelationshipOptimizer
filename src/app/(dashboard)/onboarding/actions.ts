@@ -24,6 +24,11 @@ import { updateStreak } from "@/lib/streaks";
 import { SCENARIO_PRESETS } from "@/lib/scenarios/presets";
 import { requireAuth } from "@/lib/auth/guard";
 import { onboardingInput } from "@/lib/auth/action-inputs";
+import {
+  resolveSkipAssessment,
+  resolveSkipScenarioMode,
+  type SkipAssessment,
+} from "./skip";
 import type { z } from "zod";
 
 export interface OnboardingData {
@@ -74,10 +79,71 @@ export async function completeOnboarding(
   input: OnboardingData
 ): Promise<{ error: string }> {
   const user = await requireAuth();
+  // Same one-time-write guard as `skipOnboarding`: never a second first log.
+  if (user.onboardingCompleted) {
+    redirect("/overview");
+  }
   const parsed = onboardingInput.safeParse(input);
   if (!parsed.success) return { error: validationMessage(parsed.error) };
   const data = parsed.data;
-  const userId = user.id;
+
+  await persistInitialAssessment({
+    userId: user.id,
+    dims: data,
+    scenarioMode: data.scenarioMode,
+    constraintDrafts: data.constraints,
+    notes: "Initial assessment from onboarding",
+  });
+
+  redirect("/overview");
+}
+
+/**
+ * A skip still has to leave a state the dashboard accepts. `onboardingCompleted`
+ * is what the layout gate reads, so anything short of setting it would bounce the
+ * user straight back to /onboarding -- a skip that does not escape is a loop.
+ */
+export async function skipOnboarding(input: {
+  dimensionScores?: Record<string, unknown>;
+  scenarioMode?: unknown;
+}): Promise<{ error: string }> {
+  const user = await requireAuth();
+
+  // Server actions are public endpoints: a repeated call would otherwise write a
+  // second log/score for the same day and bump the streak again. The first log is
+  // a one-time write, so an already-onboarded caller just gets the redirect.
+  if (user.onboardingCompleted) {
+    redirect("/overview");
+  }
+
+  await persistInitialAssessment({
+    userId: user.id,
+    // Whatever the person already gave us survives the skip -- in particular a
+    // quiz prefill, which is a real self-report they should not have to repeat.
+    dims: resolveSkipAssessment(input?.dimensionScores),
+    scenarioMode: resolveSkipScenarioMode(input?.scenarioMode),
+    constraintDrafts: [],
+    notes: "Initial assessment from onboarding (skipped)",
+  });
+
+  redirect("/overview");
+}
+
+interface InitialAssessmentWrite {
+  userId: string;
+  dims: SkipAssessment;
+  scenarioMode: string;
+  constraintDrafts: OnboardingData["constraints"];
+  notes: string;
+}
+
+async function persistInitialAssessment({
+  userId,
+  dims,
+  scenarioMode,
+  constraintDrafts,
+  notes,
+}: InitialAssessmentWrite): Promise<void> {
   const db = getDb();
   const today = new Date().toISOString().split("T")[0];
 
@@ -87,24 +153,24 @@ export async function completeOnboarding(
     id: logId,
     userId,
     date: today,
-    vitalityScore: data.vitality,
-    growthScore: data.growth,
-    securityScore: data.security,
-    connectionScore: data.connection,
-    emotionalScore: data.emotional,
-    trustScore: data.trust,
-    fairnessScore: data.fairness,
-    stressScore: data.stress,
-    autonomyScore: data.autonomy,
+    vitalityScore: dims.vitality,
+    growthScore: dims.growth,
+    securityScore: dims.security,
+    connectionScore: dims.connection,
+    emotionalScore: dims.emotional,
+    trustScore: dims.trust,
+    fairnessScore: dims.fairness,
+    stressScore: dims.stress,
+    autonomyScore: dims.autonomy,
     mood: 5,
     energyLevel: 5,
-    notes: "Initial assessment from onboarding",
-    scenarioMode: data.scenarioMode,
+    notes,
+    scenarioMode: scenarioMode,
   });
 
   // 2. Set scenario profile if selected
   const selectedPreset = SCENARIO_PRESETS.find(
-    (p) => p.mode === data.scenarioMode
+    (p) => p.mode === scenarioMode
   );
 
   let scenarioId: string | undefined;
@@ -150,24 +216,24 @@ export async function completeOnboarding(
 
   // 4. Compute scores
   const pillars: PillarScores = {
-    vitality: data.vitality,
-    growth: data.growth,
-    security: data.security,
-    connection: data.connection,
+    vitality: dims.vitality,
+    growth: dims.growth,
+    security: dims.security,
+    connection: dims.connection,
   };
   const relDims: RelDimScores = {
-    emotional: data.emotional,
-    trust: data.trust,
-    fairness: data.fairness,
-    stress: data.stress,
-    autonomy: data.autonomy,
+    emotional: dims.emotional,
+    trust: dims.trust,
+    fairness: dims.fairness,
+    stress: dims.stress,
+    autonomy: dims.autonomy,
   };
 
   // Fetch constraints created below + scenario constraint overrides
   const allConstraints: Constraint[] = [];
 
   // 5. Create user constraints from onboarding
-  for (const c of data.constraints) {
+  for (const c of constraintDrafts) {
     const constraintId = uuid();
     await db.insert(constraints).values({
       id: constraintId,
@@ -236,5 +302,4 @@ export async function completeOnboarding(
   await db.update(users).set(userUpdate).where(eq(users.id, userId));
 
   revalidatePath("/", "layout");
-  redirect("/overview");
 }

@@ -67,20 +67,26 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* Same hues as dark, darkened so they stay legible on a white surface. */
+  --chart-1: oklch(0.52 0.21 264);
+  --chart-2: oklch(0.48 0.16 310);
+  --chart-3: oklch(0.52 0.13 190);
+  --chart-4: oklch(0.55 0.18 30);
+  --chart-5: oklch(0.55 0.14 140);
   --radius: 0.625rem;
+  --color-scheme: light;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.52 0.21 264);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --color-life-pillar: oklch(0.52 0.21 264);
+  --color-rel-dimension: oklch(0.52 0.17 350);
+  --link: oklch(0.49 0.2 264);
+  --link-hover: oklch(0.4 0.17 264);
 }
 
 .dark {
@@ -115,8 +121,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --color-scheme: dark;
   --color-life-pillar: oklch(0.646 0.222 264);
   --color-rel-dimension: oklch(0.7 0.18 350);
+  --link: oklch(0.72 0.17 264);
+  --link-hover: oklch(0.82 0.13 264);
 }
 
 @layer base {
@@ -128,6 +137,7 @@
   }
   html {
     @apply font-sans;
+    color-scheme: var(--color-scheme);
   }
 }
 
@@ -164,12 +174,12 @@
   margin-bottom: 1.25rem;
 }
 .blog-prose a {
-  color: oklch(0.646 0.222 264);
+  color: var(--link);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .blog-prose a:hover {
-  color: oklch(0.75 0.222 264);
+  color: var(--link-hover);
 }
 .blog-prose strong {
   color: var(--foreground);

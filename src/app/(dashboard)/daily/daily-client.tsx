@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { MilestoneToast } from "@/components/milestone-toast";
 import { NotificationPrePrompt, shouldShowPushPrePrompt } from "@/components/notification-preprompt";
+import { recordLogAndMaybeRequestReview } from "@/lib/review";
 import { submitDailyLog } from "./actions";
 import type { Milestone } from "@/lib/milestones";
 
@@ -434,6 +435,7 @@ export function DailyLogWizard({
 
       const firstLog = result?.isFirstLog === true;
       setIsFirstLog(firstLog);
+      void recordLogAndMaybeRequestReview();
       setSubmitted(true);
       // The native pre-prompt owns the redirect while it is on screen.
       if (!shouldShowPushPrePrompt(firstLog)) {

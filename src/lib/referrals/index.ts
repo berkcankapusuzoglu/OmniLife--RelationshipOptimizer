@@ -2,6 +2,15 @@ import { eq, and, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "@/lib/db";
 import { users, referrals } from "@/lib/db/schema";
+import { earnedMonths, rewardMonthsForNthReferral, trialExtensionDays } from "./rewards";
+
+export {
+  REFERRAL_TIERS,
+  cumulativeRewardMonths,
+  earnedMonths,
+  rewardMonthsForNthReferral,
+  trialExtensionDays,
+} from "./rewards";
 
 function randomChars(n: number): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -49,7 +58,7 @@ export async function processReferral(
 
   // Find referrer by code
   const [referrer] = await db
-    .select({ id: users.id, trialEndsAt: users.trialEndsAt })
+    .select({ id: users.id })
     .from(users)
     .where(eq(users.referralCode, referralCode))
     .limit(1);
@@ -59,9 +68,23 @@ export async function processReferral(
   // Don't allow self-referral
   if (referrer.id === newUserId) return;
 
-  // Create referral record
+  // A replayed signup for the same pair must not create a second rewardable row.
+  const [duplicate] = await db
+    .select({ id: referrals.id })
+    .from(referrals)
+    .where(
+      and(
+        eq(referrals.referrerId, referrer.id),
+        eq(referrals.referredUserId, newUserId)
+      )
+    )
+    .limit(1);
+
+  if (duplicate) return;
+
+  const referralId = uuidv4();
   await db.insert(referrals).values({
-    id: uuidv4(),
+    id: referralId,
     referrerId: referrer.id,
     referredEmail: newUserEmail,
     referredUserId: newUserId,
@@ -69,18 +92,54 @@ export async function processReferral(
     convertedAt: new Date(),
   });
 
-  // Reward: extend trialEndsAt by 30 days
-  const now = new Date();
-  const currentEnd =
-    referrer.trialEndsAt && new Date(referrer.trialEndsAt) > now
-      ? new Date(referrer.trialEndsAt)
-      : now;
-  const newEnd = new Date(currentEnd.getTime() + 30 * 24 * 60 * 60 * 1000);
+  await rewardReferral(referralId, referrer.id);
+}
 
+// The reward is gated on this single conditional UPDATE: only the transaction
+// that observes `signed_up` gets a row back, so two concurrent runs over the
+// same referral can never both extend the trial.
+async function rewardReferral(
+  referralId: string,
+  referrerId: string
+): Promise<void> {
+  const db = getDb();
+
+  const claimed = await db
+    .update(referrals)
+    .set({ status: "rewarded" })
+    .where(
+      and(
+        eq(referrals.id, referralId),
+        eq(referrals.referrerId, referrerId),
+        eq(referrals.status, "signed_up")
+      )
+    )
+    .returning({ id: referrals.id });
+
+  if (claimed.length === 0) return;
+
+  const rewardedRows = await db
+    .select({ id: referrals.id })
+    .from(referrals)
+    .where(
+      and(eq(referrals.referrerId, referrerId), eq(referrals.status, "rewarded"))
+    );
+
+  const months = rewardMonthsForNthReferral(rewardedRows.length);
+  if (months <= 0) return;
+
+  // The extension is computed in SQL from the row's own current value, not
+  // from a value read earlier in this request: two referrals rewarded
+  // concurrently for the same referrer would otherwise both write from the
+  // same stale `trialEndsAt` and silently drop one month.
+  // Ownership: the grant is keyed to the referrer row the claimed referral
+  // points at, never to the signing-up user.
   await db
     .update(users)
-    .set({ trialEndsAt: newEnd })
-    .where(eq(users.id, referrer.id));
+    .set({
+      trialEndsAt: sql`greatest(coalesce(${users.trialEndsAt}, now()), now()) + make_interval(days => ${trialExtensionDays(months)})`,
+    })
+    .where(eq(users.id, referrerId));
 }
 
 export interface ReferralStats {
@@ -106,10 +165,7 @@ export async function getReferralStats(
   const rewarded = rows.filter((r) => r.status === "rewarded").length;
   const total = rows.length;
 
-  // Each sign-up = 1 month. Bonus tiers: 3 total = +0 extra, 5 total = +1 extra
-  let monthsEarned = signedUp + rewarded;
-  if (total >= 5) monthsEarned += 1; // bonus month at 5
-  if (total >= 3) monthsEarned += 0; // tier acknowledged but no extra here
+  const monthsEarned = earnedMonths({ signedUp, rewarded });
 
   return { pending, signedUp, rewarded, total, monthsEarned };
 }

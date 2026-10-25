@@ -24,8 +24,10 @@ describe("feature matrix", () => {
   });
   it("sells Premium only", () => {
     expect(SELLABLE_TIERS).toEqual(["premium"]);
-    expect(TIERS.premium.monthlyPrice).toBe(4.99);
-    expect(TIERS.premium.yearlyPrice).toBe(24.99);
+    // Repriced 2026-10-25 before the first paying subscriber; see tiers.ts.
+    // These must stay in step with the Play base plans and the Stripe price IDs.
+    expect(TIERS.premium.monthlyPrice).toBe(7.99);
+    expect(TIERS.premium.yearlyPrice).toBe(39.99);
     expect(TIERS.premium.featureList[0]).toBe("Covers both partners");
   });
   it("limits the free tier", () => {

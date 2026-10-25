@@ -1,6 +1,15 @@
 import { getDb } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { dailyLogs, users } from "@/lib/db/schema";
+import { and, eq, gte } from "drizzle-orm";
+
+import { FORGIVENESS_WINDOW_DAYS, resolveStreak } from "./forgiveness";
+
+export {
+  FORGIVENESS_WINDOW_DAYS,
+  dayDifference,
+  lastForgivenessDate,
+  resolveStreak,
+} from "./forgiveness";
 
 /**
  * Update streak after a daily log submission.
@@ -9,7 +18,7 @@ import { eq } from "drizzle-orm";
 export async function updateStreak(
   userId: string,
   logDate: string
-): Promise<{ currentStreak: number; longestStreak: number }> {
+): Promise<{ currentStreak: number; longestStreak: number; forgiven: boolean }> {
   const db = getDb();
 
   const [user] = await db
@@ -23,51 +32,52 @@ export async function updateStreak(
     .limit(1);
 
   if (!user) {
-    return { currentStreak: 0, longestStreak: 0 };
+    return { currentStreak: 0, longestStreak: 0, forgiven: false };
   }
 
-  const lastDate = user.lastLogDate;
-  let newStreak = user.currentStreak ?? 0;
+  // Forgiveness is derived from the log history, so the window of dates that
+  // could hold an already-spent forgiveness has to come with it.
+  const history = await db
+    .select({ date: dailyLogs.date })
+    .from(dailyLogs)
+    .where(
+      and(
+        eq(dailyLogs.userId, userId),
+        gte(dailyLogs.date, windowStart(logDate))
+      )
+    );
 
-  if (lastDate === logDate) {
-    // Already logged today — no change
-    return {
-      currentStreak: newStreak,
-      longestStreak: user.longestStreak ?? 0,
-    };
+  const result = resolveStreak({
+    currentStreak: user.currentStreak ?? 0,
+    longestStreak: user.longestStreak ?? 0,
+    lastLogDate: user.lastLogDate,
+    logDate,
+    recentLogDates: history.map((row) => row.date),
+  });
+
+  if (result.changed) {
+    await db
+      .update(users)
+      .set({
+        currentStreak: result.currentStreak,
+        longestStreak: result.longestStreak,
+        lastLogDate: logDate,
+      })
+      .where(eq(users.id, userId));
   }
 
-  if (lastDate) {
-    const diff = dayDifference(lastDate, logDate);
-    if (diff === 1) {
-      // Consecutive day
-      newStreak += 1;
-    } else {
-      // Gap > 1 day — reset
-      newStreak = 1;
-    }
-  } else {
-    // First log ever
-    newStreak = 1;
-  }
-
-  const newLongest = Math.max(user.longestStreak ?? 0, newStreak);
-
-  await db
-    .update(users)
-    .set({
-      currentStreak: newStreak,
-      longestStreak: newLongest,
-      lastLogDate: logDate,
-    })
-    .where(eq(users.id, userId));
-
-  return { currentStreak: newStreak, longestStreak: newLongest };
+  return {
+    currentStreak: result.currentStreak,
+    longestStreak: result.longestStreak,
+    forgiven: result.forgiven,
+  };
 }
 
-/** Returns the number of calendar days between two YYYY-MM-DD strings. */
-function dayDifference(dateA: string, dateB: string): number {
-  const a = new Date(dateA + "T00:00:00Z");
-  const b = new Date(dateB + "T00:00:00Z");
-  return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
+/** Oldest YYYY-MM-DD date that still falls inside the forgiveness window. */
+function windowStart(logDate: string): string {
+  const start = new Date(Date.parse(logDate + "T00:00:00Z"));
+  // Two extra days: a forgiveness that resumed just inside the window has its
+  // preceding log up to two days earlier, and the pair is what identifies it.
+  start.setUTCDate(start.getUTCDate() - FORGIVENESS_WINDOW_DAYS - 2);
+  return start.toISOString().split("T")[0];
 }

@@ -80,9 +80,15 @@ export const TIERS = {
     } satisfies Features,
   },
   premium: {
+    // Repriced 2026-10-25, before the first paying subscriber: Play price-locks
+    // existing subscribers, so this was the last free moment to change it. The
+    // category median is $12.99/mo and ~$49.99/yr (Paired charges $79.99/yr for
+    // the same both-partners plan), so this is still the value option. These
+    // figures are the WEB/Stripe prices and the marketing copy only -- native
+    // prices always come from the store offering, never from here.
     name: "Premium",
-    monthlyPrice: 4.99,
-    yearlyPrice: 24.99,
+    monthlyPrice: 7.99,
+    yearlyPrice: 39.99,
     featureList: [
       "Covers both partners",
       "90-day history & trends",

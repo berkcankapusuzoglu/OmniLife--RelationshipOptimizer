@@ -57,9 +57,9 @@ exports[`feature matrix > matches the v1.1.0 locked product decisions 1`] = `
       "therapistExport": true,
       "weeklyCheckin": true,
     },
-    "monthlyPrice": 4.99,
+    "monthlyPrice": 7.99,
     "name": "Premium",
-    "yearlyPrice": 24.99,
+    "yearlyPrice": 39.99,
   },
   "pro": {
     "featureList": [

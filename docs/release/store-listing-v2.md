@@ -112,7 +112,7 @@ Building a daily couples check-in habit. Tracking relationship health month over
 
 Download Couplemetric, take the free relationship test, and start your first streak tonight.
 
-Premium is $4.99/month or $24.99/year with a 7-day free trial, billed through Google Play. Cancel any time in Play Store → Subscriptions. Prices may vary by country.
+Premium is $7.99/month or $39.99/year with a 7-day free trial, billed through Google Play. Cancel any time in Play Store → Subscriptions. Prices may vary by country.
 ```
 
 ### Keyword coverage
