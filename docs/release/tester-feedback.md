@@ -48,3 +48,51 @@ something else entirely and we start again.
 5. **Floating UI must not cover primary actions** — found while verifying (3): the cookie notice sat on top of the step flows' CTA. It now defers to ordinary pages.
 
 All of the above shipped in versionCode 9 / versionName 1.1.2 on the Alpha closed track within the 14-day window.
+
+---
+
+## Ready-to-paste answers for the Play production-access form
+
+Google's form asks how you recruited testers, how you gathered feedback, and what
+you changed. Paste these and adjust the counts on the day you apply.
+
+**How did you recruit your testers?**
+> Friends, family and coworkers, plus a public Google Group (Couplemetric Testers)
+> that anyone can join, linked from the opt-in page. Testers join the group, then
+> opt in through the Play testing link and install from Google Play.
+
+**How did you gather feedback?**
+> Directly from testers by message and email, plus Play Console testing feedback.
+> Every item is logged verbatim with the date, the person, a diagnosis and the
+> version that fixed it, in a feedback log kept in the repository.
+
+**What did you learn, and what did you change?**
+> Ten issues were reported across the closed test and all ten were diagnosed and
+> fixed inside the test window, shipped in versions 1.1.1 through 1.1.3:
+> - The app appeared to sign users out on every launch. Two separate causes: the
+>   start page was reading a cookie removed by an earlier migration, and sessions
+>   expired on a fixed timer with no renewal. Fixed both; sessions now renew as
+>   the app is used.
+> - The header overlapped the Android status bar and swallowed taps on the sign-in
+>   control, which was also below the minimum touch-target size. Fixed across the
+>   dashboard and the public pages, with all affected controls raised to 44dp.
+> - The quiz and onboarding required scrolling to reach the Next button. Both
+>   rebuilt as single-screen steps with a permanently visible action bar.
+> - The launcher icon rendered as a square badge inside the icon mask, and the
+>   splash screen was being upscaled from a low-resolution asset on most phones.
+>   Both regenerated at correct per-density resolutions.
+> - The exercise timer stopped counting when the screen locked, because it counted
+>   timer ticks rather than elapsed time. Rewritten to use wall-clock time.
+> - A floating cookie notice covered the primary button on the quiz and onboarding
+>   screens and intercepted taps.
+>
+> The changes are visible in the release notes for each version and in the
+> repository's commit history.
+
+**Is this log actually useful?** Yes, with a caveat worth knowing: Google does not
+audit a document like this. What the reviewer sees is the form answers plus
+whether the test looks real — 12 testers, opted in continuously for 14 days, with
+evidence of genuine engagement. This log's value is that it makes those answers
+specific and true rather than vague, and vague answers are what trigger
+"insufficient tester engagement" and another 14-day cycle. It is supporting
+material, not the thing being graded.

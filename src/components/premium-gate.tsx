@@ -4,12 +4,19 @@ import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useNativePlatform } from "@/lib/capacitor/platform";
+import { useNativeBilling } from "@/components/native-billing-provider";
 import { TIERS, type Features, type SubscriptionTier, FEATURE_LABELS, FEATURE_DESCRIPTIONS } from "@/lib/subscription/tiers";
 
 interface PremiumGateProps {
   userTier: string;
   feature: keyof Features;
   children?: React.ReactNode;
+  /**
+   * Server flag `NATIVE_BILLING_ENABLED`. Normally supplied by
+   * `NativeBillingProvider`; an explicit prop overrides it. Absent both, it is
+   * false, which keeps the policy-safe silent lock on native.
+   */
+  nativeBilling?: boolean;
 }
 
 /**
@@ -51,8 +58,15 @@ function LockedIllustration() {
   );
 }
 
-export function PremiumGate({ userTier, feature, children }: PremiumGateProps) {
+export function PremiumGate({
+  userTier,
+  feature,
+  children,
+  nativeBilling,
+}: PremiumGateProps) {
   const native = useNativePlatform();
+  const billingFromContext = useNativeBilling();
+  const billingEnabled = nativeBilling ?? billingFromContext;
   const tierKey = (userTier in TIERS ? userTier : "free") as SubscriptionTier;
   const config = TIERS[tierKey].features;
   const value = config[feature];
@@ -72,7 +86,7 @@ export function PremiumGate({ userTier, feature, children }: PremiumGateProps) {
         <h3 className="text-lg font-semibold">{FEATURE_LABELS[feature]}</h3>
         <p className="text-sm text-muted-foreground">{FEATURE_DESCRIPTIONS[feature]}</p>
       </div>
-      {native === false ? (
+      {native === false && (
         <>
           <Button
             render={<Link href="/pricing" />}
@@ -84,7 +98,26 @@ export function PremiumGate({ userTier, feature, children }: PremiumGateProps) {
             ${TIERS.premium.monthlyPrice}/mo or ${TIERS.premium.yearlyPrice}/yr. One plan covers both partners.
           </p>
         </>
-      ) : (
+      )}
+      {/* Native with billing on: send the user to the in-app, store-priced
+          paywall. Hitting a lock is the moment of demonstrated intent, and with
+          89.4% of trial starts happening on install day a paywall the user has to
+          hunt for in Settings converts almost nobody. No price and no `pricing`
+          route appear here: on native, prices come from the store only. */}
+      {native === true && billingEnabled && (
+        <>
+          <Button
+            render={<Link href="/settings#subscription" />}
+            className="bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-500 hover:to-violet-500"
+          >
+            See Premium
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            One plan covers both partners.
+          </p>
+        </>
+      )}
+      {native === true && !billingEnabled && (
         <p className="text-sm text-muted-foreground">This feature is not available for your account.</p>
       )}
     </div>

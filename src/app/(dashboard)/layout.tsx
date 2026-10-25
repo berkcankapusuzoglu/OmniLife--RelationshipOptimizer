@@ -7,6 +7,7 @@ import { MobileNav } from "@/components/nav/MobileNav";
 import { StreakBadge } from "@/components/streak-badge";
 import { WelcomeModal } from "@/components/welcome-modal";
 import { RevenueCatInit } from "@/components/revenuecat-init";
+import { NativeBillingProvider } from "@/components/native-billing-provider";
 import { OnboardingGuard } from "@/components/onboarding-guard";
 import { nativeBillingEnabled } from "@/lib/billing/flags";
 import { resolveOnboardingGate } from "@/lib/auth/onboarding-gate";
@@ -42,7 +43,9 @@ export default async function DashboardLayout({
       <div className="flex h-full min-h-[100dvh] flex-col">
         <header className="safe-top flex items-center gap-3 border-b bg-card px-4">
           <div className="flex h-14 w-full items-center gap-3">
-            <span className="text-lg font-bold tracking-tight">Couplemetric</span>
+            <span className="text-lg font-bold tracking-tight">
+              Couplemetric
+            </span>
             {/* Re-checks the live pathname on soft navigation and owns the
                 "Continue setup" link; the server pathname above is stale after
                 the first client-side navigation. */}
@@ -78,55 +81,62 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-full min-h-screen">
-      {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">
-        <div className="flex h-14 items-center gap-2 px-4">
-          <span className="text-lg font-bold tracking-tight">Couplemetric</span>
-        </div>
-        <Separator />
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          <SidebarNav />
-        </div>
-        <div className="border-t px-4 py-3">
-          <p className="truncate text-xs text-muted-foreground">
-            {user.name}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {user.email}
-          </p>
-        </div>
-      </aside>
-
-      {/* Main content area */}
-      <div className="flex flex-1 flex-col">
-        {/* Top bar — safe-top adds padding for status bar on native */}
-        <header className="safe-top flex items-center gap-3 border-b bg-card px-4">
-          <div className="flex h-14 w-full items-center gap-3">
-            <MobileNav />
-
-            <span className="text-lg font-bold tracking-tight md:hidden">
+    // Publishes NATIVE_BILLING_ENABLED to the premium gates further down, so a
+    // locked feature on Android can route to the in-app paywall instead of
+    // dead-ending on "not available for your account".
+    <NativeBillingProvider enabled={nativeBillingEnabled()}>
+      <div className="flex h-full min-h-screen">
+        {/* Desktop sidebar */}
+        <aside className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">
+          <div className="flex h-14 items-center gap-2 px-4">
+            <span className="text-lg font-bold tracking-tight">
               Couplemetric
             </span>
-
-            <div className="ml-auto flex items-center gap-3">
-              <StreakBadge currentStreak={user.currentStreak ?? 0} />
-              {scenarioName && scenarioName !== "Default" && (
-                <Badge variant="secondary">{scenarioName}</Badge>
-              )}
-            </div>
           </div>
-        </header>
+          <Separator />
+          <div className="flex-1 overflow-y-auto px-3 py-4">
+            <SidebarNav />
+          </div>
+          <div className="border-t px-4 py-3">
+            <p className="truncate text-xs text-muted-foreground">
+              {user.name}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {user.email}
+            </p>
+          </div>
+        </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-6">
-          {children}
-        </main>
+        {/* Main content area */}
+        <div className="flex flex-1 flex-col">
+          {/* Top bar — safe-top adds padding for status bar on native */}
+          <header className="safe-top flex items-center gap-3 border-b bg-card px-4">
+            <div className="flex h-14 w-full items-center gap-3">
+              <MobileNav />
+
+              <span className="text-lg font-bold tracking-tight md:hidden">
+                Couplemetric
+              </span>
+
+              <div className="ml-auto flex items-center gap-3">
+                <StreakBadge currentStreak={user.currentStreak ?? 0} />
+                {scenarioName && scenarioName !== "Default" && (
+                  <Badge variant="secondary">{scenarioName}</Badge>
+                )}
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-6">
+            {children}
+          </main>
+        </div>
+
+        <WelcomeModal hasLogs={hasLogs} />
+
+        {/* Native billing SDK: configured once per page load, only when the server flag is on */}
+        <RevenueCatInit userId={user.id} enabled={nativeBillingEnabled()} />
       </div>
-
-      <WelcomeModal hasLogs={hasLogs} />
-
-      {/* Native billing SDK: configured once per page load, only when the server flag is on */}
-      <RevenueCatInit userId={user.id} enabled={nativeBillingEnabled()} />
-    </div>
+    </NativeBillingProvider>
   );
 }
