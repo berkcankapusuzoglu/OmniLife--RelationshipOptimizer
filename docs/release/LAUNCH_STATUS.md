@@ -1,4 +1,4 @@
-# Couplemetric launch status (updated 2026-10-23, evening)
+# Couplemetric launch status (updated 2026-10-25)
 
 Single source of truth for "where are we". Update this file whenever a step changes.
 
@@ -49,9 +49,16 @@ signals). Recruit real people instead: friends, family, coworkers, couples commu
       `/quiz` served from couplemetric.app).
 - [x] Alpha **1.1.2 (9)** released to testers 2026-10-24 with feedback-derived release notes; the
       web-side fixes had already auto-deployed with the push.
-- [ ] Apply the three growth decisions (price, title, listing v2) — see `docs/release/growth-strategy.md`,
-      `pricing-model.md`, `store-listing-v2.md`. Price is the only one with a deadline: Play price-locks
-      existing subscribers, and there are zero today.
+- [x] Growth decisions applied: price **$7.99 / $39.99** on Play, Stripe and the web; title
+      **Couplemetric: Couples Check-In**; listing v2 live (full description 1,549 -> 3,186 indexed chars).
+- [x] Analytics funnel live: `events` table, `/api/track`, sink mounted. **Verified recording real
+      visitor traffic in production** (page_view, landing_page_view), and the quiz funnel fires
+      end-to-end (quiz_started, quiz_completed).
+- [x] Product-audit fix wave shipped in **1.1.4 (11)**: Android purchase path from every locked
+      feature, Play in-app review after the third log, streak forgiveness, onboarding skip, referral
+      reward completion, theme toggle. See `docs/release/product-audit.md`.
+- [ ] Remaining follow-ups are listed at the bottom of `docs/release/product-audit.md`
+      (light-mode visual pass, native status bar, referral unique index).
 - [x] **Fix wave from tester A feedback** (see `docs/release/tester-feedback.md`): landing page read
       the removed pre-migration cookie so users always looked signed out; landing nav lacked
       `safe-top` and had 28px buttons; `/quiz` rendered a 100dvh flow inside the shared header+footer;

@@ -1,5 +1,10 @@
 # Product audit vs. the category leaders (2026-10-25)
 
+> **Status after the fix wave (same day):** items 1-7 are implemented and shipped
+> in 1.1.4 (11). Item 8 (theme) is implemented but defaults to dark until light
+> mode gets a rendered pass. Remaining follow-ups are listed at the bottom under
+> "Still open".
+
 What is still wrong or sub-optimal, checked against the competitor teardown
 (Paired, Lasting, Candle, Evergreen, Flamme, Couply, Connected) and the
 subscription benchmarks. Ordered by revenue impact, not by effort.
@@ -141,3 +146,32 @@ Worth saying plainly, because the list above is all problems:
 3. **(2) Close the price inconsistency** once Stripe is set up.
 4. **(4) Streak forgiveness.** Cheap, retention-positive, contrarian.
 5. (6), (5), (7), (8) as capacity allows.
+
+---
+
+## Still open after the fix wave
+
+1. **Light mode has had no rendered verification.** The tokens are converted and
+   the mechanism works, but components still carry hard-coded literals
+   (`bg-amber-50/50`, fixed `text-white`, `bg-black/...`) and contrast in light
+   mode is reasoned, not measured. This is why the default is `dark` rather than
+   `system` — see `src/lib/theme/preference.ts`. Flipping the default is one line
+   once a visual pass is done.
+2. **Native status bar is hard-coded dark.** `src/components/capacitor-init.tsx`
+   calls `StatusBar.setStyle({ style: Style.Dark })` and sets `#09090b`. Only
+   visible to someone who opts into light mode on Android. Needs to read the
+   resolved theme.
+3. **No `<meta name="theme-color">`**, so browser/PWA chrome does not follow a
+   manual theme override, and `public/manifest.json` still declares dark colours.
+4. **Referrals have no unique index on `(referrer_id, referred_user_id)`**, so the
+   duplicate guard is still read-then-insert. Two simultaneous signups of the same
+   referred user could create two rows, each rewarded once. Needs a migration;
+   CLAUDE.md is explicit that migrations are not improvised.
+5. **Streak forgiveness is derived, not stored.** A user with any historical 2-day
+   gap inside the last 30 days is treated as having already spent forgiveness, so
+   some existing users get none on their first miss. Intended trade-off (no schema
+   change), worth revisiting if it confuses anyone.
+6. **The referral bonus tier under-delivers for legacy rows.** The bonus month
+   keys off `rewarded` rows only, so a referrer carrying old `signed_up` rows who
+   reaches 5 referrals sees 5 months, not the published 6. Conservative by design
+   — it never over-grants — but it is a product decision left open.
