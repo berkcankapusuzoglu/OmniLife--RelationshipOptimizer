@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  elapsedSeconds,
+  pauseTimer,
+  resetTimer,
+  startTimer,
+  type TimerState,
+} from "@/lib/exercises/timer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,8 +58,13 @@ export function ExercisesClient({
   );
 
   const [activeExercise, setActiveExercise] = useState<Exercise | null>(null);
-  const [timer, setTimer] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
+  // Wall-clock timer state. The interval below only forces a re-render: Android
+  // stops delivering ticks while the screen is locked, so counting ticks lost the
+  // elapsed time entirely (tester feedback 2026-10-25).
+  const [timerState, setTimerState] = useState<TimerState>(() => resetTimer());
+  const [now, setNow] = useState(() => Date.now());
+  const timer = elapsedSeconds(timerState, now);
+  const isRunning = timerState.running;
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
 
@@ -64,8 +76,15 @@ export function ExercisesClient({
 
   useEffect(() => {
     if (!isRunning) return;
-    const interval = setInterval(() => setTimer((t) => t + 1), 1000);
-    return () => clearInterval(interval);
+    const tick = () => setNow(Date.now());
+    const interval = setInterval(tick, 1000);
+    // Re-read the clock the moment the app comes back, so the display is correct
+    // immediately rather than after the next tick.
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+    };
   }, [isRunning]);
 
   function formatTime(seconds: number) {
@@ -94,15 +113,13 @@ export function ExercisesClient({
     if (result?.error) {
       setActionError(result.error);
       setActiveExercise(null);
-      setIsRunning(false);
-      setTimer(0);
+      setTimerState(resetTimer());
       return;
     }
     setActionError(null);
     setCompleted((prev) => new Set(prev).add(exercise.id));
     setActiveExercise(null);
-    setIsRunning(false);
-    setTimer(0);
+    setTimerState(resetTimer());
     setToast(`"${exercise.title}" completed and saved to your history.`);
   }
 
@@ -142,7 +159,11 @@ export function ExercisesClient({
 
           <div className="flex justify-center gap-2">
             <Button
-              onClick={() => setIsRunning(!isRunning)}
+              onClick={() =>
+                setTimerState((state) =>
+                  state.running ? pauseTimer(state, Date.now()) : startTimer(state, Date.now())
+                )
+              }
               variant={isRunning ? "outline" : "default"}
             >
               {isRunning ? "Pause" : "Start"}
@@ -188,8 +209,7 @@ export function ExercisesClient({
             variant="ghost"
             onClick={() => {
               setActiveExercise(null);
-              setIsRunning(false);
-              setTimer(0);
+              setTimerState(resetTimer());
             }}
           >
             Cancel

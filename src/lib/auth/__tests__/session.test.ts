@@ -28,7 +28,9 @@ vi.mock("next/headers", () => ({
 
 const secret = "test-only-session-key-with-at-least-32-bytes";
 const now = 1_800_000_000_000;
-const duration = 7 * 24 * 60 * 60 * 1000;
+// Raised from 7 to 30 days on 2026-10-25 after two testers reported the app not
+// staying signed in; see src/lib/auth/session-token.ts.
+const duration = 30 * 24 * 60 * 60 * 1000;
 
 function signedFixture(payload: unknown, key = secret) {
   const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");

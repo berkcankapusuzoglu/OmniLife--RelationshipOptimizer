@@ -18,6 +18,27 @@ Closed test (track Alpha) went active 2026-10-20. 14-day window: 2026-10-20 → 
 | 6 | 2026-10-23 | Found verifying #4 | (not reported — caught on a phone viewport while fixing the quiz) | Overlay collision | **Fixed, in 1.1.2 (9)** | The floating cookie notice is fixed to the bottom of the screen, exactly where the step flows pin their CTA, so it covered "Start Quiz" / "Next" and intercepted taps. It now waits until the user is on an ordinary page; its button is a 44px target. |
 | 7 | 2026-10-23 | Found verifying #2 | (not reported) | Stale domain | **Fixed, in 1.1.2 (9)** | The bundled offline fallback page's Retry link still pointed at the old Vercel origin instead of couplemetric.app. |
 
+| 8 | 2026-10-25 | Tester A (friend) | "The exercise timer doesn't run when lock screen I think" | Exercise / timing | **Fixed, in 1.1.3 (10)** | The timer counted `setInterval` ticks. Android suspends timers in a backgrounded or screen-locked WebView, so the ticks stopped and the elapsed time was lost outright. Rewritten to derive elapsed time from wall-clock timestamps; the interval now only triggers a re-render, and the clock is re-read on `visibilitychange`. 9 unit tests. |
+| 9 | 2026-10-25 | Tester A (friend) | "once app opens the logo in that full screen looks blurry lower quality" | Splash / assets | **Fixed, in 1.1.3 (10)** | Two resolution faults. `drawable/splash.png` was 320x480 and only `xxxhdpi` port/land variants existed, so every common 1080p (xxhdpi) phone fell back to the 320x480 default stretched across the screen -- a ~4x upscale. And the adaptive-icon layers were at legacy launcher sizes (48-192px) instead of the 108dp adaptive sizes (108-432px), which Android 12+ also upscales onto its system splash. Splash regenerated for 11 density/orientation buckets plus night variants; icon layers regenerated at 108dp. |
+| 10 | 2026-10-25 | Tester A (friend) | "the app doesn't stay sign in. That would nice" (second report) | Auth / session | **Partly fixed, in 1.1.3 (10)** | The earlier fix (item 2) addressed a real cause but not this one. Two further causes found: (a) `renewSession()` was implemented and unit-tested but **never called from any production path**, so a session expired a fixed period after login however actively it was used -- sliding renewal now runs in the proxy, the only place that can both read and set the cookie, and the window moved from 7 to 30 days; (b) the Android WebView flushed cookies only in `onStop()`, which Android does not guarantee under memory pressure or on OEM builds with aggressive process management -- it now also flushes in `onPause()`, which is guaranteed before the app leaves the foreground. See "Open question" below. |
+
+## Open question on item 10
+
+Cause (b) is a strong hypothesis, not a proven diagnosis: it cannot be reproduced
+without the device. The server side was ruled out by evidence -- production sends
+`Cache-Control: private, no-cache, no-store`, `/overview` correctly 307s to
+`/login` when unauthenticated, and `/` is a dynamic route, so if the cookie were
+being sent the user would land signed in. That leaves the cookie not arriving,
+i.e. the Android cookie jar.
+
+To confirm or refute after 1.1.3, ask the tester which of these loses the session:
+  1. switching away and back,
+  2. swiping the app from recents and reopening,
+  3. rebooting the phone,
+  4. only after several days.
+(2) or (3) points at cookie flushing. (4) points at expiry. (1) points at
+something else entirely and we start again.
+
 ## Themes for the production-access form
 
 1. **Session persistence on Android** — testers reported being logged out. The app's start URL was still reading a cookie removed by an earlier security migration, so signed-in users always saw the signed-out marketing page. Fixed and pinned with a regression test.

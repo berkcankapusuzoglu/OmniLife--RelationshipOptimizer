@@ -1,15 +1,16 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import {
+  SESSION_COOKIE,
+  SESSION_DURATION_MS,
+  decodeSessionToken,
+  encodeSessionToken,
+} from "./session-token";
 
-const SESSION_COOKIE = "session_token";
-const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-interface SessionData {
-  version: 1;
-  userId: string;
-  expiresAt: number;
-}
+/**
+ * Cookie-backed sessions. The signing and verification live in `session-token`
+ * so the proxy can share them for sliding renewal; this module owns the cookie.
+ */
 
 function sessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -19,20 +20,12 @@ function sessionSecret(): string {
   return secret;
 }
 
-function sign(payload: string, secret: string): Buffer {
-  return createHmac("sha256", secret).update(payload).digest();
-}
-
 export async function createSession(userId: string): Promise<void> {
-  const secret = sessionSecret();
   const expiresAt = Date.now() + SESSION_DURATION_MS;
-
-  const sessionData: SessionData = { version: 1, userId, expiresAt };
-  const payload = Buffer.from(JSON.stringify(sessionData)).toString("base64url");
-  const encoded = `${payload}.${sign(payload, secret).toString("base64url")}`;
+  const token = encodeSessionToken({ version: 1, userId, expiresAt }, sessionSecret());
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, encoded, {
+  cookieStore.set(SESSION_COOKIE, token, {
     path: "/",
     httpOnly: true,
     sameSite: "lax",
@@ -44,46 +37,20 @@ export async function createSession(userId: string): Promise<void> {
 export async function getSession(): Promise<{ userId: string } | null> {
   const cookieStore = await cookies();
   const cookie = cookieStore.get(SESSION_COOKIE);
+  if (!cookie?.value) return null;
 
-  if (!cookie?.value) {
-    return null;
-  }
-
+  // Reading a session fails closed: a missing or weak secret means nobody is
+  // authenticated, never an unhandled error on a page render. Writing one still
+  // throws, so a misconfigured deployment cannot silently issue sessions.
+  let secret: string;
   try {
-    // Authenticate the exact encoded bytes before trusting any payload fields.
-    if (cookie.value.length > 4096) return null;
-    const parts = cookie.value.split(".");
-    if (parts.length !== 2) return null;
-    const [payload, signature] = parts;
-    if (!/^[A-Za-z0-9_-]+$/.test(payload) || !/^[A-Za-z0-9_-]{43}$/.test(signature)) {
-      return null;
-    }
-    const received = Buffer.from(signature, "base64url");
-    const expected = sign(payload, sessionSecret());
-    if (received.length !== expected.length || !timingSafeEqual(received, expected)) {
-      return null;
-    }
-    if (received.toString("base64url") !== signature) return null;
-
-    const decoded = Buffer.from(payload, "base64url");
-    if (decoded.toString("base64url") !== payload) return null;
-    const sessionData: unknown = JSON.parse(decoded.toString("utf8"));
-
-    if (
-      !sessionData || typeof sessionData !== "object" ||
-      !("version" in sessionData) || sessionData.version !== 1 ||
-      !("userId" in sessionData) || typeof sessionData.userId !== "string" ||
-      !sessionData.userId.trim() ||
-      !("expiresAt" in sessionData) || typeof sessionData.expiresAt !== "number" ||
-      !Number.isSafeInteger(sessionData.expiresAt) || Date.now() >= sessionData.expiresAt
-    ) {
-      return null;
-    }
-
-    return { userId: sessionData.userId };
+    secret = sessionSecret();
   } catch {
     return null;
   }
+
+  const data = decodeSessionToken(cookie.value, secret);
+  return data ? { userId: data.userId } : null;
 }
 
 export async function renewSession(userId: string): Promise<void> {
